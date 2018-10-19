@@ -23,10 +23,11 @@ kalmaned_with_ts = interface.pass_kalmaned_list(kalmaned_coordinates, gps)
 acc_with_ts = interface.pass_acc_list(acc)
 #print(len(kalmaned_coordinates))
 #print(kalmaned_coordinates[0]['IM'])
-
+"""
 points = Point()
 interpolated_attribute_table = points.interpolate_kalmaned_coordinates(acc_with_ts, kalmaned_with_ts)
 print('Len int_att_tabl: %s' % len(interpolated_attribute_table))
+"""
 
 
 

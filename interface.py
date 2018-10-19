@@ -67,22 +67,17 @@ class Interface:
             acc_time.append(values['time'])
         return {'acc_east': acc_east, 'acc_north': acc_north, 'acc_down': acc_down, 'acc_time': acc_time}
         
-    def _pass_std_devs(self, gps, acc):
-        gps_lists = self.pass_gps_list(gps)
-        acc_lists = self.pass_acc_list(acc)
-        std_dev_ln = np.std(gps_lists['ln'])
-        std_dev_la = np.std(gps_lists['la'])
-        std_dev_vln = np.std(gps_lists['vln'])
-        std_dev_vla = np.std(gps_lists['vla'])
-        std_dev_acc_east = np.std(acc_lists['acc_east'])
-        std_dev_acc_north = np.std(acc_lists['acc_north'])
+    def _pass_std_devs(self, acc_east, acc_north, gps_lng, gps_lat, gps_vlng, gps_vlat):
 
-        return {'std_dev_ln': std_dev_ln,'std_dev_la': std_dev_la, 'std_dev_vln': std_dev_vln,'std_dev_vla': std_dev_vla, 'std_dev_acc_east': std_dev_acc_east, 'std_dev_acc_north': std_dev_acc_north}
+        std_dev_ln = np.std(gps_lng)
+        std_dev_la = np.std(gps_lat)
+        std_dev_vln = np.std(gps_vlng)
+        std_dev_vla = np.std(gps_vlat)
+        std_dev_acc_east = np.std(acc_east)
+        std_dev_acc_north = np.std(acc_north)
 
-    def _update(gps, acc, X, P, Y, H, R):
-        pass
-    def _predict(gps, acc, X, P, F, Q, B, U):
-        pass
+        return {'ln': std_dev_ln,'la': std_dev_la, 'vln': std_dev_vln,'vla': std_dev_vla, 'acc_east': std_dev_acc_east, 'acc_north': std_dev_acc_north}
+
 
     def interpolate_gps_data(self, acc, gps):
 
@@ -90,7 +85,6 @@ class Interface:
         acc_lists = self.pass_acc_list(acc)
         
         acc_time = acc_lists['acc_time']
-        print(type(acc_time))
         acc_east = acc_lists['acc_east']
         acc_north = acc_lists['acc_north']
         acc_down = acc_lists['acc_down']
@@ -103,34 +97,63 @@ class Interface:
         gps_hdop = gps_lists['hdop']
         
 
-        interpolated_lng = np.interp(acc_time, gps_time, gps_lng)
-        interpolated_lat = np.interp(acc_time, gps_time, gps_lat)
-        interpolated_vlng = np.interp(acc_time, gps_time, gps_vln)
-        interpolated_vlat = np.interp(acc_time, gps_time, gps_vla)
-        interpolated_hdop = np.interp(acc_time, gps_time, gps_hdop)
+        interpolated_lng = np.interp(acc_time, gps_time, gps_lng).tolist()
+        interpolated_lat = np.interp(acc_time, gps_time, gps_lat).tolist()
+        interpolated_vlng = np.interp(acc_time, gps_time, gps_vln).tolist()
+        interpolated_vlat = np.interp(acc_time, gps_time, gps_vla).tolist()
+        interpolated_hdop = np.interp(acc_time, gps_time, gps_hdop).tolist()
+
         if(len(acc_time) == len(acc_down) == len(acc_east) == len(acc_north) == len(interpolated_lat) == len(interpolated_lng) == len(interpolated_vlat) == len(interpolated_vlng) == len(interpolated_hdop)):
-            print('EQUAL')
+            return {'acc_time': acc_time, 'lng': interpolated_lng, 'lat': interpolated_lat, 'vlng': interpolated_vlng, 'vlat': interpolated_vlat, 'hdop': interpolated_hdop, 'acc_east': acc_east, 'acc_north': acc_north, 'acc_down': acc_down}
         else:
             print('NEM')
 
-        return {'acc_time': acc_time, 'lng': interpolated_lng, 'lat': interpolated_lat, 'vlng': interpolated_vlng, 'vlat': interpolated_vlat, 'hdop': interpolated_hdop, 'acc_east': acc_east, 'acc_north': acc_north, 'acc_down': acc_down}
 
 
-
+        
+    def _predict(self, X_minus, P_minus, F, Q, B, std_devs, acc_east, acc_north):
+        kalman = Kalman()
+        dt = 1
+        Q[0,0] = std_devs['acc_east'] * dt* dt
+        Q[1,1] = std_devs['acc_north'] * dt* dt 
+        Q[2,2] = std_devs['acc_east'] * dt
+        Q[3,3] = std_devs['acc_north'] * dt
         """
-        for pos in zip(acc_time, interpolated_lng, interpolated_lat, acc_east, acc_north, acc_down):
-            interpolated_attribute_table.append(pos)
-
-        self._write_attr_table_to_file(interpolated_attribute_table)
-        return interpolated_attribute_table
+        Q[0,2] = std_devs['ln'] * std_devs['la']
+        Q[1,3] = std_devs['vln'] * std_devs['vla']
         """
+                
+        U = np.transpose([acc_north, acc_east])
+        predict = kalman.kf_predict(X_minus, P_minus, F, Q, B, U)
+        return predict
+
+    def _update(self, X_minus, P_minus, H, R, hdop, lng, lat, vlng, vlat):
+        kalman = Kalman()
+        R[0,0] = hdop * hdop 
+        R[1,1] = hdop * hdop 
+        R[2,2] = hdop 
+        R[3,3] = hdop 
+        X = np.transpose([lng, lat])
+        Y = X * H + R
+        print('LEN!')
+        print(len(Y))
+        
+        update = kalman.kf_update(X_minus, P_minus, Y, H, R)
+
+        return update
 
     def get_kalmaned_coordinates(self, gps, acc):
-        kalman = Kalman()
-        gps_lists = self.pass_gps_list(gps)
-        acc_lists = self.pass_acc_list(acc)
+        
 
         interpolated_attribute_table = self.interpolate_gps_data(acc, gps)
+        acc_time = interpolated_attribute_table['acc_time']
+        acc_east = interpolated_attribute_table['acc_east']
+        acc_north = interpolated_attribute_table['acc_north']
+        gps_lng = interpolated_attribute_table['lng']
+        gps_lat = interpolated_attribute_table['lat']
+        gps_vlng = interpolated_attribute_table['vlng']
+        gps_vlat = interpolated_attribute_table['vlat']
+        gps_hdop = interpolated_attribute_table['hdop']
 
         init = Initial_params()
         init_params = init.get_initial_parameters()
@@ -140,160 +163,63 @@ class Interface:
         Q = init_params['Q']
         F = init_params['F']
         B = init_params['B']
-        dt = 1
 
-        std_devs = self._pass_std_devs(gps, acc)
+        std_devs = self._pass_std_devs(acc_east, acc_north, gps_lng, gps_lat, gps_vlng, gps_vlat)
 
-        fused = {**acc, **gps}
-        sorted_timestamps_of_all_measurements = sorted(list(fused.keys()))
         
         updated = []
         predicted = []
-        last_step = []
-        each_state = []
-        X = 0
-        X_minus = 0
+        lng_to_plot = []
+        lat_to_plot = []
+        og_lng = []
+        og_lat = []
+
         counter = 0
-        for t in sorted_timestamps_of_all_measurements:
-            #THIS HAS TO BE CHECKED!
-            measurement = fused[t]
-            #print(measurement)
-            
-            #if we got a measurement from GPS
-            if (len(measurement) == 8): 
-                if len(last_step) != 0: 
-                    last_step_was = last_step[len(last_step)-1]
-                
-                R[0,0] = measurement['hdop'] * measurement['hdop'] 
-                R[1,1] = measurement['hdop'] * measurement['hdop'] 
-                R[2,2] = measurement['hdop'] 
-                R[3,3] = measurement['hdop'] 
-                
-                # so predict will be the first, but a state has to be initialized
-                if len(predicted) == 0:
-                    X = np.transpose([measurement['lng'], measurement['lat'], measurement['vlng'], measurement['vlat']])
-                    updated.append({'X':X,'P':P})
-                    each_state.append(X)
-                    last_step.append('updated')
-                    continue
-                #if last step was a predcition, use its state as the state input, and this measurement for Y
-                elif(last_step_was == 'predicted'):
-                    
-                    X = np.transpose([measurement['lng'], measurement['lat'], measurement['vlng'], measurement['vlat']])
-                    Y = H*X + R
-                    P_minus = predicted[len(predicted) - 1]['P']
-                    X_minus = predicted[len(predicted) - 1]['X']
-                    if (len(X_minus) > 4):
-                        print(X_minus)
-                        break
-                    update = kalman.kf_update(X_minus, P_minus, Y, H, R)
+        for time, acc_east, acc_north, lng, lat, vlng, vlat, hdop in zip(acc_time, acc_east, acc_north, gps_lng, gps_lat, gps_vlng, gps_vlat, gps_hdop):
 
-                    update['X'] = np.transpose([update['X'][0][0], update['X'][1][1], update['X'][2][2], update['X'][3][3]])
-                    updated.append(update)
-                    last_step.append('updated')
-                    #if last step was an update, use its state as the state input, and this measurement for Y
-                elif(last_step_was == 'updated'):
+            #time, acc_east, acc_north, lng, lat, vlng, vlat, hdop = point[0], point[1], point[2], point[3], point[4], point[5], point[6], point[7]
+            og_lng.append(lng)
+            og_lat.append(lat)
 
-                    X = np.transpose([measurement['lng'], measurement['lat'], measurement['vlng'], measurement['vlat']])
-                    Y = H*X + R
-                    P_minus = updated[len(updated) - 1]['P']
-                    X_minus = np.transpose(updated[len(updated) - 1]['X'])
-                    if (len(X_minus) > 4):
-                        print(X_minus)
-                        break
-                    update = kalman.kf_update(X_minus, P, Y, H, R)
-                    update['X'] = [update['X'][0][0], update['X'][1][1], update['X'][2][2], update['X'][3][3]]
-                    updated.append(update)
-                    last_step.append('updated')
-
-            #if we got a control vector
-            elif (len(measurement) == 4):
-                if len(last_step) != 0:
-                    last_step_was = last_step[len(last_step)-1]
-
-                Q[0,0] = std_devs['std_dev_acc_east'] * dt* dt
-                Q[1,1] = std_devs['std_dev_acc_north'] * dt* dt 
-                Q[2,2] = std_devs['std_dev_acc_east'] * dt
-                Q[3,3] = std_devs['std_dev_acc_north'] * dt
-                Q[0,2] = std_devs['std_dev_ln'] * std_devs['std_dev_la']
-                Q[1,3] = std_devs['std_dev_vln'] * std_devs['std_dev_vla']
-                
-                U = np.transpose([measurement['acc_east'], measurement['acc_north']])
-                if len(predicted) == 0:
-                    #if updated is empty, do it first
-                    if len(updated) == 0:
-                        continue
-                    #otherwise use last state from measurement
-                    else:
-                        X_minus = updated[len(updated) - 1]['X']
-                        P_minus = updated[len(updated) - 1]['P']
-                        predict = kalman.kf_predict(X_minus, P, F, Q, B, U)
-                        predicted.append(predict)
-                        last_step.append('predicted')
-                #if last step was prediction, use the parameters from the last predicted state
-                elif (last_step_was == 'predicted'): #good
-                    P_minus = predicted[len(predicted) - 1]['P']
-                    X_minus = predicted[len(predicted) - 1]['X']
-                    if (len(X_minus) > 4):
-                        print(X_minus)
-                        break
-                    predict = kalman.kf_predict(X_minus, P, F, Q, B, U)
-                    predicted.append(predict)
-                    last_step.append('predicted')
-                #if last step was update, use the state from the last updated state
-                elif (last_step_was == 'updated'): 
-                    P_minus = updated[len(updated) - 1]['P']
-                    X_minus = np.transpose(updated[len(updated) - 1]['X']) 
-                    if (len(X_minus) > 4):
-                        print(X_minus)
-                        break
-                    predict = kalman.kf_predict(X_minus, P, F, Q, B, U)
-                    predicted.append(predict)
-                    last_step.append('predicted')
+            if counter == 0:
+                X_minus = np.transpose([lng,lat,vlng,vlat])
+                P_minus = P
+                counter = counter + 1
             else:
-                print('kalman filter can\'t apply your shit man')
-                break
-        kalmaned_coordinates = [i['X'] for i in updated]
+                last_X = updated[len(updated) - 1]['X']
+                X_minus = np.transpose([last_X[0][0], last_X[1][1], last_X[2][2], last_X[3][3]])
+                P_minus = updated[len(updated) - 1]['P']
+        
+
+            predict = self._predict(X_minus, P_minus, F, Q, B, std_devs, acc_east, acc_north)
+            predicted.append(predict)
+            last_X = predicted[len(predicted) - 1]['X']
+            if(counter == 1):
+                X_minus = predicted[len(predicted) - 1]['X']
+                counter = counter + 1
+            else:
+                X_minus = np.transpose(last_X)
+            P_minus = predicted[len(predicted) - 1]['P']
+
+            update = self._update(X_minus, P_minus, H, R, hdop, lng, lat, vlng, vlat)
+            updated.append(update)
+
+            lng_to_plot.append(update['X'][0][0])
+            lat_to_plot.append(update['X'][1][1])
+
+        """
         print('Length of updated states')
         #print(kalmaned_coordinates)
-        print(len(last_step))
-        print(len(kalmaned_coordinates))
-        print(len(kalmaned_coordinates[0]))
-        print(kalmaned_coordinates[0::100])
+        print(len(lng_to_plot))
+        print(len(lat_to_plot))
+        print(lng_to_plot[0::100])
+        print(lat_to_plot[0::100])
+        """
 
-        x_to_plot = []
-        y_to_plot = []
-        for i in kalmaned_coordinates:
-            #print(i)
-            x_to_plot.append(i[0])
-            y_to_plot.append(i[1])
-
-        plt.plot(gps_lists['ln'], gps_lists['la'], 'bs', x_to_plot, y_to_plot, 'r--')
+        plt.plot(og_lng, og_lat, 'bs', lng_to_plot, lat_to_plot, 'r--')
         plt.show()
         return updated
 
-        """
-        x_to_plot = []
-        y_to_plot = []
-        for i in kalmaned_coordinates:
-            #print(i)
-            x_to_plot.append(i[0][0])
-            y_to_plot.append(i[1][1])
-        
-
-        print(type(gps_lists['ln']))
-        print(len(gps_lists['ln']))
-        print(type(gps_lists['la']))
-        print(len(gps_lists['la']))
-        print(len(x_to_plot))
-        print(len(y_to_plot))
-
-    
-        
-        plt.plot(gps_lists['ln'], gps_lists['la'], 'bs', x_to_plot, y_to_plot, 'r--')
-        plt.show()
-        print('ide is eljut')
-        """
         """
         diff_lat, diff_lng = [], []
 

@@ -20,9 +20,11 @@ class Kalman:
         U : The control input.
     """
         
-    def kf_predict(self, X, P, F, Q, B, U): #the parameter X is the old X, and the returned value is the new value
-        X = np.dot(F, X) + np.dot(B, U)
-        P = np.dot(F, np.dot(P, F.T)) + Q
+    def kf_predict(self, X_minus, P_minus, F, Q, B, U): #the parameter X is the old X, and the returned value is the new value
+        fx = np.dot(F, X_minus)
+        bu = np.dot(B, U)
+        X = X_minus + bu 
+        P = np.dot(F, np.dot(P_minus, F.T)) + Q
         return {'X': X, 'P': P}
     """
     def gauss_pdf(self, X, M, S):
@@ -50,14 +52,20 @@ class Kalman:
         LH : the Predictive probability (likelihood) of measurement which is computed using the Python function gauss_pdf.
     """
 
-    def kf_update(self, X, P, Y, H, R):
-        IM = np.dot(H, X)
+    def kf_update(self, X_minus, P_minus, Y, H, R):
+        print(X_minus)
+        print(P_minus)
+        print(H)
+        print(R)
+        IM = np.dot(H, X_minus)
+        print(Y)
+        print(IM)
         Z = Y - IM
-        IS = R + np.dot(H, np.dot(P, H.T))
-
-        K = np.dot(P, np.dot(H.T, inv(IS)))
-        X = X + np.dot(K, Z)
-        P = P - np.dot(K, np.dot(IS, K.T))
+        IS = R + np.dot(H, np.dot(P_minus, H.T))
+        K = np.dot(P_minus, np.dot(H.T, inv(IS)))
+        kz = np.dot(K,Z)
+        X = X_minus + kz
+        P = P_minus - np.dot(K, np.dot(IS, K.T))
         #LH = self.gauss_pdf(Y, IM, IS)
         #print('update')
         return {'X': X,'P': P,'K': K,'IM': IM,'IS': IS,}

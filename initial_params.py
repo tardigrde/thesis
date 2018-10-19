@@ -4,7 +4,7 @@ class Initial_params:
     def __init__(self):
         
         # timestep
-        dt = 1
+        dt = 0.01
 
         # initial state matrix(4x1)
         self.X = np.asarray([0, 0, 0, 0])
@@ -14,7 +14,7 @@ class Initial_params:
     
         # F - state transition matrix (4x4)
         self.F = np.eye(4)
-        self.F[0,2], self.F[1,3] = dt, dt    
+        self.F[0,1], self.F[2,3] = dt, dt    
 
         # B - control matrix(4x2)
         self.B = np.zeros((4,2))
@@ -22,7 +22,7 @@ class Initial_params:
         self.B[2,0], self.B[3,1] = dt, dt
 
         # H -measurment matrix(4)
-        self.H = np.eye(4)
+        self.H = [[1,0,0,0],[0,1,0,0]]
 
         # R - measurment covariance matrix(4x4)
         self.R = np.zeros((4,4))
