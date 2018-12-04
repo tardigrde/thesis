@@ -8,9 +8,9 @@ start_time = time.time()
 
 # acc, gyro, magnetometer, timestamp inputfile
 #in_imu = '/home/acer/Desktop/szakdoga/code/code_oop/teszt/mlt-20180718-212142-452.csv'
-in_imu = '/home/acer/Desktop/szakdoga/code/code_oop/teszt/roszke-szeged/mlt_20180915_150741_18m-1.csv'
+in_imu = './teszt/roszke-szeged/mlt_20180915_150741_18m-1.csv'
 # gps nmea sentences inputfile
-in_gps = '/home/acer/Desktop/szakdoga/code/code_oop/teszt/roszke-szeged/nmea.log'
+in_gps = './teszt/roszke-szeged/nmea.log'
 
 # get filtered data
 interface = Interface(in_imu, in_gps)
