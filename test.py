@@ -17,10 +17,13 @@ interface = Interface(in_imu, in_gps)
 
 gps = interface.get_gps_data()
 acc = interface.get_acceleration_data()
-kalmaned_coordinates = interface.get_kalmaned_coordinates(gps, acc)
 
-kalmaned_with_ts = interface.pass_kalmaned_list(kalmaned_coordinates, gps)
-acc_with_ts = interface.pass_acc_list(acc)
+kalmaned_coordinates = interface.do_pykalmaning(acc, gps);
+
+#kalmaned_coordinates = interface.get_kalmaned_coordinates(gps, acc);
+
+# kalmaned_with_ts = interface.pass_kalmaned_list(kalmaned_coordinates, gps)
+# acc_with_ts = interface.pass_acc_list(acc)
 #print(len(kalmaned_coordinates))
 #print(kalmaned_coordinates[0]['IM'])
 """

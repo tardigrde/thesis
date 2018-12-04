@@ -16,10 +16,7 @@ def trim_datatable(self):
 
     measurment = []
     for index, row in df_raw.iterrows():
-        measurment = ['Timestamp': row['Timestamp'], 
-        'accelX': row['accelX'], 'accelY': row['accelY'], 'accelZ': row['accelZ'], 
-        'gyroX': row['gyroX'], 'gyroY': row['gyroY'], 'gyroZ': row['gyroZ'], 
-        'calMagX': row['calMagX'], 'calMagY': row['calMagY'], 'calMagZ': row['calMagZ']]
+        measurment = ['Timestamp': row['Timestamp'], 'accelX': row['accelX'], 'accelY': row['accelY'], 'accelZ': row['accelZ'], 'gyroX': row['gyroX'], 'gyroY': row['gyroY'], 'gyroZ': row['gyroZ'], 'calMagX': row['calMagX'], 'calMagY': row['calMagY'], 'calMagZ': row['calMagZ']]
 
         
         
