@@ -6,6 +6,7 @@ from numpy import dot, sum, tile, linalg, exp, log
 from numpy.linalg import inv
 
 
+
 class Kalman:
     def __init__(self):
         pass
@@ -23,7 +24,7 @@ class Kalman:
     """
 
     def kf_predict(self, X_minus, P_minus, F, Q, B, U):  # the parameter X is the old X, and the returned value is the new value
-        fx = np.dot(F, X_minus)
+        fx = np.dot(F, X_minus.T)
         bu = np.dot(B, U)
         X = fx + bu 
         P = np.dot(F, np.dot(P_minus, F.T)) + Q
@@ -56,11 +57,13 @@ class Kalman:
     """
 
     def kf_update(self, X_minus, P_minus, Y, H, R):
+        IS = R + np.dot(H, np.dot(P_minus, H.T))
+        K = np.dot(P_minus, np.dot(H.T, inv(IS))) # 4
+
         IM = np.dot(H, X_minus)
         Z = Y - IM
-        IS = R + np.dot(H, np.dot(P_minus, H.T))
-        K = np.dot(P_minus, np.dot(H.T, inv(IS)))
+
         X = X_minus + np.dot(K, Z)
         P = P_minus - np.dot(K, np.dot(IS, K.T))
         # LH = self.gauss_pdf(Y, IM, IS)
-        return {'X': X, 'P': P, 'K': K, 'IM': IM, 'IS': IS}
+        return {'X': X, 'P': P}

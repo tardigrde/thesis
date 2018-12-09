@@ -1,3 +1,4 @@
+from pyproj import Proj, transform
 from gps_data import GPS_data
 from imu_data import IMU_data
 from kalman import Kalman
@@ -46,25 +47,24 @@ class Interface:
 
     def pass_gps_list(self, gps):
         time, ln, la, vla, vln, hdop = [], [], [], [], [], []
-        latlong = []
-        og_lat, og_lng = [], []
         timestamps = sorted(list(gps.keys()))
+        inProj = Proj(init='epsg:4326')
+        outProj = Proj(init='epsg:23700')
         for t in timestamps:
             values = gps[t]
-            og_lat.append(values['lat'])
-            og_lng.append(values['lng'])
-            latlong.append([values['lat'], values['lng']])
+            # ln.append(values['lng'])
+            # la.append(values['lat'])
+            vln.append(values['vlng'])
+            vla.append(values['vlat'])
+            hdop.append(values['hdop'])
+            time.append(values['time'])
+            lng, lat =  transform(inProj,outProj,values['lng'],values['lat'])
+            ln.append(lng)
+            la.append(lat)
 
-        #     values = gps[t]
-        #     ln.append(values['lng'])
-        #     la.append(values['lat'])
-        #     vln.append(values['vlng'])
-        #     vla.append(values['vlat'])
-        #     hdop.append(values['hdop'])
-        #     time.append(values['time'])
-        # return {'ln': ln, 'la': la, 'vln': vln, 'vla': vla, 'hdop': hdop, 'time': time}
-        data = [np.asarray(latlong), og_lat, og_lng]
-        return data
+        return {'ln': ln, 'la': la, 'vln': vln, 'vla': vla, 'hdop': hdop, 'time': time}
+        # data = [np.asarray(latlong), og_lat, og_lng]
+        # return data
 
     def pass_acc_list(self, acc):
         timestamps = sorted(list(acc.keys()))
@@ -77,17 +77,23 @@ class Interface:
             acc_time.append(values['time'])
         return {'acc_east': acc_east, 'acc_north': acc_north, 'acc_down': acc_down, 'acc_time': acc_time}
 
-    def _pass_std_devs(self, acc_east, acc_north, gps_lng, gps_lat, gps_vlng, gps_vlat):
+    # def _pass_std_devs(self, acc_east, acc_north, gps_lng, gps_lat, gps_vlng, gps_vlat):
+    #
+    #     std_dev_ln = np.std(gps_lng)
+    #     std_dev_la = np.std(gps_lat)
+    #     std_dev_vln = np.std(gps_vlng)
+    #     std_dev_vla = np.std(gps_vlat)
+    #     std_dev_acc_east = np.std(acc_east)
+    #     std_dev_acc_north = np.std(acc_north)
+    #
+    #     return {'ln': std_dev_ln, 'la': std_dev_la, 'vln': std_dev_vln, 'vla': std_dev_vla,
+    #             'acc_east': std_dev_acc_east, 'acc_north': std_dev_acc_north}
 
-        std_dev_ln = np.std(gps_lng)
-        std_dev_la = np.std(gps_lat)
-        std_dev_vln = np.std(gps_vlng)
-        std_dev_vla = np.std(gps_vlat)
+    def _pass_std_devs(self, acc_east, acc_north):
         std_dev_acc_east = np.std(acc_east)
         std_dev_acc_north = np.std(acc_north)
 
-        return {'ln': std_dev_ln, 'la': std_dev_la, 'vln': std_dev_vln, 'vla': std_dev_vla,
-                'acc_east': std_dev_acc_east, 'acc_north': std_dev_acc_north}
+        return {'std_dev_acc_east': std_dev_acc_east, 'std_dev_acc_north': std_dev_acc_north}
 
     def interpolate_gps_data(self, acc, gps):
 
@@ -120,22 +126,34 @@ class Interface:
         else:
             print('NEM')
 
-    def _predict(self, X_minus, P_minus, F, Q, B, std_devs, acc_north):
+    def _predict(self, X_minus, P_minus, F, Q, B, std_devs, acc_east, acc_north):
         kalman = Kalman()
         dt = 1
-        Q[0] = std_devs['acc_north'] * dt* dt
-        U = acc_north
+        Q[0, 0] = (std_devs['std_dev_acc_east'] * dt * dt / 2)**2
+        Q[1, 1] = (std_devs['std_dev_acc_north'] * dt * dt / 2)**2
+        Q[2, 2] = (std_devs['std_dev_acc_east'] * dt)**2
+        Q[3, 3] = (std_devs['std_dev_acc_north'] * dt)**2
+        Q[0, 2] = (std_devs['std_dev_acc_east'] * dt * dt / 2) * (std_devs['std_dev_acc_east'] * dt)
+        Q[1, 3] = (std_devs['std_dev_acc_north'] * dt * dt / 2) * (std_devs['std_dev_acc_north'] * dt)
+
+        U = np.transpose([acc_east, acc_north])
+
+        #print('Q: {} and U: {}'.format(Q, U))
 
         predict = kalman.kf_predict(X_minus, P_minus, F, Q, B, U)
         return predict
 
-    def _update(self, X_minus, P_minus, H, R, hdop, lat, vlat):
+    def _update(self, X_minus, P_minus, H, R, hdop, lng, lat, vlng, vlat):
         kalman = Kalman()
-        R[0] = hdop * hdop
-        R[1] = hdop
-        X = np.transpose([lat, vlat])
+        R[0][0] = hdop * hdop
+        R[1][1] = hdop * hdop
+        R[2][2] = hdop * hdop
+        R[3][3] = hdop * hdop
+        #print('R is {}'.format(R))
+        X = np.transpose([lng, lat, vlng, vlat])
+        #print('X is {}'.format(X))
         Y = X * H + R
-        print(len(Y))
+        #print('Y is {}'.format(Y))
 
         update = kalman.kf_update(X_minus, P_minus, Y, H, R)
 
@@ -145,18 +163,13 @@ class Interface:
 
         init = Initial_params()
         init_params = init.get_initial_parameters()
+        #print(init_params)
         P = init_params['P']
         H = init_params['H']
         R = init_params['R']
         Q = init_params['Q']
         F = init_params['F']
         B = init_params['B']
-
-        #this is a mess
-        gps_lists = self.pass_gps_list(gps)
-        measurements = gps_lists[0]
-        og_lat = gps_lists[1]
-        og_lng = gps_lists[2]
 
         interpolated_attribute_table = self.interpolate_gps_data(acc, gps)
         acc_time = interpolated_attribute_table['acc_time']
@@ -168,88 +181,49 @@ class Interface:
         gps_vlat = interpolated_attribute_table['vlat']
         gps_hdop = interpolated_attribute_table['hdop']
 
-        std_devs = self._pass_std_devs(acc_east, acc_north, gps_lng, gps_lat, gps_vlng, gps_vlat)
+        std_devs = self._pass_std_devs(acc_east, acc_north)
 
         updated = []
         predicted = []
         lng_to_plot = []
         lat_to_plot = []
-
+        og_lng, og_lat = [], []
 
         counter = 0
-        for time, acc_north, lat, vlat, hdop in zip(acc_time, acc_north, gps_lat, gps_vlat, gps_hdop):
+        for time, a_east, a_north, lat, lng, vlat, vlng, hdop in zip(acc_time, acc_east, acc_north, gps_lat, gps_lng, gps_vlat, gps_vlng, gps_hdop):
+
+            og_lng.append(lng)
+            og_lat.append(lat)
+
             if counter == 0:
-                X_minus = np.transpose([lat, vlat])
+                X_minus = np.transpose([lng, lat, vlng, vlat])
                 P_minus = P
                 counter = counter + 1
             else:
-                last_X = updated[len(updated) - 1]['X']
-                X_minus = np.transpose([last_X[0][0], last_X[1][1], last_X[2][2], last_X[3][3]])
+                X_minus = updated[len(updated) - 1]['X']
                 P_minus = updated[len(updated) - 1]['P']
 
-            predict = self._predict(X_minus, P_minus, F, Q, B, std_devs, acc_east)
+            predict = self._predict(X_minus, P_minus, F, Q, B, std_devs, a_east, a_north) # 1
+            #print('Predicted STATE is {}'.format(predict['X']))
             predicted.append(predict)
-            last_X = predicted[len(predicted) - 1]['X']
-            if (counter == 1):
-                X_minus = predicted[len(predicted) - 1]['X']
-                counter = counter + 1
-            else:
-                X_minus = np.transpose(last_X)
-            P_minus = predicted[len(predicted) - 1]['P']
 
-            update = self._update(X_minus, P_minus, H, R, hdop, lat, vlat)
+            X_minus = predicted[len(predicted) - 1]['X']
+            P_minus = predicted[len(predicted) - 1]['P'] #2,3
+
+            update = self._update(X_minus, P_minus, H, R, hdop, lng, lat, vlng, vlat)
             updated.append(update)
+            #print('Updated STATE is {}'.format(update['X']))
 
             lng_to_plot.append(update['X'][0][0])
             lat_to_plot.append(update['X'][1][1])
+        plt.plot(og_lng, og_lat, 'bs', lng_to_plot, lat_to_plot, 'r--')
+        plt.show()
+        out = './teszt/roszke-szeged/kalmaned_coordinates1.csv'
+        with open(out, 'w') as out:
+            for ln, la in zip(lng_to_plot, lat_to_plot):
+                out.write(str(ln) + ',' + str(la) + '\n')
 
 
-
-
-
-        # initial_state_mean = [measurements[0, 0], 0, measurements[0, 1], 0]
-        # transition_matrix = F
-        # observation_matrix = H
-        # kf1 = KalmanFilter(transition_matrices=transition_matrix,
-        #                    observation_matrices=observation_matrix,
-        #                    initial_state_mean=initial_state_mean)
-        # kf1 = kf1.em(measurements, n_iter=20)
-        # (smoothed_state_means, smoothed_state_covariances) = kf1.smooth(measurements)
-
-        # plt.figure(1)
-        # times = range(measurements.shape[0])
-        # plt.plot(times, measurements[:, 0], 'bo',
-        #          times, measurements[:, 1], 'ro',
-        #          times, smoothed_state_means[:, 0], 'b--',
-        #          times, smoothed_state_means[:, 2], 'r--', )
-        # plt.show()
-        # plt.plot(og_lng, og_lat, 'bs', smoothed_state_means[:, 1], smoothed_state_means[:, 0], 'r--')
-        # plt.show()
-        # _lng, _lat = [], []
-        #
-        # for i in range(len(og_lng)):
-        #     _lng.append(og_lng[i] - smoothed_state_means[i][1])
-        #     _lat.append(og_lat[i] - smoothed_state_means[i][0])
-        #
-        # plt.plot(_lng, 'b--', _lat, 'r--')
-        # plt.show()
-
-        # kf2 = KalmanFilter(transition_matrices=transition_matrix,
-        #                    observation_matrices=observation_matrix,
-        #                    initial_state_mean=initial_state_mean,
-        #                    observation_covariance=10 * kf1.observation_covariance,
-        #                    em_vars=['transition_covariance', 'initial_state_covariance'])
-        #
-        # kf2 = kf2.em(measurements, n_iter=5)
-        # (smoothed_state_means, smoothed_state_covariances) = kf2.smooth(measurements)
-        #
-        # plt.figure(2)
-        # times = range(measurements.shape[0])
-        # plt.plot(times, measurements[:, 0], 'bo',
-        #          times, measurements[:, 1], 'ro',
-        #          times, smoothed_state_means[:, 0], 'b--',
-        #          times, smoothed_state_means[:, 2], 'r--', )
-        # plt.show()
 
 
 
