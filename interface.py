@@ -5,7 +5,6 @@ from kalman import Kalman
 from initial_params import Initial_params
 import numpy as np
 import matplotlib.pyplot as plt
-from pykalman import KalmanFilter
 
 
 class Interface:
@@ -135,6 +134,12 @@ class Interface:
         Q[3, 3] = (std_devs['std_dev_acc_north'] * dt)**2
         Q[0, 2] = (std_devs['std_dev_acc_east'] * dt * dt / 2) * (std_devs['std_dev_acc_east'] * dt)
         Q[1, 3] = (std_devs['std_dev_acc_north'] * dt * dt / 2) * (std_devs['std_dev_acc_north'] * dt)
+        # Q[1, 1] = (std_devs['std_dev_acc_east'] * dt * dt / 2) ** 2
+        # Q[0, 0] = (std_devs['std_dev_acc_north'] * dt * dt / 2) ** 2
+        # Q[3, 3] = (std_devs['std_dev_acc_east'] * dt) ** 2
+        # Q[2, 2] = (std_devs['std_dev_acc_north'] * dt) ** 2
+        # Q[1, 3] = (std_devs['std_dev_acc_east'] * dt * dt / 2) * (std_devs['std_dev_acc_east'] * dt)
+        # Q[0, 2] = (std_devs['std_dev_acc_north'] * dt * dt / 2) * (std_devs['std_dev_acc_north'] * dt)
 
         U = np.transpose([acc_east, acc_north])
 
@@ -145,9 +150,10 @@ class Interface:
 
     def _update(self, X_minus, P_minus, H, R, hdop, lng, lat, vlng, vlat):
         kalman = Kalman()
+        #print("vl: {}\n va: {}".format(vlng, vlat))
         R[0][0] = hdop * hdop
         R[1][1] = hdop * hdop
-        R[2][2] = hdop * hdop
+        R[2][2] = hdop * hdop #*10 works better
         R[3][3] = hdop * hdop
         #print('R is {}'.format(R))
         X = np.transpose([lng, lat, vlng, vlat])
@@ -212,16 +218,22 @@ class Interface:
 
             update = self._update(X_minus, P_minus, H, R, hdop, lng, lat, vlng, vlat)
             updated.append(update)
-            #print('Updated STATE is {}'.format(update['X']))
 
-            lng_to_plot.append(update['X'][0][0])
+            lng_to_plot.append(update['X'][0][0]) ## CHECK THIS
             lat_to_plot.append(update['X'][1][1])
+
         plt.plot(og_lng, og_lat, 'bs', lng_to_plot, lat_to_plot, 'r--')
         plt.show()
-        out = './teszt/roszke-szeged/kalmaned_coordinates1.csv'
+        #print()
+        out = './teszt/szeged_trolli_teszt/kalmaned_coordinates15.csv'
         with open(out, 'w') as out:
             for ln, la in zip(lng_to_plot, lat_to_plot):
                 out.write(str(ln) + ',' + str(la) + '\n')
+
+        # out_og = './teszt/szeged_trolli_teszt/og_coords.csv'
+        # with open(out_og, 'w') as out:
+        #     for ln, la in zip(og_lng, og_lat):
+        #         out.write(str(ln) + ',' + str(la) + '\n')
 
 
 

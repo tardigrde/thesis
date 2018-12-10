@@ -10,7 +10,7 @@ class Initial_params:
         self.X = np.asarray([0, 0, 0, 0])
 
         # initial state covariance(4)
-        self.P = np.eye(4) * 10
+        self.P = np.eye(4) * 1000000
 
         # F - state transition matrix (4x4)
         self.F = np.eye(4)

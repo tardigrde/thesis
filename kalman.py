@@ -31,25 +31,6 @@ class Kalman:
         return {'X': X, 'P': P}
 
     """
-    def gauss_pdf(self, X, M, S):
-        if M.shape()[1] == 1:
-            DX = X - tile(M, X.shape()[1])
-            E = 0.5 * sum(DX * (np.dot(np.inv(S), DX)), axis=0)
-            E = E + 0.5 * M.shape()[0] * log(2 * pi) + 0.5 * log(linalg.det(S))
-            P = exp(-E)
-        elif X.shape()[1] == 1:
-            DX = tile(X, M.shape()[1])- M
-            E = 0.5 * sum(DX * (np.dot(inv(S), DX)), axis=0)
-            E = E + 0.5 * M.shape()[0] * log(2 * pi) + 0.5 * log(linalg.det(S))
-            P = exp(-E)
-        else:
-            DX = X-M
-            E = 0.5 * np.dot(DX.T, np.dot(inv(S), DX))
-            E = E + 0.5 * M.shape()[0] * log(2 * pi) + 0.5 * log(linalg.det(S))
-            P = exp(-E)
-        return (P[0],E[0])
-    """
-    """
         K : the Kalman Gain matrix
         IM : the Mean of predictive distribution of Y
         IS : the Covariance or predictive mean of Y
@@ -58,7 +39,8 @@ class Kalman:
 
     def kf_update(self, X_minus, P_minus, Y, H, R):
         IS = R + np.dot(H, np.dot(P_minus, H.T))
-        K = np.dot(P_minus, np.dot(H.T, inv(IS))) # 4
+        K = np.dot(P_minus, np.dot(H.T, inv(IS)))
+        #print("K: {}".format(K))# 4
 
         IM = np.dot(H, X_minus)
         Z = Y - IM
@@ -67,3 +49,23 @@ class Kalman:
         P = P_minus - np.dot(K, np.dot(IS, K.T))
         # LH = self.gauss_pdf(Y, IM, IS)
         return {'X': X, 'P': P}
+
+    """
+        def gauss_pdf(self, X, M, S):
+            if M.shape()[1] == 1:
+                DX = X - tile(M, X.shape()[1])
+                E = 0.5 * sum(DX * (np.dot(np.inv(S), DX)), axis=0)
+                E = E + 0.5 * M.shape()[0] * log(2 * pi) + 0.5 * log(linalg.det(S))
+                P = exp(-E)
+            elif X.shape()[1] == 1:
+                DX = tile(X, M.shape()[1])- M
+                E = 0.5 * sum(DX * (np.dot(inv(S), DX)), axis=0)
+                E = E + 0.5 * M.shape()[0] * log(2 * pi) + 0.5 * log(linalg.det(S))
+                P = exp(-E)
+            else:
+                DX = X-M
+                E = 0.5 * np.dot(DX.T, np.dot(inv(S), DX))
+                E = E + 0.5 * M.shape()[0] * log(2 * pi) + 0.5 * log(linalg.det(S))
+                P = exp(-E)
+            return (P[0],E[0]),
+        """

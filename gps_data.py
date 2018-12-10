@@ -25,13 +25,13 @@ class GPS_data:
         return gsa
 
     def _transform_vtg(self, parsed_sentence):
-        v = parsed_sentence.spd_over_grnd_kmph
+        v_ms = float(parsed_sentence.spd_over_grnd_kmph) / 3.6
         t = parsed_sentence.true_track
 
-        vel_lng = float(v) * math.cos(t)
-        vel_lat = float(v) * math.sin(t)
+        vel_lng = float(v_ms) * math.cos(t)
+        vel_lat = float(v_ms) * math.sin(t)
 
-        vtg = {'t': t, 'v': v, 'vlng': vel_lng, 'vlat': vel_lat}
+        vtg = {'t': t, 'v': v_ms, 'vlng': vel_lng, 'vlat': vel_lat}
         # self.sentence_info.append(vtg)
         return vtg
 

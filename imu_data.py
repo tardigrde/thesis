@@ -160,7 +160,7 @@ class IMU_data:
         This function rotataes the "absolute" acceleration frame so north means true north, 
         instead of magnetic north. For this, I use Scott Lobdell's modified code,
         see: http://scottlobdell.me/2017/01/gps-accelerometer-sensor-fusion-kalman-filter-practical-walkthrough/.
-        For now magnetic declunation offset is manually set.
+        For now magnetic declination offset is manually set.
         Input: list of absolute accelerations.
         Output: dictionary of absolute acceleration with true north.
         """
