@@ -18,7 +18,7 @@ interface = Interface(in_imu, in_gps)
 gps = interface.get_gps_data()
 acc = interface.get_acceleration_data()
 
-kalmaned_coordinates = interface.do_pykalmaning(acc, gps);
+kalmaned_coordinates = interface.get_kalmaned_coordinates(acc, gps);
 
 #kalmaned_coordinates = interface.get_kalmaned_coordinates(gps, acc);
 

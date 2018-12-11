@@ -1,3 +1,5 @@
+from pyproj import Proj, transform
+import Geohash
 import pynmea2
 import math
 
@@ -36,6 +38,8 @@ class GPS_data:
         return vtg
 
     def _transform_gga(self, parsed_sentence):
+        in_proj = Proj(init='epsg:4326')
+        out_proj = Proj(init='epsg:23700')
         ts = parsed_sentence.timestamp
         time = (ts.hour * 60 * 60 * 1000) + (ts.minute * 60 * 1000) + (ts.second * 1000) + ts.microsecond
 
@@ -49,7 +53,10 @@ class GPS_data:
         if (parsed_sentence.lat_dir == 'S'):
             lat = lat * -1
 
-        gga = {'time': time, 'lng': lng, 'lat': lat}
+        lng_eov, lat_eov = transform(in_proj, out_proj, lng, lat)
+        ghashed = Geohash.encode(lng_eov, lat_eov, precision=8)
+
+        gga = {'time': time, 'lng': lng_eov, 'lat': lat_eov, 'geohashed': ghashed}
         # self.sentence_info.append(gga)
         return gga
 

@@ -3,7 +3,7 @@ import numpy as np
 
 class Initial_params:
     def __init__(self):
-        dt = 1
+        dt = 0.01
 
 
         # initial state matrix(4x1)
