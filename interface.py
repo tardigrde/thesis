@@ -465,6 +465,15 @@ def pass_likelihood(self):
 """
 
 """
+TODO:
+- check/adjust velocity
+- try 2x1D
+- make it OO for real
+- make cross-terms 0
+- try like this: https://github.com/balzer82/Kalman/blob/master/Kalman-Filter-CA-2.ipynb?create=1
+- try it like it was before interpolation
+
+
 https://github.com/akshaychawla/1D-Kalman-Filter
 https://dsp.stackexchange.com/questions/8860/kalman-filter-for-position-and-velocity-introducing-speed-estimates
 https://dsp.stackexchange.com/questions/38045/even-more-on-kalman-filter-for-position-and-velocity?noredirect=1&lq=1
