@@ -6,8 +6,8 @@ import math
 
 class GPS_data:
     """
-    NMEA GPS sentences class. 
-    Input: log file. 
+    NMEA GPS sentences class.
+    Input: log file.
     Output: gps data output in a dictionary.
     In the input log file every line is a nmea sentece. Every seven sentences make one measurement.
 
@@ -19,11 +19,13 @@ class GPS_data:
 
         self.extracted_data = []
         self.measurement_dictionary = {}
+        self.final_lng = []
+        self.final_lat = []
+        self.i = -1
 
     def _transform_gsa(self, parsed_sentence):
         hdop = float(parsed_sentence.hdop)
         gsa = {'hdop': hdop}
-        # self.sentence_info.append(gsa)
         return gsa
 
     def _transform_vtg(self, parsed_sentence):
@@ -34,12 +36,10 @@ class GPS_data:
         vel_lat = float(v_ms) * math.sin(t)
 
         vtg = {'t': t, 'v': v_ms, 'vlng': vel_lng, 'vlat': vel_lat}
-        # self.sentence_info.append(vtg)
         return vtg
 
     def _transform_gga(self, parsed_sentence):
-        in_proj = Proj(init='epsg:4326')
-        out_proj = Proj(init='epsg:23700')
+
         ts = parsed_sentence.timestamp
         time = (ts.hour * 60 * 60 * 1000) + (ts.minute * 60 * 1000) + (ts.second * 1000) + ts.microsecond
 
@@ -53,11 +53,9 @@ class GPS_data:
         if (parsed_sentence.lat_dir == 'S'):
             lat = lat * -1
 
-        lng_eov, lat_eov = transform(in_proj, out_proj, lng, lat)
-        ghashed = Geohash.encode(lng_eov, lat_eov, precision=8)
+        self._get_ghashed_eov_coordinates(lng, lat)
 
-        gga = {'time': time, 'lng': lng_eov, 'lat': lat_eov, 'geohashed': ghashed}
-        # self.sentence_info.append(gga)
+        gga = {'time': time, 'lng': lng, 'lat': lat}
         return gga
 
     def get_gps_dictionary(self):
@@ -90,3 +88,25 @@ class GPS_data:
 
         _transform_data_to_dictionary(self.extracted_data)
         return self.measurement_dictionary
+
+    def _get_ghashed_eov_coordinates(self, lng, lat):
+
+        ghashed = Geohash.encode(lng, lat, precision=10)
+        lng_to_tf, lat_to_tf = Geohash.decode(ghashed)
+        in_proj = Proj(init='epsg:4326')
+        out_proj = Proj(init='epsg:23700')
+
+        if (not self.final_lng and not self.final_lat):
+            lng, lat = transform(in_proj, out_proj, lng_to_tf, lat_to_tf)
+            self.final_lng.append(lng)
+            self.final_lat.append(lat)
+            self.i = self.i + 1
+        elif (lng_to_tf == self.final_lng[self.i] and lat_to_tf == self.final_lat[self.i]):
+            pass
+        else:
+            lng, lat = transform(in_proj, out_proj, lng_to_tf, lat_to_tf)
+            self.final_lng.append(lng)
+            self.final_lat.append(lat)
+            self.i = self.i + 1
+
+        return {'lng': lng, 'lat': lat}
