@@ -10,8 +10,7 @@ class IMU_data:
     # Output: Dictionary of accelearation values.
 
     def __init__(self, filename):
-        #with open(filename, 'rt') as inputfile:
-        #    self.file_path = inputfile
+
         self.filename = filename
         self.measurement_dictionary = {}
         self.quaternion_list = []
