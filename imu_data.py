@@ -3,7 +3,7 @@ from pyquaternion import Quaternion
 import pandas as pd
 import numpy as np
 import math
-
+import imu_data_reader
 class IMU_data:
 
     # Input: filename
@@ -202,3 +202,20 @@ class IMU_data:
         
         
         return self.true_absolute_acceleration_dictionary
+
+
+# list_of_dicts_of_imu_data = []
+# for i in range(no_of_measurment):
+#     acc = [acc_x[i], acc_y[i], acc_z[i]]
+#     gyro = [gyro_x[i], gyro_y[i], gyro_z[i]]
+#     mag = [mag_x[i], mag_y[i], mag_z[i]]
+#
+#     MadgwickAHRS.update(MadgwickAHRS, gyro, acc, mag)
+#     Q = MadgwickAHRS.quaternion
+#     quaternion = Quaternion([float(Q[0]), float(Q[1]), float(Q[2]), float(Q[3])])
+#
+#     rotation_matrix = quaternion.rotation_matrix.tolist()
+#
+#     ned_acc = np.dot(np.linalg.inv(rotation_matrix),
+#                      np.transpose([float(acc_x[i]), float(acc_y[i]), float(acc_z[i])])).tolist()
+#     list_of_dicts_of_imu_data.append(_calculate_true_acceleration(ned_acc))
