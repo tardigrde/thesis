@@ -1,7 +1,14 @@
 from pyproj import Proj, transform
+import pandas as pd
 import Geohash
 import pynmea2
 import math
+
+
+def _read_log_file(path):
+    with open(path, 'rt') as inputfile:
+        read_data = inputfile.readlines()
+    return read_data
 
 
 def _transform_gsa(parsed_sentence):
@@ -98,7 +105,15 @@ def _remove_redundant_points(msrmnt_dict):
     return list_of_dicts_of_gps_data
 
 
-def get_gps_dictionary(read_data):
+def get_gps_dataframe(list_of_dicts_of_gps_data):
+    gps_dataframe = pd.DataFrame(list_of_dicts_of_gps_data)
+    return gps_dataframe
+
+
+# Call this and on the result of this you can call get_gps_dataframe.
+def get_gps_dictionary(path):
+    read_data = _read_log_file(path)
+
     extracted_data = []
 
     dict_of_methods = {
@@ -113,5 +128,6 @@ def get_gps_dictionary(read_data):
             extracted_data.append(dict_of_methods[str(type(parsed_sentence))](parsed_sentence))
 
     msrmnt_dict = _transform_data_to_dictionary(extracted_data)
-    measurement_dictionary = _remove_redundant_points(msrmnt_dict)
-    return measurement_dictionary
+    list_of_dicts_of_gps_data = _remove_redundant_points(msrmnt_dict)
+    print('Output gps measurement count was: {}'.format(len(list_of_dicts_of_gps_data)))
+    return list_of_dicts_of_gps_data

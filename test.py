@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 from interface import Interface
-from point import Point
 import time
 
 start_time = time.time()

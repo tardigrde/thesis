@@ -2,12 +2,18 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="0e055dcb-df68-43f1-8e78-67ba27ea9bf4" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/imu_data_reader.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/nmea_parser.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/imu_data_parser.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/imu_data.py" beforeDir="false" afterPath="$PROJECT_DIR$/imu_data.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gps_data.py" beforeDir="false" afterPath="$PROJECT_DIR$/old_stuff/gps_data.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/imu_data.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/imu_data.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/imu_data.py" beforeDir="false" afterPath="$PROJECT_DIR$/old_stuff/imu_data.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/imu_data_reader.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/interface.py" beforeDir="false" afterPath="$PROJECT_DIR$/interface.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/interface_imu.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/matlab.txt" beforeDir="false" afterPath="$PROJECT_DIR$/old_stuff/matlab.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/nmea_parser.py" beforeDir="false" afterPath="$PROJECT_DIR$/nmea_parser.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/point.py" beforeDir="false" afterPath="$PROJECT_DIR$/old_stuff/point.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/imu_data_test.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/imu_data_test.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -33,71 +39,33 @@
     <select />
   </component>
   <component name="FileEditorManager">
-    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
+    <leaf>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/interface.py">
+        <entry file="file://$PROJECT_DIR$/nmea_parser.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="119">
-              <caret line="14" column="21" selection-start-line="14" selection-start-column="21" selection-end-line="14" selection-end-column="21" />
+            <state relative-caret-position="145">
+              <caret line="108" column="58" selection-start-line="108" selection-start-column="58" selection-end-line="108" selection-end-column="58" />
               <folding>
                 <element signature="e#0#34#0" expanded="true" />
-                <marker date="1545492522566" expanded="true" signature="5787:5806" ph="..." />
-                <marker date="1545492522566" expanded="true" signature="6928:7803" ph="..." />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/initial_params.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="85">
-              <caret line="5" column="17" selection-start-line="5" selection-start-column="17" selection-end-line="5" selection-end-column="17" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/test.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="136">
-              <caret line="10" selection-start-line="10" selection-end-line="10" selection-end-column="51" />
-              <folding>
-                <element signature="e#25#56#0" expanded="true" />
-              </folding>
+        <entry file="file://$PROJECT_DIR$/gps_data.ipynb">
+          <provider selected="true" editor-type-id="ipnb-editor">
+            <state>
+              <selected id="10" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/gps_data.py">
+        <entry file="file://$PROJECT_DIR$/imu_data_parser.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="238">
-              <caret line="26" column="42" lean-forward="true" selection-start-line="26" selection-start-column="42" selection-end-line="26" selection-end-column="42" />
-              <folding>
-                <element signature="e#0#34#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/nmea_parser.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="250">
-              <caret line="100" selection-start-line="100" selection-end-line="116" selection-end-column="33" />
-              <folding>
-                <element signature="e#0#34#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/imu_data.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state>
-              <caret selection-end-line="5" selection-end-column="22" />
+            <state relative-caret-position="264">
+              <caret line="84" lean-forward="true" selection-start-line="84" selection-end-line="84" />
               <folding>
                 <element signature="e#0#46#0" expanded="true" />
               </folding>
@@ -109,7 +77,7 @@
         <entry file="file://$PROJECT_DIR$/imu_data.ipynb">
           <provider selected="true" editor-type-id="ipnb-editor">
             <state>
-              <selected id="15" />
+              <selected id="11" />
             </state>
           </provider>
         </entry>
@@ -160,19 +128,21 @@
         <option value="$PROJECT_DIR$/untitled" />
         <option value="$PROJECT_DIR$/imu_data.ipynb" />
         <option value="$PROJECT_DIR$/nmea_parser.py" />
+        <option value="$PROJECT_DIR$/imu_data_parser.py" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="951" />
-    <option name="width" value="978" />
-    <option name="height" value="1039" />
+    <option name="x" value="950" />
+    <option name="width" value="979" />
+    <option name="height" value="1040" />
   </component>
   <component name="ProjectView">
     <navigator proportions="" version="1">
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -180,23 +150,29 @@
               <item name="thesis" type="b2602c69:ProjectViewProjectNode" />
               <item name="thesis" type="462c0819:PsiDirectoryNode" />
             </path>
+            <path>
+              <item name="thesis" type="b2602c69:ProjectViewProjectNode" />
+              <item name="thesis" type="462c0819:PsiDirectoryNode" />
+              <item name="old_stuff" type="462c0819:PsiDirectoryNode" />
+            </path>
           </expand>
           <select />
         </subPane>
       </pane>
-      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
     <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="full.screen.before.presentation.mode" value="false" />
     <property name="last_opened_file_path" value="$USER_HOME$/Desktop" />
   </component>
   <component name="RecentsManager">
-    <key name="MoveFile.RECENT_KEYS">
-      <recent name="D:\PyCharmProjects\thesis\tests\fixtures" />
-    </key>
     <key name="CopyFile.RECENT_KEYS">
       <recent name="D:\PyCharmProjects\thesis\tests" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\PyCharmProjects\thesis\old_stuff" />
+      <recent name="D:\PyCharmProjects\thesis\tests\fixtures" />
     </key>
   </component>
   <component name="RunDashboard">
@@ -270,12 +246,13 @@
       <workItem from="1545645371135" duration="7670000" />
       <workItem from="1545685210894" duration="1878000" />
       <workItem from="1545727647662" duration="11311000" />
-      <workItem from="1545771914203" duration="2588000" />
+      <workItem from="1545771914203" duration="3187000" />
+      <workItem from="1545810330885" duration="4148000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="23447000" />
+    <option name="totallyTimeSpent" value="28194000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -290,7 +267,7 @@
     <frame x="-7" y="-7" width="1550" height="838" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.12818792" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.1328859" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -311,16 +288,16 @@
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
       <window_info anchor="right" id="SciView" order="3" sideWeight="0.5495751" weight="0.27986577" />
       <window_info anchor="right" id="Database" order="4" weight="0.3295302" />
-      <window_info anchor="right" x="0" y="0" width="337" height="638" id="Documentation" order="5" sideWeight="0.45042494" side_tool="true" visible="true" weight="0.27986577" />
+      <window_info anchor="right" x="0" y="0" width="337" height="638" id="Documentation" order="5" sideWeight="0.45042494" side_tool="true" weight="0.28791946" />
     </layout>
     <layout-to-restore>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.10760518" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.1328859" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
-      <window_info anchor="bottom" id="Find" order="1" />
+      <window_info anchor="bottom" id="Find" order="1" weight="0.3286119" />
       <window_info anchor="bottom" id="Run" order="2" />
-      <window_info anchor="bottom" id="Debug" order="3" sideWeight="0.4986577" weight="0.33564013" />
+      <window_info anchor="bottom" id="Debug" order="3" sideWeight="0.4986577" weight="0.47733712" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" weight="0.3286119" />
@@ -329,13 +306,13 @@
       <window_info anchor="bottom" id="Database Changes" order="9" show_stripe_button="false" />
       <window_info anchor="bottom" id="Event Log" order="10" sideWeight="0.5013423" side_tool="true" weight="0.5311615" />
       <window_info anchor="bottom" id="Terminal" order="11" weight="0.09348442" />
-      <window_info anchor="bottom" id="Python Console" order="12" visible="true" weight="0.38177624" />
+      <window_info anchor="bottom" id="Python Console" order="12" weight="0.38101983" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
-      <window_info anchor="right" id="SciView" order="3" sideWeight="0.5522388" weight="0.5703884" />
+      <window_info anchor="right" id="SciView" order="3" sideWeight="0.5495751" weight="0.27986577" />
       <window_info anchor="right" id="Database" order="4" weight="0.3295302" />
-      <window_info anchor="right" x="0" y="0" width="337" height="638" id="Documentation" order="5" sideWeight="0.4477612" side_tool="true" weight="0.28883496" />
+      <window_info anchor="right" x="0" y="0" width="337" height="638" id="Documentation" order="5" sideWeight="0.45042494" side_tool="true" visible="true" weight="0.28791946" />
     </layout-to-restore>
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -345,37 +322,32 @@
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/interface_imu.py</url>
-          <line>17</line>
-          <option name="timeStamp" value="6" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/kalman.py</url>
           <line>50</line>
           <option name="timeStamp" value="47" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/interface.py</url>
-          <line>385</line>
+          <line>384</line>
           <option name="timeStamp" value="50" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/interface.py</url>
-          <line>387</line>
+          <line>386</line>
           <option name="timeStamp" value="51" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/interface.py</url>
-          <line>388</line>
+          <line>387</line>
           <option name="timeStamp" value="52" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/interface.py</url>
-          <line>220</line>
+          <line>219</line>
           <option name="timeStamp" value="53" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/imu_data.py</url>
+          <url>file://$PROJECT_DIR$/old_stuff/imu_data.py</url>
           <line>37</line>
           <option name="timeStamp" value="54" />
         </line-breakpoint>
@@ -466,23 +438,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/interface_imu.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="374">
-          <caret line="22" column="33" selection-start-line="22" selection-start-column="33" selection-end-line="22" selection-end-column="33" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/kalman.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="621">
-          <caret line="43" selection-start-line="43" selection-end-line="43" />
-          <folding>
-            <element signature="e#0#18#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/tests/fixtures/fixtures.log">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
@@ -496,27 +451,9 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/imu_data_reader.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="273">
-          <caret line="27" column="6" selection-start-line="27" selection-start-column="6" selection-end-line="27" selection-end-column="6" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/untitled" />
     <entry file="file://$PROJECT_DIR$/imu_data_manager.ipynb" />
-    <entry file="file://$PROJECT_DIR$/interface.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="119">
-          <caret line="14" column="21" selection-start-line="14" selection-start-column="21" selection-end-line="14" selection-end-column="21" />
-          <folding>
-            <element signature="e#0#34#0" expanded="true" />
-            <marker date="1545492522566" expanded="true" signature="5787:5806" ph="..." />
-            <marker date="1545492522566" expanded="true" signature="6928:7803" ph="..." />
-          </folding>
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://$PROJECT_DIR$/Untitled.ipynb" />
     <entry file="file://$PROJECT_DIR$/initial_params.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="85">
@@ -524,20 +461,83 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/test.py">
+    <entry file="file://$PROJECT_DIR$/interface.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="119">
+          <caret line="13" column="21" selection-start-line="13" selection-start-column="21" selection-end-line="13" selection-end-column="21" />
+          <folding>
+            <element signature="e#0#34#0" expanded="true" />
+            <marker date="1545811953202" expanded="true" signature="5775:5794" ph="..." />
+            <marker date="1545811953202" expanded="true" signature="6916:7791" ph="..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/imu_data_reader.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="459">
+          <caret line="27" column="6" selection-start-line="27" selection-start-column="6" selection-end-line="27" selection-end-column="6" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/old_stuff/matlab.txt">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="136">
-          <caret line="10" selection-start-line="10" selection-end-line="10" selection-end-column="51" />
+          <caret line="8" lean-forward="true" selection-start-line="8" selection-end-line="8" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/kalman.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="63">
+          <caret line="43" selection-start-line="43" selection-end-line="43" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/interface_imu.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="374">
+          <caret line="22" column="33" selection-start-line="22" selection-start-column="33" selection-end-line="22" selection-end-column="33" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/test.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="204">
+          <caret line="13" column="19" lean-forward="true" selection-start-line="13" selection-start-column="19" selection-end-line="13" selection-end-column="19" />
           <folding>
             <element signature="e#25#56#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/imu_data.py">
+    <entry file="file://$PROJECT_DIR$/old_stuff/point.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <caret selection-end-line="5" selection-end-column="22" />
+        <state relative-caret-position="349">
+          <caret line="71" lean-forward="true" selection-start-line="71" selection-end-line="71" />
+          <folding>
+            <element signature="e#0#31#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/old_stuff/gps_data.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="357">
+          <caret line="21" column="27" lean-forward="true" selection-start-line="21" selection-start-column="27" selection-end-line="21" selection-end-column="27" />
+          <folding>
+            <element signature="e#0#34#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/old_stuff/imu_data.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="26">
+          <caret line="10" lean-forward="true" selection-start-line="10" selection-end-line="10" />
           <folding>
             <element signature="e#0#46#0" expanded="true" />
           </folding>
@@ -547,33 +547,33 @@
     <entry file="file://$PROJECT_DIR$/imu_data.ipynb">
       <provider selected="true" editor-type-id="ipnb-editor">
         <state>
-          <selected id="15" />
+          <selected id="11" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/nmea_parser.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="250">
-          <caret line="100" selection-start-line="100" selection-end-line="116" selection-end-column="33" />
+        <state relative-caret-position="145">
+          <caret line="108" column="58" selection-start-line="108" selection-start-column="58" selection-end-line="108" selection-end-column="58" />
           <folding>
             <element signature="e#0#34#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Untitled.ipynb">
+    <entry file="file://$PROJECT_DIR$/gps_data.ipynb">
       <provider selected="true" editor-type-id="ipnb-editor">
         <state>
-          <selected id="0" />
+          <selected id="10" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/gps_data.py">
+    <entry file="file://$PROJECT_DIR$/imu_data_parser.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="238">
-          <caret line="26" column="42" lean-forward="true" selection-start-line="26" selection-start-column="42" selection-end-line="26" selection-end-column="42" />
+        <state relative-caret-position="264">
+          <caret line="84" lean-forward="true" selection-start-line="84" selection-end-line="84" />
           <folding>
-            <element signature="e#0#34#0" expanded="true" />
+            <element signature="e#0#46#0" expanded="true" />
           </folding>
         </state>
       </provider>

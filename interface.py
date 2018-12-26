@@ -1,10 +1,9 @@
 from pyproj import Proj, transform
-from gps_data import GPS_data
-from imu_data import IMU_data
+from old_stuff.gps_data import GPS_data
+from old_stuff.imu_data import IMU_data
 from kalman import Kalman
 from initial_params import Initial_params
 import numpy as np
-import matplotlib.pyplot as plt
 import Geohash
 
 
