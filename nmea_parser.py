@@ -66,7 +66,7 @@ def _transform_data_to_dictionary(extracted_data):
 
 
 def _get_ghashed_eov_coordinates(lng, lat):
-    ghashed = Geohash.encode(lng, lat, precision=9)
+    ghashed = Geohash.encode(lng, lat, precision=11)
     lng_to_tf, lat_to_tf = Geohash.decode(ghashed)
     return {'lng': lng_to_tf, 'lat': lat_to_tf}
 

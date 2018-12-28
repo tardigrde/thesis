@@ -51,7 +51,7 @@ def _pass_std_devs(acc):
 
 def _predict(X_minus, P_minus, F, Q, B, std_devs, acc_east, acc_north):
     kalman = Kalman()
-    dt = 0.0001
+    dt = 1
     Q[0, 0] = (std_devs['std_dev_acc_east'] * dt * dt / 2) ** 2
     Q[1, 1] = (std_devs['std_dev_acc_north'] * dt * dt / 2) ** 2
     Q[2, 2] = (std_devs['std_dev_acc_east'] * dt) ** 2
@@ -125,7 +125,7 @@ def get_kalmaned_coordinates(acc, gps):
             hdop = measurement['hdop']
 
             # so predict will be the first, but a state has to be initialized
-            if (last_step_was == 'none'):
+            if last_step_was == 'none':
                 X = np.transpose([measurement['lng'], measurement['lat'], measurement['vlng'], measurement['vlat']])
                 updated.append({'X': X, 'P': P})
                 last_step_was = 'update'
@@ -134,7 +134,7 @@ def get_kalmaned_coordinates(acc, gps):
                 lat_to_plot.append(X[1])
 
             # if last step was a predcition, use its state as the state input, and this measurement for Y
-            elif (last_step_was == 'predict'):
+            elif last_step_was == 'predict':
                 P_minus = predicted[len(predicted) - 1]['P']
                 X_minus = predicted[len(predicted) - 1]['X']
                 update = _update(X_minus, P_minus, H, R, hdop, lng, lat, vlng, vlat)
@@ -145,7 +145,7 @@ def get_kalmaned_coordinates(acc, gps):
                 last_step.append('update')
 
             # if last step was an update, use its state as the state input, and this measurement for Y
-            elif (last_step_was == 'update'):
+            elif last_step_was == 'update':
                 P_minus = updated[len(updated) - 1]['P']
                 X_minus = updated[len(updated) - 1]['X']
                 update = _update(X_minus, P_minus, H, R, hdop, lng, lat, vlng, vlat)
@@ -159,14 +159,14 @@ def get_kalmaned_coordinates(acc, gps):
             acc_east = measurement['acc_east']
             acc_north = measurement['acc_north']
 
-            if (last_step_was == 'predict'):
+            if last_step_was == 'predict':
                 X_minus = predicted[len(predicted) - 1]['X']
                 P_minus = predicted[len(predicted) - 1]['P']
                 predict = _predict(X_minus, P_minus, F, Q, B, std_devs, acc_east, acc_north)
                 predicted.append(predict)
                 last_step_was = 'predict'
                 last_step.append('predict')
-            elif (last_step_was == 'update'):
+            elif last_step_was == 'update':
                 X_minus = updated[len(updated) - 1]['X']
                 P_minus = updated[len(updated) - 1]['P']
                 predict = _predict(X_minus, P_minus, F, Q, B, std_devs, acc_east, acc_north)
@@ -186,14 +186,16 @@ def get_kalmaned_coordinates(acc, gps):
     plt.plot(og_lng, og_lat, 'bs', lng_to_plot, lat_to_plot, 'ro')
     plt.show()
 
-    out = './teszt/szeged_trolli_teszt/kalmaned_after_refactoring.csv'
+    out = './teszt/szeged_trolli_teszt/nointerpolation/kalmaned.csv'
     with open(out, 'w') as out:
         for ln, la in zip(lng_to_plot, lat_to_plot):
             out.write(str(ln) + ',' + str(la) + '\n')
-    out_og = './teszt/szeged_trolli_teszt/og_coords.csv'
+    out_og = './teszt/szeged_trolli_teszt/nointerpolation/og_coords.csv'
     with open(out_og, 'w') as out:
         for ln, la in zip(og_lng, og_lat):
             out.write(str(ln) + ',' + str(la) + '\n')
+
+
     return updated
 
     """
