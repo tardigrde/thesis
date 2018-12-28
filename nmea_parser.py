@@ -66,7 +66,7 @@ def _transform_data_to_dictionary(extracted_data):
 
 
 def _get_ghashed_eov_coordinates(lng, lat):
-    ghashed = Geohash.encode(lng, lat, precision=10)
+    ghashed = Geohash.encode(lng, lat, precision=9)
     lng_to_tf, lat_to_tf = Geohash.decode(ghashed)
     return {'lng': lng_to_tf, 'lat': lat_to_tf}
 
@@ -78,6 +78,7 @@ def _remove_redundant_points(msrmnt_dict):
     no_of_measurements = len(time_list)
     print('Original gps measurment count was: {}'.format(len(time_list)))
     list_of_dicts_of_gps_data = []
+    gps_data_dict = {}
     counter = -1
 
     for i in range(no_of_measurements):
@@ -92,6 +93,11 @@ def _remove_redundant_points(msrmnt_dict):
                 'vlng': m['vlng'], 'vlat': m['vlat'],
                 'lng': lng, 'lat': lat,
             })
+            gps_data_dict[m['time']] = {
+                'time': m['time'], 'hdop': m['hdop'],
+                'vlng': m['vlng'], 'vlat': m['vlat'],
+                'lng': lng, 'lat': lat,
+            }
             counter = counter + 1
         elif lng == list_of_dicts_of_gps_data[counter]['lng'] and lat == list_of_dicts_of_gps_data[counter]['lat']:
             pass
@@ -101,12 +107,17 @@ def _remove_redundant_points(msrmnt_dict):
                 'vlng': m['vlng'], 'vlat': m['vlat'],
                 'lng': lng, 'lat': lat,
             })
+            gps_data_dict[m['time']] = {
+                'time': m['time'], 'hdop': m['hdop'],
+                'vlng': m['vlng'], 'vlat': m['vlat'],
+                'lng': lng, 'lat': lat,
+            }
             counter = counter + 1
-    return list_of_dicts_of_gps_data
+    return gps_data_dict
 
 
-def get_gps_dataframe(list_of_dicts_of_gps_data):
-    gps_dataframe = pd.DataFrame(list_of_dicts_of_gps_data)
+def get_gps_dataframe(gps_data_dict):
+    gps_dataframe = pd.DataFrame(gps_data_dict)
     return gps_dataframe
 
 
@@ -128,6 +139,5 @@ def get_gps_dictionary(path):
             extracted_data.append(dict_of_methods[str(type(parsed_sentence))](parsed_sentence))
 
     msrmnt_dict = _transform_data_to_dictionary(extracted_data)
-    list_of_dicts_of_gps_data = _remove_redundant_points(msrmnt_dict)
-    print('Output gps measurement count was: {}'.format(len(list_of_dicts_of_gps_data)))
-    return list_of_dicts_of_gps_data
+    gps_data_dict = _remove_redundant_points(msrmnt_dict)
+    return gps_data_dict

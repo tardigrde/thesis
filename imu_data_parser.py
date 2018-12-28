@@ -6,8 +6,6 @@ import numpy as np
 import math
 
 
-# path = r'teszt/szeged_trolli_teszt/mlt_20181210_163817_190.csv'
-
 def _wrangle_data_with_pandas(path):
     # Transform the huge csv to dataframe.
     df = pd.DataFrame(pd.read_csv(path, sep=','))
@@ -15,6 +13,7 @@ def _wrangle_data_with_pandas(path):
                      'accelX', 'accelY', 'accelZ',
                      'gyroX(rad/s)', 'gyroY(rad/s)', 'gyroZ(rad/s)',
                      'calMagX', 'calMagY', 'calMagZ']]
+    pd.options.mode.chained_assignment = None
     trimmed_df.update(trimmed_df['Timestamp'].apply(_milisecondify))
     dataframe = trimmed_df.where(trimmed_df != 0, 0.001)
     return dataframe
@@ -47,7 +46,7 @@ def _calculate_true_acceleration(acceleration):
     return {'east': acc_e, 'north': acc_n, 'down': acc_down}
 
 
-def _iterate_thrrough_table_and_do_calculations(df):
+def _iterate_through_table_and_do_calculations(df):
     # Extracting columns.
     time = [str(t) for t in df.iloc[:, 0]]
     acc_x = [aX for aX in df.iloc[:, 1]]
@@ -62,6 +61,7 @@ def _iterate_thrrough_table_and_do_calculations(df):
     no_of_measurements = len(time)
 
     list_of_dicts_of_imu_data = []
+    imu_data_dict = {}
     # Iterating through rows.
     for i in range(no_of_measurements):
         acc = [acc_x[i], acc_y[i], acc_z[i]]
@@ -79,23 +79,29 @@ def _iterate_thrrough_table_and_do_calculations(df):
         # Calculate absolute acceleration in terms of East-North-Down.
         ned_acc = np.dot(np.linalg.inv(rotation_matrix),
                          np.transpose([float(acc_x[i]), float(acc_y[i]), float(acc_z[i])])).tolist()
+        # print('Ned_acc {}'.format(ned_acc))
 
         # Rotate absolute acceleration in respect to true north.
         tru_acc = _calculate_true_acceleration(ned_acc)
+        # print('True_acc {}'.format(tru_acc))
+
+
+        imu_data_dict[int(time[i])] = {'time': time[i], 'acc_east': tru_acc['east'], 'acc_north': tru_acc['north'],
+                                  'acc_down': tru_acc['down']}
 
         list_of_dicts_of_imu_data.append(
-            {'time': time[i], 'acc_east': tru_acc.east, 'acc_north': tru_acc.north, 'acc_down': tru_acc.down}
+            {'time': int(time[i]), 'acc_east': tru_acc['east'], 'acc_north': tru_acc['north'], 'acc_down': tru_acc['down']}
         )
-    return list_of_dicts_of_imu_data
+    return imu_data_dict
 
-def get_imu_dataframe(list_of_dicts_of_imu_data):
-    imu_dataframe = pd.DataFrame(list_of_dicts_of_imu_data)
+
+def get_imu_dataframe(imu_data_dict):
+    imu_dataframe = pd.DataFrame(imu_data_dict)
     return imu_dataframe
 
 
 # Call this and on the result of this you can call get_gps_dataframe.
 def get_imu_dictionary(path):
     dataframe = _wrangle_data_with_pandas(path)
-    list_of_dicts_of_imu_data = _iterate_thrrough_table_and_do_calculations(dataframe)
-    return list_of_dicts_of_imu_data
-
+    imu_data_dict = _iterate_through_table_and_do_calculations(dataframe)
+    return imu_data_dict
