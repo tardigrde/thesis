@@ -1,12 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="0e055dcb-df68-43f1-8e78-67ba27ea9bf4" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/initial_params.py" beforeDir="false" afterPath="$PROJECT_DIR$/initial_params.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/interface.py" beforeDir="false" afterPath="$PROJECT_DIR$/interface.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/nmea_parser.py" beforeDir="false" afterPath="$PROJECT_DIR$/nmea_parser.py" afterDir="false" />
-    </list>
+    <list default="true" id="0e055dcb-df68-43f1-8e78-67ba27ea9bf4" name="Default Changelist" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -269,12 +264,12 @@
       <workItem from="1545823400333" duration="1355000" />
       <workItem from="1545831708678" duration="2145000" />
       <workItem from="1545991388979" duration="7398000" />
-      <workItem from="1546015275928" duration="2986000" />
+      <workItem from="1546015275928" duration="3594000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="44792000" />
+    <option name="totallyTimeSpent" value="45400000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
