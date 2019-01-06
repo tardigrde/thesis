@@ -79,10 +79,12 @@ def _iterate_through_table_and_do_calculations(df):
         # Calculate absolute acceleration in terms of East-North-Down.
         ned_acc = np.dot(np.linalg.inv(rotation_matrix),
                          np.transpose([float(acc_x[i]), float(acc_y[i]), float(acc_z[i])])).tolist()
+
         # print('Ned_acc {}'.format(ned_acc))
 
         # Rotate absolute acceleration in respect to true north.
         tru_acc = _calculate_true_acceleration(ned_acc)
+
         # print('True_acc {}'.format(tru_acc))
 
 

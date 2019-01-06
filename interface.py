@@ -49,6 +49,68 @@ def _pass_std_devs(acc):
     return {'std_dev_acc_east': std_dev_acc_east, 'std_dev_acc_north': std_dev_acc_north}
 
 
+def interpolate_gps_data(acc, gps):
+    gps_lists = pass_gps_list(gps)
+    acc_lists = pass_acc_list(acc)
+
+    acc_time = acc_lists['acc_time']
+    acc_east = acc_lists['acc_east']
+    acc_north = acc_lists['acc_north']
+    acc_down = acc_lists['acc_down']
+
+    gps_time = gps_lists['time']
+    gps_lng = gps_lists['ln']
+    gps_lat = gps_lists['la']
+    gps_vln = gps_lists['vln']
+    gps_vla = gps_lists['vla']
+    gps_hdop = gps_lists['hdop']
+
+    interpolated_lng = np.interp(acc_time, gps_time, gps_lng).tolist()
+    interpolated_lat = np.interp(acc_time, gps_time, gps_lat).tolist()
+    interpolated_vlng = np.interp(acc_time, gps_time, gps_vln).tolist()
+    interpolated_vlat = np.interp(acc_time, gps_time, gps_vla).tolist()
+    interpolated_hdop = np.interp(acc_time, gps_time, gps_hdop).tolist()
+
+    if (len(acc_time) == len(acc_down) == len(acc_east) == len(acc_north) == len(interpolated_lat) == len(
+            interpolated_lng) == len(interpolated_vlat) == len(interpolated_vlng) == len(interpolated_hdop)):
+        return {'acc_time': acc_time, 'lng': interpolated_lng, 'lat': interpolated_lat, 'vlng': interpolated_vlng,
+                'vlat': interpolated_vlat, 'hdop': interpolated_hdop, 'acc_east': acc_east, 'acc_north': acc_north,
+                'acc_down': acc_down}
+    else:
+        print('NEM')
+
+
+def do_pothole_extraction(acc, gps):
+    interpolated_attribute_table = interpolate_gps_data(acc, gps)
+    acc_time = interpolated_attribute_table['acc_time']
+    acc_east = interpolated_attribute_table['acc_east']
+    acc_north = interpolated_attribute_table['acc_north']
+    acc_down = interpolated_attribute_table['acc_down']
+    gps_lng = interpolated_attribute_table['lng']
+    gps_lat = interpolated_attribute_table['lat']
+    gps_vlng = interpolated_attribute_table['vlng']
+    gps_vlat = interpolated_attribute_table['vlat']
+    gps_hdop = interpolated_attribute_table['hdop']
+    print('Count of acc_down is {}'.format(len(acc_down)))
+    print('Biggest value is {}'.format(max(acc_down)))
+    print('Lowest value is {}'.format(min(acc_down)))
+    p_lng = []
+    p_lat = []
+    for lng, lat, down in zip(gps_lng, gps_lat, acc_down):
+        if down > 1.2 or 0.4 < down < 0.8:
+            p_lng.append(lng)
+            p_lat.append(lat)
+    # pothole = [value for value in acc_down if value > 1.2 or 0.4 < value < 0.8]
+    # print('Count of pothole is {}'.format(len(pothole)))
+    # plt.plot(acc_down, 'b--')
+    # plt.show()
+    fig = plt.figure()
+    plt.plot(gps_lng, gps_lat, 'b--', p_lng, p_lat, 'rs')
+    plt.show()
+    fig.savefig('first_potholes_manually_extracted.pdf', dpi=fig.dpi)
+    return acc_down
+
+
 def _predict(X_minus, P_minus, F, Q, B, std_devs, acc_east, acc_north):
     kalman = Kalman()
     dt = 1
@@ -97,6 +159,16 @@ def get_kalmaned_coordinates(acc, gps):
     F = init_params['F']
     B = init_params['B']
     std_devs = _pass_std_devs(acc)
+
+    # interpolated_attribute_table = interpolate_gps_data(acc, gps)
+    # acc_time = interpolated_attribute_table['acc_time']
+    # acc_east = interpolated_attribute_table['acc_east']
+    # acc_north = interpolated_attribute_table['acc_north']
+    # gps_lng = interpolated_attribute_table['lng']
+    # gps_lat = interpolated_attribute_table['lat']
+    # gps_vlng = interpolated_attribute_table['vlng']
+    # gps_vlat = interpolated_attribute_table['vlat']
+    # gps_hdop = interpolated_attribute_table['hdop']
 
     fused = {**acc, **gps}
     sorted_timestamps_of_all_measurements = sorted(list(fused.keys()))
@@ -194,7 +266,6 @@ def get_kalmaned_coordinates(acc, gps):
     with open(out_og, 'w') as out:
         for ln, la in zip(og_lng, og_lat):
             out.write(str(ln) + ',' + str(la) + '\n')
-
 
     return updated
 
@@ -383,36 +454,6 @@ def get_kalmaned_coordinates(acc, gps):
     #
     # def pass_likelihood(self):
     #     pass
-
-    # def interpolate_gps_data(self, acc, gps):
-    #     gps_lists = self.pass_gps_list(gps)
-    #     acc_lists = self.pass_acc_list(acc)
-    #
-    #     acc_time = acc_lists['acc_time']
-    #     acc_east = acc_lists['acc_east']
-    #     acc_north = acc_lists['acc_north']
-    #     acc_down = acc_lists['acc_down']
-    #
-    #     gps_time = gps_lists['time']
-    #     gps_lng = gps_lists['ln']
-    #     gps_lat = gps_lists['la']
-    #     gps_vln = gps_lists['vln']
-    #     gps_vla = gps_lists['vla']
-    #     gps_hdop = gps_lists['hdop']
-    #
-    #     interpolated_lng = np.interp(acc_time, gps_time, gps_lng).tolist()
-    #     interpolated_lat = np.interp(acc_time, gps_time, gps_lat).tolist()
-    #     interpolated_vlng = np.interp(acc_time, gps_time, gps_vln).tolist()
-    #     interpolated_vlat = np.interp(acc_time, gps_time, gps_vla).tolist()
-    #     interpolated_hdop = np.interp(acc_time, gps_time, gps_hdop).tolist()
-    #
-    #     if (len(acc_time) == len(acc_down) == len(acc_east) == len(acc_north) == len(interpolated_lat) == len(
-    #             interpolated_lng) == len(interpolated_vlat) == len(interpolated_vlng) == len(interpolated_hdop)):
-    #         return {'acc_time': acc_time, 'lng': interpolated_lng, 'lat': interpolated_lat, 'vlng': interpolated_vlng,
-    #                 'vlat': interpolated_vlat, 'hdop': interpolated_hdop, 'acc_east': acc_east, 'acc_north': acc_north,
-    #                 'acc_down': acc_down}
-    #     else:
-    #         print('NEM')
 
     # in_proj = Proj(init='epsg:4326')
     # out_proj = Proj(init='epsg:23700')

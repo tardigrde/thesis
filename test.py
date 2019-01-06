@@ -16,7 +16,9 @@ print('Length of output gps data is: {}'.format(len(gps)))
 acc = interface.get_acceleration_data(path_imu)
 print('Length of acceleration data is: {}'.format(len(acc)))
 
-kalmaned_coordinates = interface.get_kalmaned_coordinates(acc, gps)
+pothole_count = interface.do_pothole_extraction(acc, gps)
+
+# kalmaned_coordinates = interface.get_kalmaned_coordinates(acc, gps)
 
 print("--- %s seconds ---" % (time.time() - start_time))
 
