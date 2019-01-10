@@ -1,3 +1,6 @@
+"""
+CC-BY-SA2.0 Lizenz
+"""
 import matplotlib.pyplot as plt
 from kalman import Kalman
 import nmea_parser
