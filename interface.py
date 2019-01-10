@@ -94,12 +94,19 @@ def do_pothole_extraction(acc, gps):
     print('Count of acc_down is {}'.format(len(acc_down)))
     print('Biggest value is {}'.format(max(acc_down)))
     print('Lowest value is {}'.format(min(acc_down)))
+
+    out_weka = './teszt/szeged_trolli_teszt/nointerpolation/for_weka.csv'
+    with open(out_weka, 'w') as out:
+        for d in acc_down:
+            out.write(str(d) + '\n')
+    return
+
     p_lng = []
     p_lat = []
-    for lng, lat, down in zip(gps_lng, gps_lat, acc_down):
-        if down > 1.2 or 0.4 < down < 0.8:
-            p_lng.append(lng)
-            p_lat.append(lat)
+    # for lng, lat, down in zip(gps_lng, gps_lat, acc_down):
+    #     if down > 1.2 or 0.4 < down < 0.8:
+    #         p_lng.append(lng)
+    #         p_lat.append(lat)
     # pothole = [value for value in acc_down if value > 1.2 or 0.4 < value < 0.8]
     # print('Count of pothole is {}'.format(len(pothole)))
     # plt.plot(acc_down, 'b--')
