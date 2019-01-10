@@ -81,6 +81,12 @@ def interpolate_gps_data(acc, gps):
 
 
 def do_pothole_extraction(acc, gps):
+    """
+
+    :param acc:
+    :param gps:
+    :return:
+    """
     interpolated_attribute_table = interpolate_gps_data(acc, gps)
     acc_time = interpolated_attribute_table['acc_time']
     acc_east = interpolated_attribute_table['acc_east']
@@ -98,7 +104,7 @@ def do_pothole_extraction(acc, gps):
     out_weka = './teszt/szeged_trolli_teszt/nointerpolation/for_weka.csv'
     with open(out_weka, 'w') as out:
         for d in acc_down:
-            out.write(str(d) + '\n')
+            out.write(str(d) + ',' + '' + '\n')
     return
 
     p_lng = []
@@ -119,6 +125,18 @@ def do_pothole_extraction(acc, gps):
 
 
 def _predict(X_minus, P_minus, F, Q, B, std_devs, acc_east, acc_north):
+    """
+
+    :param X_minus:
+    :param P_minus:
+    :param F:
+    :param Q:
+    :param B:
+    :param std_devs:
+    :param acc_east:
+    :param acc_north:
+    :return:
+    """
     kalman = Kalman()
     dt = 1
     Q[0, 0] = (std_devs['std_dev_acc_east'] * dt * dt / 2) ** 2
@@ -137,6 +155,19 @@ def _predict(X_minus, P_minus, F, Q, B, std_devs, acc_east, acc_north):
 
 
 def _update(X_minus, P_minus, H, R, hdop, lng, lat, vlng, vlat):
+    """
+
+    :param X_minus:
+    :param P_minus:
+    :param H:
+    :param R:
+    :param hdop:
+    :param lng:
+    :param lat:
+    :param vlng:
+    :param vlat:
+    :return:
+    """
     kalman = Kalman()
     # print("vl: {}\n va: {}".format(vlng, vlat))
     R[0][0] = hdop * hdop
@@ -156,6 +187,15 @@ def _update(X_minus, P_minus, H, R, hdop, lng, lat, vlng, vlat):
 
 def get_kalmaned_coordinates(acc, gps):
     # http: // geopandas.org /
+    """
+    TODO:
+    - itt az a gáz hogy kivesszük a redundáns pontokat és dt-től függően változik az eredmény.
+    - ha a pontok biztosan kapcsolódnak a az acc mérésekkel, akk nem kéne h gáz legyen
+    - IVESTIGATE!
+    :param acc:
+    :param gps:
+    :return:
+    """
 
     init = Initial_params()
     init_params = init.get_initial_parameters()
