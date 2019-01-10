@@ -11,12 +11,12 @@ path_gps = r'teszt/szeged_trolli_teszt/nmea.log'
 
 
 
-gps = interface.get_gps_data(path_gps)
-print('Length of output gps data is: {}'.format(len(gps)))
-acc = interface.get_acceleration_data(path_imu)
-print('Length of acceleration data is: {}'.format(len(acc)))
+# gps = interface.get_gps_data(path_gps)
+# print('Length of output gps data is: {}'.format(len(gps)))
+# acc = interface.get_acceleration_data(path_imu)
+# print('Length of acceleration data is: {}'.format(len(acc)))
 
-pothole_count = interface.do_pothole_extraction(acc, gps)
+pothole_count = interface.get_kalmaned_coordinates(path_imu, path_gps)
 
 # kalmaned_coordinates = interface.get_kalmaned_coordinates(acc, gps)
 

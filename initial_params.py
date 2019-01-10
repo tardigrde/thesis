@@ -1,64 +1,59 @@
 import numpy as np
 
 
-class Initial_params:
-    def __init__(self):
-        dt = 1
+def get_initial_params():
+    dt = 0.01
 
+    I = np.eye(6)
+    print(I, I.shape)
 
-        # initial state matrix(4x1)
-        self.X = np.asarray([0, 0, 0, 0])
+    # initial state matrix(4x1)
+    X = np.matrix([[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]).T
+    print('X:\n', X, X.shape)
 
-        # initial state covariance(4)
-        self.P = np.eye(4) * 1000000
+    # initial state covariance(4)
+    P = np.diag([100.0, 100.0, 10.0, 10.0, 1.0, 1.0])
+    print('P:\n', P, P.shape)
 
-        # F - state transition matrix (4x4)
-        self.F = np.eye(4)
-        self.F[0,2], self.F[1,3] = dt, dt
+    # F - state transition matrix (4x4)
+    F = np.matrix([[1.0, 0.0, dt, 0.0, 1 / 2.0 * dt ** 2, 0.0],
+                        [0.0, 1.0, 0.0, dt, 0.0, 1 / 2.0 * dt ** 2],
+                        [0.0, 0.0, 1.0, 0.0, dt, 0.0],
+                        [0.0, 0.0, 0.0, 1.0, 0.0, dt],
+                        [0.0, 0.0, 0.0, 0.0, 1.0, 0.0],
+                        [0.0, 0.0, 0.0, 0.0, 0.0, 1.0]])
+    print('F:\n', F, F.shape)
+    # F = np.eye(6)
+    # F[0,2], F[1,3], F[2,4],F[3,5] = dt, dt, dt, dt
+    # F[0, 4], F[1,5] = (dt**2)/2,(dt**2)/2
 
-        # B - control matrix(4x2)
-        self.B = np.zeros((4,2))
-        self.B[0,0], self.B[1,1] = (dt**2)/2,(dt**2)/2
-        self.B[2,0], self.B[3,1] = dt, dt
+    # B - control matrix(4x2)
+    B = np.zeros((4, 2))
+    B[0, 0], B[1, 1] = (dt ** 2) / 2, (dt ** 2) / 2
+    B[2, 0], B[3, 1] = dt, dt
 
-        # H - measurment matrix(4)
-        self.H = np.eye(4)
+    # H - measurment matrix(4)
+    H = np.matrix([[1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                        [0.0, 1.0, 0.0, 0.0, 0.0, 0.0],
+                        [0.0, 0.0, 0.0, 0.0, 1.0, 0.0],
+                        [0.0, 0.0, 0.0, 0.0, 0.0, 1.0]])
+    print('H:\n', H, H.shape)
 
-        # R - measurment covariance matrix(4x4)
-        self.R = np.zeros((4,4))
+    # R - measurment covariance matrix(4x4)
+    R = np.matrix([[1.0, 0.0, 0.0, 0.0],
+                        [0.0, 1.0, 0.0, 0.0],
+                        [0.0, 0.0, 1.0, 0.0],
+                        [0.0, 0.0, 0.0, 1.0]])
+    print('R:\n', R, R.shape)
 
-        # Q - process measurment matrix(4x4)
-        self.Q = np.zeros((4,4))
+    # Q - process measurment matrix(4x4)
+    G = np.matrix([[1 / 2.0 * dt ** 2],
+                        [1 / 2.0 * dt ** 2],
+                        [dt],
+                        [dt],
+                        [1.0],
+                        [1.0]])
+    Q = G * G.T
+    print('G:\n', Q, Q.shape)
 
-    def get_initial_parameters(self):
-        return {'X': self.X, 'P': self.P, 'F': self.F, 'B': self.B, 'H': self.H, 'R': self.R, 'Q': self.Q}
-
-
-        # dt = 1
-        #
-        # # initial state matrix(4x1)
-        # self.X = np.asarray([0, 0])
-        #
-        # # initial state covariance(4)
-        # self.P = np.asarray([1,0])
-        #
-        # # F - state transition matrix (4x4)
-        # self.F = np.eye(2)
-        # self.F[0, 0], self.F[1, 1] = dt, 1
-        #
-        # # B - control matrix(4x2)
-        # self.B = np.asarray([0, 0])
-        # self.B[0] = (dt * dt) / 2
-        # self.B[1] = dt
-        #
-        # # H -measurment matrix(4)
-        # self.H = np.asarray([1, 0])
-        #
-        # # R - measurment covariance matrix(4x4)
-        # self.R = np.asarray([1, 0])
-        #
-        # # Q - process measurment matrix(4x4)
-        # self.Q = np.asarray([1,1])
-        #
-        # # timestep
-        # dt = 0.01
+    return {'X': X, 'P': P, 'F': F, 'I': I, 'H': H, 'R': R, 'Q': Q}
