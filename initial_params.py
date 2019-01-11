@@ -2,7 +2,7 @@ import numpy as np
 
 
 def get_initial_params():
-    dt = 0.01
+    dt = 1
 
     I = np.eye(6)
     print(I, I.shape)

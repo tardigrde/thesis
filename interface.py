@@ -20,17 +20,16 @@ def get_gps_data(path_gps):
 
 
 def pass_gps_list(gps):
-    time, ln, la, vla, vln, hdop = [], [], [], [], [], []
+    time, ln, la, v, t, hdop = [], [], [], [], [], []
     timestamps = sorted(list(gps.keys()))
     for t in timestamps:
         values = gps[t]
-        vln.append(values['vlng'])
-        vla.append(values['vlat'])
+        v.append(values['v'])
         hdop.append(values['hdop'])
         time.append(values['time'])
         ln.append(values['lng'])
         la.append(values['lat'])
-    return {'ln': ln, 'la': la, 'vln': vln, 'vla': vla, 'hdop': hdop, 'time': time, }
+    return {'ln': ln, 'la': la, 'v': v, 't': t, 'hdop': hdop, 'time': time, }
 
 
 def pass_acc_list(acc):
@@ -52,7 +51,7 @@ def _pass_std_devs(acc):
     return {'std_dev_acc_east': std_dev_acc_east, 'std_dev_acc_north': std_dev_acc_north}
 
 
-def interpolate_gps_data(acc, gps):
+def interpolate_and_trim_gps_data(acc, gps):
     gps_lists = pass_gps_list(gps)
     acc_lists = pass_acc_list(acc)
 
@@ -61,14 +60,12 @@ def interpolate_gps_data(acc, gps):
     acc_north = acc_lists['acc_north']
     acc_down = acc_lists['acc_down']
 
+
     gps_time = gps_lists['time']
     gps_lng = gps_lists['ln']
     gps_lat = gps_lists['la']
-    gps_vln = gps_lists['vln']
-    gps_vla = gps_lists['vla']
     gps_hdop = gps_lists['hdop']
     gps_v = gps_lists['v']
-    gps_t = gps_lists['t']
 
     interpolated_lng = np.interp(acc_time, gps_time, gps_lng).tolist()
     interpolated_lat = np.interp(acc_time, gps_time, gps_lat).tolist()
@@ -78,8 +75,29 @@ def interpolate_gps_data(acc, gps):
     # interpolated_vlat = np.interp(acc_time, gps_time, gps_vla).tolist()
     # interpolated_t = np.interp(acc_time, gps_time, gps_t).toList()
 
+    """
+    TODO:
+        - refactor this messssssssssss
+    """
+
     if (len(acc_time) == len(acc_down) == len(acc_east) == len(acc_north) == len(interpolated_lat) == len(
             interpolated_lng) == len(interpolated_v) == len(interpolated_hdop)):
+        count = len(acc_time)
+        print('LEN DOES EQUALS;\nit is: ', count)
+        trim_count = count / 20
+        print('LEN/20 IS: ', trim_count)
+
+        del (acc_time[:trim_count])
+        del (acc_east[:trim_count])
+        del (acc_north[:trim_count])
+        del (acc_down[:trim_count])
+        del (interpolated_lat[:trim_count])
+        del (interpolated_lng[:trim_count])
+        del (interpolated_hdop[:trim_count])
+        del (interpolated_v[:trim_count])
+
+        print('TRIMMED COUNT: ', len(acc_east))
+
         return {
             'acc_time': acc_time, 'lng': interpolated_lng, 'lat': interpolated_lat,
             'v': interpolated_v, 'hdop': interpolated_hdop,
@@ -89,47 +107,7 @@ def interpolate_gps_data(acc, gps):
         print('NEM')
 
 
-def do_pothole_extraction(acc, gps):
-    """
 
-    :param acc: Dict of lists of acceleration data.
-    :param gps: Dict of lists of gps data.
-    :return:
-    """
-    interpolated_attribute_table = interpolate_gps_data(acc, gps)
-    acc_time = interpolated_attribute_table['acc_time']
-    acc_east = interpolated_attribute_table['acc_east']
-    acc_north = interpolated_attribute_table['acc_north']
-    acc_down = interpolated_attribute_table['acc_down']
-    gps_lng = interpolated_attribute_table['lng']
-    gps_lat = interpolated_attribute_table['lat']
-    gps_v = interpolated_attribute_table['v']
-    gps_hdop = interpolated_attribute_table['hdop']
-    print('Count of acc_down is {}'.format(len(acc_down)))
-    print('Biggest value is {}'.format(max(acc_down)))
-    print('Lowest value is {}'.format(min(acc_down)))
-
-    out_weka = './teszt/szeged_trolli_teszt/nointerpolation/for_weka.csv'
-    with open(out_weka, 'w') as out:
-        for d in acc_down:
-            out.write(str(d) + ',' + '' + '\n')
-    return
-
-    p_lng = []
-    p_lat = []
-    # for lng, lat, down in zip(gps_lng, gps_lat, acc_down):
-    #     if down > 1.2 or 0.4 < down < 0.8:
-    #         p_lng.append(lng)
-    #         p_lat.append(lat)
-    # pothole = [value for value in acc_down if value > 1.2 or 0.4 < value < 0.8]
-    # print('Count of pothole is {}'.format(len(pothole)))
-    # plt.plot(acc_down, 'b--')
-    # plt.show()
-    fig = plt.figure()
-    plt.plot(gps_lng, gps_lat, 'b--', p_lng, p_lat, 'rs')
-    plt.show()
-    fig.savefig('first_potholes_manually_extracted.pdf', dpi=fig.dpi)
-    return acc_down
 
 
 def get_kalmaned_coordinates(path_acc, path_gps):
@@ -148,7 +126,9 @@ def get_kalmaned_coordinates(path_acc, path_gps):
 
     std_devs = _pass_std_devs(acc)
 
-    interpolated_attribute_table = interpolate_gps_data(acc, gps)
+    interpolated_attribute_table = interpolate_and_trim_gps_data(acc, gps)
+    table = interpolated_attribute_table()
+
     acc_time = interpolated_attribute_table['acc_time']
     acc_east = interpolated_attribute_table['acc_east']
     acc_north = interpolated_attribute_table['acc_north']
@@ -162,9 +142,9 @@ def get_kalmaned_coordinates(path_acc, path_gps):
     # sorted_timestamps_of_all_measurements = sorted(list(fused.keys()))
     # print('Length of steps is: {}'.format(len(sorted_timestamps_of_all_measurements)))
 
-    m = 500  # Measurements
+    m = len(acc_time)  # Measurements
 
-    sp = 1.0  # Sigma for position
+    sp = 1.0  # Sigma for position !!!!! THIS IS HDOP
     px = 0.0  # x Position
     py = 0.0  # y Position
 
@@ -183,16 +163,18 @@ def get_kalmaned_coordinates(path_acc, path_gps):
             mpy[i] = mpy[i - 1]
             GPS[i] = False
 
-    # Acceleration
-    sa = 0.1  # Sigma for acceleration
+    # Acceleration --> MOVE THIS TO THE FOR LOOP
+    sa = 0.1  # Sigma for acceleration THIS IS STD_DEV((acc_x+acc_y)/2)
     ax = 0.0  # in X
     ay = 0.0  # in Y
 
+    # GPS --> MOVE THIS TO FOOR LOOP
     mx = np.array(ax + sa * np.random.randn(m))
     my = np.array(ay + sa * np.random.randn(m))
 
     measurements = np.vstack((mpx, mpy, mx, my))
     print(measurements.shape)
+    return
 
     def plot_m():
         fig = plt.figure(figsize=(16, 9))
@@ -301,6 +283,49 @@ def get_kalmaned_coordinates(path_acc, path_gps):
     dist = np.cumsum(np.sqrt(np.diff(xt) ** 2 + np.diff(yt) ** 2))
     print('Your drifted %dm from origin.' % dist[-1])
 
+
+
+def do_pothole_extraction(acc, gps):
+    """
+
+    :param acc: Dict of lists of acceleration data.
+    :param gps: Dict of lists of gps data.
+    :return:
+    """
+    interpolated_attribute_table = interpolate_and_trim_gps_data(acc, gps)
+    acc_time = interpolated_attribute_table['acc_time']
+    acc_east = interpolated_attribute_table['acc_east']
+    acc_north = interpolated_attribute_table['acc_north']
+    acc_down = interpolated_attribute_table['acc_down']
+    gps_lng = interpolated_attribute_table['lng']
+    gps_lat = interpolated_attribute_table['lat']
+    gps_v = interpolated_attribute_table['v']
+    gps_hdop = interpolated_attribute_table['hdop']
+    print('Count of acc_down is {}'.format(len(acc_down)))
+    print('Biggest value is {}'.format(max(acc_down)))
+    print('Lowest value is {}'.format(min(acc_down)))
+
+    out_weka = './teszt/szeged_trolli_teszt/nointerpolation/for_weka.csv'
+    with open(out_weka, 'w') as out:
+        for d in acc_down:
+            out.write(str(d) + ',' + '' + '\n')
+    return
+
+    p_lng = []
+    p_lat = []
+    # for lng, lat, down in zip(gps_lng, gps_lat, acc_down):
+    #     if down > 1.2 or 0.4 < down < 0.8:
+    #         p_lng.append(lng)
+    #         p_lat.append(lat)
+    # pothole = [value for value in acc_down if value > 1.2 or 0.4 < value < 0.8]
+    # print('Count of pothole is {}'.format(len(pothole)))
+    # plt.plot(acc_down, 'b--')
+    # plt.show()
+    fig = plt.figure()
+    plt.plot(gps_lng, gps_lat, 'b--', p_lng, p_lat, 'rs')
+    plt.show()
+    fig.savefig('first_potholes_manually_extracted.pdf', dpi=fig.dpi)
+    return acc_down
 
 """
 --------------------------------------------------------------------------------------------
