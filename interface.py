@@ -129,6 +129,13 @@ def get_kalmaned_coordinates(path_acc, path_gps):
     interpolated_attribute_table = interpolate_and_trim_gps_data(acc, gps)
     table = interpolated_attribute_table()
 
+    """
+    MIAFASZ, MIÉRT KELL A V ÉS MIÉRT A VLNG VLAT??? JA MÁR TUDOM
+    v - DEAL WITH DATA WHERE LOCATION IS 0
+    VLNG, VLAT- NEM KELL MERT NEM ISMERT
+    
+    """
+
     acc_time = interpolated_attribute_table['acc_time']
     acc_east = interpolated_attribute_table['acc_east']
     acc_north = interpolated_attribute_table['acc_north']
