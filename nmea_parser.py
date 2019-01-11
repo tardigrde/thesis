@@ -87,31 +87,25 @@ def _remove_redundant_points(msrmnt_dict):
         coords = _get_ghashed_eov_coordinates(ln, lt)
         lng, lat = transform(in_proj, out_proj, coords['lng'], coords['lat'])
 
+        measurmentAttributes = {
+            'time': m['time'], 'hdop': m['hdop'],
+            'vlng': m['vlng'], 'vlat': m['vlat'],
+            't': m['t'], 'v': m['v'],
+            'lng': lng, 'lat': lat,
+        }
+        """
+        TODO:
+        - refactor list_of_dicts_of_gps_data
+        """
         if not list_of_dicts_of_gps_data:
-            list_of_dicts_of_gps_data.append({
-                'time': m['time'], 'hdop': m['hdop'],
-                'vlng': m['vlng'], 'vlat': m['vlat'],
-                'lng': lng, 'lat': lat,
-            })
-            gps_data_dict[m['time']] = {
-                'time': m['time'], 'hdop': m['hdop'],
-                'vlng': m['vlng'], 'vlat': m['vlat'],
-                'lng': lng, 'lat': lat,
-            }
+            list_of_dicts_of_gps_data.append(measurmentAttributes)
+            gps_data_dict[m['time']] = measurmentAttributes
             counter = counter + 1
         elif lng == list_of_dicts_of_gps_data[counter]['lng'] and lat == list_of_dicts_of_gps_data[counter]['lat']:
             pass
         else:
-            list_of_dicts_of_gps_data.append({
-                'time': m['time'], 'hdop': m['hdop'],
-                'vlng': m['vlng'], 'vlat': m['vlat'],
-                'lng': lng, 'lat': lat,
-            })
-            gps_data_dict[m['time']] = {
-                'time': m['time'], 'hdop': m['hdop'],
-                'vlng': m['vlng'], 'vlat': m['vlat'],
-                'lng': lng, 'lat': lat,
-            }
+            list_of_dicts_of_gps_data.append(measurmentAttributes)
+            gps_data_dict[m['time']] = measurmentAttributes
             counter = counter + 1
     return gps_data_dict
 

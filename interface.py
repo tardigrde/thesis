@@ -67,18 +67,24 @@ def interpolate_gps_data(acc, gps):
     gps_vln = gps_lists['vln']
     gps_vla = gps_lists['vla']
     gps_hdop = gps_lists['hdop']
+    gps_v = gps_lists['v']
+    gps_t = gps_lists['t']
 
     interpolated_lng = np.interp(acc_time, gps_time, gps_lng).tolist()
     interpolated_lat = np.interp(acc_time, gps_time, gps_lat).tolist()
-    interpolated_vlng = np.interp(acc_time, gps_time, gps_vln).tolist()
-    interpolated_vlat = np.interp(acc_time, gps_time, gps_vla).tolist()
     interpolated_hdop = np.interp(acc_time, gps_time, gps_hdop).tolist()
+    interpolated_v = np.interp(acc_time, gps_time, gps_v).toList()
+    # interpolated_vlng = np.interp(acc_time, gps_time, gps_vln).tolist()
+    # interpolated_vlat = np.interp(acc_time, gps_time, gps_vla).tolist()
+    # interpolated_t = np.interp(acc_time, gps_time, gps_t).toList()
 
     if (len(acc_time) == len(acc_down) == len(acc_east) == len(acc_north) == len(interpolated_lat) == len(
-            interpolated_lng) == len(interpolated_vlat) == len(interpolated_vlng) == len(interpolated_hdop)):
-        return {'acc_time': acc_time, 'lng': interpolated_lng, 'lat': interpolated_lat, 'vlng': interpolated_vlng,
-                'vlat': interpolated_vlat, 'hdop': interpolated_hdop, 'acc_east': acc_east, 'acc_north': acc_north,
-                'acc_down': acc_down}
+            interpolated_lng) == len(interpolated_v) == len(interpolated_hdop)):
+        return {
+            'acc_time': acc_time, 'lng': interpolated_lng, 'lat': interpolated_lat,
+            'v': interpolated_v, 'hdop': interpolated_hdop,
+            'acc_east': acc_east, 'acc_north': acc_north, 'acc_down': acc_down
+        }
     else:
         print('NEM')
 
@@ -86,8 +92,8 @@ def interpolate_gps_data(acc, gps):
 def do_pothole_extraction(acc, gps):
     """
 
-    :param acc:
-    :param gps:
+    :param acc: Dict of lists of acceleration data.
+    :param gps: Dict of lists of gps data.
     :return:
     """
     interpolated_attribute_table = interpolate_gps_data(acc, gps)
@@ -97,8 +103,7 @@ def do_pothole_extraction(acc, gps):
     acc_down = interpolated_attribute_table['acc_down']
     gps_lng = interpolated_attribute_table['lng']
     gps_lat = interpolated_attribute_table['lat']
-    gps_vlng = interpolated_attribute_table['vlng']
-    gps_vlat = interpolated_attribute_table['vlat']
+    gps_v = interpolated_attribute_table['v']
     gps_hdop = interpolated_attribute_table['hdop']
     print('Count of acc_down is {}'.format(len(acc_down)))
     print('Biggest value is {}'.format(max(acc_down)))
@@ -127,67 +132,6 @@ def do_pothole_extraction(acc, gps):
     return acc_down
 
 
-def _predict(X_minus, P_minus, F, Q, B, std_devs, acc_east, acc_north):
-    """
-
-    :param X_minus:
-    :param P_minus:
-    :param F:
-    :param Q:
-    :param B:
-    :param std_devs:
-    :param acc_east:
-    :param acc_north:
-    :return:
-    """
-    kalman = Kalman()
-    dt = 1
-    Q[0, 0] = (std_devs['std_dev_acc_east'] * dt * dt / 2) ** 2
-    Q[1, 1] = (std_devs['std_dev_acc_north'] * dt * dt / 2) ** 2
-    Q[2, 2] = (std_devs['std_dev_acc_east'] * dt) ** 2
-    Q[3, 3] = (std_devs['std_dev_acc_north'] * dt) ** 2
-    Q[0, 2] = (std_devs['std_dev_acc_east'] * dt * dt / 2) * (std_devs['std_dev_acc_east'] * dt)
-    Q[1, 3] = (std_devs['std_dev_acc_north'] * dt * dt / 2) * (std_devs['std_dev_acc_north'] * dt)
-
-    U = np.transpose([acc_east, acc_north])
-
-    # print('Q: {} and U: {}'.format(Q, U))
-
-    predict = kalman.kf_predict(X_minus, P_minus, F, Q, B, U)
-    return predict
-
-
-def _update(X_minus, P_minus, H, R, hdop, lng, lat, vlng, vlat):
-    """
-
-    :param X_minus:
-    :param P_minus:
-    :param H:
-    :param R:
-    :param hdop:
-    :param lng:
-    :param lat:
-    :param vlng:
-    :param vlat:
-    :return:
-    """
-    kalman = Kalman()
-    # print("vl: {}\n va: {}".format(vlng, vlat))
-    R[0][0] = hdop * hdop
-    R[1][1] = hdop * hdop
-    R[2][2] = hdop * hdop  # *10 works better
-    R[3][3] = hdop * hdop
-    # print('R is {}'.format(R))
-    X = np.transpose([lng, lat, vlng, vlat])
-    # print('X is {}'.format(X))
-    Y = X * H
-    # print('Y is {}'.format(Y))
-
-    update = kalman.kf_update(X_minus, P_minus, Y, H, R)
-
-    return update
-
-
 def get_kalmaned_coordinates(path_acc, path_gps):
     acc = get_acceleration_data(path_acc)
     gps = get_gps_data(path_gps)
@@ -203,6 +147,17 @@ def get_kalmaned_coordinates(path_acc, path_gps):
     I = init_params['I']
 
     std_devs = _pass_std_devs(acc)
+
+    interpolated_attribute_table = interpolate_gps_data(acc, gps)
+    acc_time = interpolated_attribute_table['acc_time']
+    acc_east = interpolated_attribute_table['acc_east']
+    acc_north = interpolated_attribute_table['acc_north']
+    acc_down = interpolated_attribute_table['acc_down']
+    gps_lng = interpolated_attribute_table['lng']
+    gps_lat = interpolated_attribute_table['lat']
+    gps_v = interpolated_attribute_table['v']
+    gps_hdop = interpolated_attribute_table['hdop']
+
     # fused = {**acc, **gps}
     # sorted_timestamps_of_all_measurements = sorted(list(fused.keys()))
     # print('Length of steps is: {}'.format(len(sorted_timestamps_of_all_measurements)))
@@ -333,125 +288,18 @@ def get_kalmaned_coordinates(path_acc, path_gps):
             # Save states for Plotting
             savestates(x, Z, P, K)
 
-    def plot_P():
-        fig = plt.figure(figsize=(16, 9))
-        plt.subplot(211)
-        plt.plot(range(len(measurements[0])), Px, label='$x$')
-        plt.plot(range(len(measurements[0])), Py, label='$y$')
-        plt.title('Uncertainty (Elements from Matrix $P$)')
-        plt.legend(loc='best', prop={'size': 22})
-        plt.subplot(212)
-        plt.plot(range(len(measurements[0])), Pddx, label='$\ddot x$')
-        plt.plot(range(len(measurements[0])), Pddy, label='$\ddot y$')
-
-        plt.xlabel('Filter Step')
-        plt.ylabel('')
-        plt.legend(loc='best', prop={'size': 22})
-
-    plot_P()
-
-    def plot_P2():
-        fig = plt.figure(figsize=(6, 6))
-        im = plt.imshow(P, interpolation="none", cmap=plt.get_cmap('binary'))
-        plt.title('Covariance Matrix $P$ (after %i Filter Steps)' % (m))
-        ylocs, ylabels = plt.yticks()
-        # set the locations of the yticks
-        plt.yticks(np.arange(7))
-        # set the locations and labels of the yticks
-        plt.yticks(np.arange(6), ('$x$', '$y$', '$\dot x$', '$\dot y$', '$\ddot x$', '$\ddot y$'), fontsize=22)
-
-        xlocs, xlabels = plt.xticks()
-        # set the locations of the yticks
-        plt.xticks(np.arange(7))
-        # set the locations and labels of the yticks
-        plt.xticks(np.arange(6), ('$x$', '$y$', '$\dot x$', '$\dot y$', '$\ddot x$', '$\ddot y$'), fontsize=22)
-
-        plt.xlim([-0.5, 5.5])
-        plt.ylim([5.5, -0.5])
-
-        from mpl_toolkits.axes_grid1 import make_axes_locatable
-        divider = make_axes_locatable(plt.gca())
-        cax = divider.append_axes("right", "5%", pad="3%")
-        plt.colorbar(im, cax=cax)
-
-        plt.tight_layout()
-        plt.savefig('Kalman-Filter-CA-CovarianceMatrix.png', dpi=72, transparent=True, bbox_inches='tight')
-
-    plot_P2()
-
-    def plot_K():
-        fig = plt.figure(figsize=(16, 9))
-        plt.plot(range(len(measurements[0])), Kx, label='Kalman Gain for $x$')
-        plt.plot(range(len(measurements[0])), Ky, label='Kalman Gain for $y$')
-        plt.plot(range(len(measurements[0])), Kdx, label='Kalman Gain for $\dot x$')
-        plt.plot(range(len(measurements[0])), Kdy, label='Kalman Gain for $\dot y$')
-        plt.plot(range(len(measurements[0])), Kddx, label='Kalman Gain for $\ddot x$')
-        plt.plot(range(len(measurements[0])), Kddy, label='Kalman Gain for $\ddot y$')
-
-        plt.xlabel('Filter Step')
-        plt.ylabel('')
-        plt.title('Kalman Gain (the lower, the more the measurement fullfill the prediction)')
-        plt.legend(loc='best', prop={'size': 18})
-
-    plot_K()
-
-    def plot_x():
-
-        fig = plt.figure(figsize=(16, 16))
-
-        plt.subplot(311)
-        plt.step(range(len(measurements[0])), ddxt, label='$\ddot x$')
-        plt.step(range(len(measurements[0])), ddyt, label='$\ddot y$')
-
-        plt.title('Estimate (Elements from State Vector $x$)')
-        plt.legend(loc='best', prop={'size': 22})
-        plt.ylabel(r'Acceleration $m/s^2$')
-        plt.ylim([-.1, .1])
-
-        plt.subplot(312)
-        plt.step(range(len(measurements[0])), dxt, label='$\dot x$')
-        plt.step(range(len(measurements[0])), dyt, label='$\dot y$')
-
-        plt.ylabel('')
-        plt.legend(loc='best', prop={'size': 22})
-        plt.ylabel(r'Velocity $m/s$')
-        plt.ylim([-1, 1])
-
-        plt.subplot(313)
-        plt.step(range(len(measurements[0])), xt, label='$x$')
-        plt.step(range(len(measurements[0])), yt, label='$y$')
-
-        plt.xlabel('Filter Step')
-        plt.ylabel('')
-        plt.legend(loc='best', prop={'size': 22})
-        plt.ylabel(r'Position $m$')
-        plt.ylim([-1, 1])
-
-        plt.savefig('Kalman-Filter-CA-StateEstimated.png', dpi=72, transparent=True, bbox_inches='tight')
-
-    plot_x()
-
-    def plot_xy():
-
-        fig = plt.figure(figsize=(16, 16))
-        plt.plot(xt, yt, label='State', alpha=0.5)
-        plt.scatter(xt[0], yt[0], s=100, label='Start', c='g')
-        plt.scatter(xt[-1], yt[-1], s=100, label='Goal', c='r')
-
-        plt.xlabel('X')
-        plt.ylabel('Y')
-        plt.title('Position')
-        plt.legend(loc='best')
-        plt.xlim([-5, 5])
-        plt.ylim([-5, 5])
-        plt.savefig('Kalman-Filter-CA-Position.png', dpi=72, transparent=True, bbox_inches='tight')
-
-    plot_xy()
+    # plot_P()
+    #
+    # plot_P2()
+    #
+    # plot_K()
+    #
+    # plot_x()
+    #
+    # plot_xy()
 
     dist = np.cumsum(np.sqrt(np.diff(xt) ** 2 + np.diff(yt) ** 2))
     print('Your drifted %dm from origin.' % dist[-1])
-
-
 
 
 """
@@ -481,286 +329,110 @@ def get_kalmaned_coordinates(path_acc, path_gps):
     https://gist.github.com/manicai/922976
 """
 
-# print('Length of updated states {}'.format(len(updated)))
-# #print('Predicted STATE is {}'.format(predict['X']))
-# plt.plot(og_lng, og_lat, 'bs', lng_to_plot, lat_to_plot, 'r--')
-# plt.show()
-#
-# out = './teszt/szeged_trolli_teszt/kalmaned_coordinates21.csv'
-# with open(out, 'w') as out:
-#     for ln, la in zip(lng_to_plot, lat_to_plot):
-#         out.write(str(ln) + ',' + str(la) + '\n')
-#
-# out_og = './teszt/szeged_trolli_teszt/og_coords.csv'
-# with open(out_og, 'w') as out:
-#     for ln, la in zip(og_lng, og_lat):
-#         out.write(str(ln) + ',' + str(la) + '\n')
-# return updated
 
-"""
-        diff_lat, diff_lng = [], []
-        for m_lng, k_lng in zip(measurement_lng, x_to_plot):
-            diff = m_lng-k_lng
-            diff_lng.append(diff)
-        for m_lat, k_lat in zip(measurement_lat, y_to_plot):
-            diff = m_lat-k_lat
-            diff_lat.append(diff)
+def plot_P():
+    fig = plt.figure(figsize=(16, 9))
+    plt.subplot(211)
+    plt.plot(range(len(measurements[0])), Px, label='$x$')
+    plt.plot(range(len(measurements[0])), Py, label='$y$')
+    plt.title('Uncertainty (Elements from Matrix $P$)')
+    plt.legend(loc='best', prop={'size': 22})
+    plt.subplot(212)
+    plt.plot(range(len(measurements[0])), Pddx, label='$\ddot x$')
+    plt.plot(range(len(measurements[0])), Pddy, label='$\ddot y$')
 
-        print(diff_lng[0::100])
-        print(diff_lat[0::100])
+    plt.xlabel('Filter Step')
+    plt.ylabel('')
+    plt.legend(loc='best', prop={'size': 22})
 
-        out = '/home/acer/Desktop/szakdoga/code/code_oop/teszt/roszke-szeged/kalmaned_coordinates.csv'
-        with open(out, 'w') as out:
-            for i in kalmaned_coordinates:
-                out.write(str(i[0]) + ',' + str(i[1]) + '\n')
-        # gps_lists = pass_gps_list(gps)
-        # acc_lists = pass_acc_list(acc)
-        # 
-        # acc_time = acc_lists['acc_time']
-        # acc_east = acc_lists['acc_east']
-        # acc_north = acc_lists['acc_north']
-        # acc_down = acc_lists['acc_down']
-        # print("at: {}, ae: {}, an: {}, ad: {}".format(len(acc_time), len(acc_east), len(acc_north), len(acc_down)))
-        # 
-        # gps_time = gps_lists['time']
-        # gps_lng = gps_lists['ln']
-        # gps_lat = gps_lists['la']
-        # gps_vln = gps_lists['vln']
-        # gps_vla = gps_lists['vla']
-        # gps_hdop = gps_lists['hdop']
-        # print("gt: {}, gln: {}, glt: {}, gvln: {}, gvlt: {}, hdop: {}".format(len(gps_time), len(gps_lng), len(gps_lat), len(gps_vln), len(gps_vla), len(gps_hdop)))
-"""
 
-# def do_pykalmaning(self, acc, gps):
-#     gps_lists = self.pass_gps_list(gps)
-#     acc_lists = self.pass_acc_list(acc)
-#
-#     acc_time = acc_lists['acc_time']
-#     acc_east = acc_lists['acc_east']
-#     acc_north = acc_lists['acc_north']
-#     acc_down = acc_lists['acc_down']
-#
-#     gps_time = gps_lists['time']
-#     gps_lng = gps_lists['ln']
-#     gps_lat = gps_lists['la']
-#     gps_vlng = gps_lists['vln']
-#     gps_vlat = gps_lists['vla']
-#     gps_hdop = gps_lists['hdop']
-#
-#     init = Initial_params()
-#     init_params = init.get_initial_parameters()
-#     P = init_params['P']
-#     H = init_params['H']
-#     R = init_params['R']
-#     Q = init_params['Q']
-#     F = init_params['F']
-#     B = init_params['B']
-#
-#     # interpolated_attribute_table = self.interpolate_gps_data(acc, gps)
-#     # acc_time = interpolated_attribute_table['acc_time']
-#     # acc_east = interpolated_attribute_table['acc_east']
-#     # acc_north = interpolated_attribute_table['acc_north']
-#     # gps_lng = interpolated_attribute_table['lng']
-#     # gps_lat = interpolated_attribute_table['lat']
-#     # gps_vlng = interpolated_attribute_table['vlng']
-#     # gps_vlat = interpolated_attribute_table['vlat']
-#     # gps_hdop = interpolated_attribute_table['hdop']
-#
-#     std_devs = self._pass_std_devs(acc_east, acc_north)
-#
-#     updated = []
-#     predicted = []
-#     lng_to_plot = []
-#     lat_to_plot = []
-#     og_lng, og_lat = [], []
-#
-#     counter = 0
-#     for acc_time, gps_time, a_east, a_north, lat, lng, vlat, vlng, hdop in zip(acc_time, gps_time, acc_east, acc_north, gps_lat, gps_lng, gps_vlat, gps_vlng, gps_hdop):
-#
-#         og_lng.append(lng)
-#         og_lat.append(lat)
-#
-#         if counter == 0:
-#             X_minus = np.transpose([lng, lat, vlng, vlat])
-#             P_minus = P
-#             counter = counter + 1
-#         else:
-#             X_minus = updated[len(updated) - 1]['X']
-#             P_minus = updated[len(updated) - 1]['P']
-#
-#         predict = self._predict(X_minus, P_minus, F, Q, B, std_devs, a_east, a_north) # 1
-#         #print('Predicted STATE is {}'.format(predict['X']))
-#         predicted.append(predict)
-#
-#         X_minus = predicted[len(predicted) - 1]['X']
-#         P_minus = predicted[len(predicted) - 1]['P'] #2,3
-#
-#         update = self._update(X_minus, P_minus, H, R, hdop, lng, lat, vlng, vlat)
-#         updated.append(update)
-#
-#         lng_to_plot.append(update['X'][0][0]) ## CHECK THIS
-#         lat_to_plot.append(update['X'][1][1])
-#
-#     plt.plot(og_lng, og_lat, 'bs', lng_to_plot, lat_to_plot, 'r--')
-#     plt.show()
-#     #print()
-#     out = './teszt/szeged_trolli_teszt/kalmaned_coordinates15.csv'
-#     with open(out, 'w') as out:
-#         for ln, la in zip(lng_to_plot, lat_to_plot):
-#             out.write(str(ln) + ',' + str(la) + '\n')
-#
-#     # out_og = './teszt/szeged_trolli_teszt/og_coords.csv'
-#     # with open(out_og, 'w') as out:
-#     #     for ln, la in zip(og_lng, og_lat):
-#     #         out.write(str(ln) + ',' + str(la) + '\n')
+def plot_P2():
+    fig = plt.figure(figsize=(6, 6))
+    im = plt.imshow(P, interpolation="none", cmap=plt.get_cmap('binary'))
+    plt.title('Covariance Matrix $P$ (after %i Filter Steps)' % (m))
+    ylocs, ylabels = plt.yticks()
+    # set the locations of the yticks
+    plt.yticks(np.arange(7))
+    # set the locations and labels of the yticks
+    plt.yticks(np.arange(6), ('$x$', '$y$', '$\dot x$', '$\dot y$', '$\ddot x$', '$\ddot y$'), fontsize=22)
 
-# def pass_kalmaned_list(self, updated, gps):
-#     # EZ SZAR
-#     """
-#     468 kalmaned timestamps list
-#     468 gps measurement dictinary elements
-#     """
-#     timestamps = sorted(list(gps.keys()))
-#     # print(timestamps)
-#     kalmaned_dict = {}
-#     kalmaned_list = []
-#     for t, k in zip(timestamps, updated):
-#         measurement = gps[t]
-#         kalmaned_measurement = k['IM']
-#         lng_kalmaned = kalmaned_measurement[0]
-#         lat_kalmaned = kalmaned_measurement[1]
-#         kalmaned_list.append([measurement['time'], lng_kalmaned, lat_kalmaned])
-#         kalmaned_dict[t] = {
-#             'timestamp': measurement['time'],
-#             'lat': measurement['lat'],
-#             'lng': measurement['lng'],
-#             'kalmaned_lng': lng_kalmaned,
-#             'kalmaned_lat': lat_kalmaned
-#         }
-#     return kalmaned_list
-#
-#
-# def pass_likelihood(self):
-#     pass
+    xlocs, xlabels = plt.xticks()
+    # set the locations of the yticks
+    plt.xticks(np.arange(7))
+    # set the locations and labels of the yticks
+    plt.xticks(np.arange(6), ('$x$', '$y$', '$\dot x$', '$\dot y$', '$\ddot x$', '$\ddot y$'), fontsize=22)
 
-# in_proj = Proj(init='epsg:4326')
-# out_proj = Proj(init='epsg:23700')
-# lng_eov, lat_eov = transform(in_proj, out_proj, lng, lat)
-# print(measurement)
+    plt.xlim([-0.5, 5.5])
+    plt.ylim([5.5, -0.5])
 
-# def _plot_ghashed_against_real_coords(measurement, i):
-#     lng = measurement['lng']
-#     og_lng.append(lng)
-#     lat = measurement['lat']
-#     og_lat.append(lat)
-#     lng_to_add, lat_to_add = Geohash.decode(measurement['geohashed'])
-#
-#     if (not lng_to_plot and not lat_to_plot):
-#         lng_to_plot.append(lng_to_add)
-#         lat_to_plot.append(lat_to_add)
-#         i = i + 1
-#     elif (lng_to_add == lng_to_plot[i] and lat_to_add == lat_to_plot[i]):
-#         pass
-#     else:
-#         lng_to_plot.append(lng_to_add)
-#         lat_to_plot.append(lat_to_add)
-#         i = i + 1
-#         # to_plot.append([lng_to_add, lat_to_plot])
-#
-# if (len(measurement) == 9):
-#     _plot_ghashed_against_real_coords(measurement, i)
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+    divider = make_axes_locatable(plt.gca())
+    cax = divider.append_axes("right", "5%", pad="3%")
+    plt.colorbar(im, cax=cax)
 
-# updated = []
-# predicted = []
-# last_step_was = 'none'
-# last_step = []
-# lng_to_plot = []
-# lat_to_plot = []
-# og_lng, og_lat = [], []
-#
-# for t in sorted_timestamps_of_all_measurements:
-#     # THIS HAS TO BE CHECKED!
-#     measurement = fused[t]
-#
-#     # if we got a measurement from GPS
-#     if len(measurement) == 6:
-#         lng = measurement['lng']
-#         og_lng.append(lng)
-#         lat = measurement['lat']
-#         og_lat.append(lat)
-#         vlng = measurement['vlng']
-#         vlat = measurement['vlat']
-#         hdop = measurement['hdop']
-#
-#         # so predict will be the first, but a state has to be initialized
-#         if last_step_was == 'none':
-#             X = np.transpose([measurement['lng'], measurement['lat'], measurement['vlng'], measurement['vlat']])
-#             updated.append({'X': X, 'P': P})
-#             last_step_was = 'update'
-#             last_step.append('update')
-#             lng_to_plot.append(X[0])
-#             lat_to_plot.append(X[1])
-#
-#         # if last step was a predcition, use its state as the state input, and this measurement for Y
-#         elif last_step_was == 'predict':
-#             P_minus = predicted[len(predicted) - 1]['P']
-#             X_minus = predicted[len(predicted) - 1]['X']
-#             update = _update(X_minus, P_minus, H, R, hdop, lng, lat, vlng, vlat)
-#             updated.append(update)
-#             lng_to_plot.append(update['X'][0][0])
-#             lat_to_plot.append(update['X'][1][1])
-#             last_step_was = 'update'
-#             last_step.append('update')
-#
-#         # if last step was an update, use its state as the state input, and this measurement for Y
-#         elif last_step_was == 'update':
-#             P_minus = updated[len(updated) - 1]['P']
-#             X_minus = updated[len(updated) - 1]['X']
-#             update = _update(X_minus, P_minus, H, R, hdop, lng, lat, vlng, vlat)
-#             lng_to_plot.append(update['X'][0][0])
-#             lat_to_plot.append(update['X'][1][1])
-#             updated.append(update)
-#             last_step_was = 'update'
-#             last_step.append('update')
-#
-#     elif len(measurement) == 4:
-#         acc_east = measurement['acc_east']
-#         acc_north = measurement['acc_north']
-#
-#         if last_step_was == 'predict':
-#             X_minus = predicted[len(predicted) - 1]['X']
-#             P_minus = predicted[len(predicted) - 1]['P']
-#             predict = _predict(X_minus, P_minus, F, Q, B, std_devs, acc_east, acc_north)
-#             predicted.append(predict)
-#             last_step_was = 'predict'
-#             last_step.append('predict')
-#         elif last_step_was == 'update':
-#             X_minus = updated[len(updated) - 1]['X']
-#             P_minus = updated[len(updated) - 1]['P']
-#             predict = _predict(X_minus, P_minus, F, Q, B, std_devs, acc_east, acc_north)
-#             predicted.append(predict)
-#             last_step_was = 'predict'
-#             last_step.append('predict')
-#     else:
-#         print('The length of measurement is not one of 4 or 6.')
-#         break
-#
-# # print('Length of lng is: {}'.format(len(lng_to_plot)))
-# # print('Length of lat is: {}'.format(len(lat_to_plot)))
-# # print('Length of og_lng is: {}'.format(len(og_lng)))
-# # print('Length of og_lat is: {}'.format(len(og_lat)))
-# print('Length of steps is: {}'.format(len(last_step)))
-#
-# plt.plot(og_lng, og_lat, 'bs', lng_to_plot, lat_to_plot, 'ro')
-# plt.show()
-#
-# out = './teszt/szeged_trolli_teszt/nointerpolation/kalmaned.csv'
-# with open(out, 'w') as out:
-#     for ln, la in zip(lng_to_plot, lat_to_plot):
-#         out.write(str(ln) + ',' + str(la) + '\n')
-# out_og = './teszt/szeged_trolli_teszt/nointerpolation/og_coords.csv'
-# with open(out_og, 'w') as out:
-#     for ln, la in zip(og_lng, og_lat):
-#         out.write(str(ln) + ',' + str(la) + '\n')
-#
-# return updated
+    plt.tight_layout()
+    plt.savefig('Kalman-Filter-CA-CovarianceMatrix.png', dpi=72, transparent=True, bbox_inches='tight')
+
+
+def plot_K():
+    fig = plt.figure(figsize=(16, 9))
+    plt.plot(range(len(measurements[0])), Kx, label='Kalman Gain for $x$')
+    plt.plot(range(len(measurements[0])), Ky, label='Kalman Gain for $y$')
+    plt.plot(range(len(measurements[0])), Kdx, label='Kalman Gain for $\dot x$')
+    plt.plot(range(len(measurements[0])), Kdy, label='Kalman Gain for $\dot y$')
+    plt.plot(range(len(measurements[0])), Kddx, label='Kalman Gain for $\ddot x$')
+    plt.plot(range(len(measurements[0])), Kddy, label='Kalman Gain for $\ddot y$')
+
+    plt.xlabel('Filter Step')
+    plt.ylabel('')
+    plt.title('Kalman Gain (the lower, the more the measurement fullfill the prediction)')
+    plt.legend(loc='best', prop={'size': 18})
+
+
+def plot_x():
+    fig = plt.figure(figsize=(16, 16))
+
+    plt.subplot(311)
+    plt.step(range(len(measurements[0])), ddxt, label='$\ddot x$')
+    plt.step(range(len(measurements[0])), ddyt, label='$\ddot y$')
+
+    plt.title('Estimate (Elements from State Vector $x$)')
+    plt.legend(loc='best', prop={'size': 22})
+    plt.ylabel(r'Acceleration $m/s^2$')
+    plt.ylim([-.1, .1])
+
+    plt.subplot(312)
+    plt.step(range(len(measurements[0])), dxt, label='$\dot x$')
+    plt.step(range(len(measurements[0])), dyt, label='$\dot y$')
+
+    plt.ylabel('')
+    plt.legend(loc='best', prop={'size': 22})
+    plt.ylabel(r'Velocity $m/s$')
+    plt.ylim([-1, 1])
+
+    plt.subplot(313)
+    plt.step(range(len(measurements[0])), xt, label='$x$')
+    plt.step(range(len(measurements[0])), yt, label='$y$')
+
+    plt.xlabel('Filter Step')
+    plt.ylabel('')
+    plt.legend(loc='best', prop={'size': 22})
+    plt.ylabel(r'Position $m$')
+    plt.ylim([-1, 1])
+
+    plt.savefig('Kalman-Filter-CA-StateEstimated.png', dpi=72, transparent=True, bbox_inches='tight')
+
+
+def plot_xy():
+    fig = plt.figure(figsize=(16, 16))
+    plt.plot(xt, yt, label='State', alpha=0.5)
+    plt.scatter(xt[0], yt[0], s=100, label='Start', c='g')
+    plt.scatter(xt[-1], yt[-1], s=100, label='Goal', c='r')
+
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    plt.title('Position')
+    plt.legend(loc='best')
+    plt.xlim([-5, 5])
+    plt.ylim([-5, 5])
+    plt.savefig('Kalman-Filter-CA-Position.png', dpi=72, transparent=True, bbox_inches='tight')
