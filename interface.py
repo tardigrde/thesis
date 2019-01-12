@@ -60,7 +60,6 @@ def interpolate_and_trim_gps_data(acc, gps):
     acc_north = acc_lists['acc_north']
     acc_down = acc_lists['acc_down']
 
-
     gps_time = gps_lists['time']
     gps_lng = gps_lists['ln']
     gps_lat = gps_lists['la']
@@ -70,7 +69,7 @@ def interpolate_and_trim_gps_data(acc, gps):
     interpolated_lng = np.interp(acc_time, gps_time, gps_lng).tolist()
     interpolated_lat = np.interp(acc_time, gps_time, gps_lat).tolist()
     interpolated_hdop = np.interp(acc_time, gps_time, gps_hdop).tolist()
-    interpolated_v = np.interp(acc_time, gps_time, gps_v).toList()
+    interpolated_v = np.interp(acc_time, gps_time, gps_v).tolist()
     # interpolated_vlng = np.interp(acc_time, gps_time, gps_vln).tolist()
     # interpolated_vlat = np.interp(acc_time, gps_time, gps_vla).tolist()
     # interpolated_t = np.interp(acc_time, gps_time, gps_t).toList()
@@ -84,7 +83,7 @@ def interpolate_and_trim_gps_data(acc, gps):
             interpolated_lng) == len(interpolated_v) == len(interpolated_hdop)):
         count = len(acc_time)
         print('LEN DOES EQUALS;\nit is: ', count)
-        trim_count = count / 20
+        trim_count = int(round(count / 20, 0))
         print('LEN/20 IS: ', trim_count)
 
         del (acc_time[:trim_count])
@@ -107,190 +106,215 @@ def interpolate_and_trim_gps_data(acc, gps):
         print('NEM')
 
 
+def _predict(X_minus, P_minus, A, Q):
+    """
+    :param X_minus:
+    :param P_minus:
+    :param A:
+    :param Q:
+    :return:
+    """
+    # Project the state ahead
+    x = A * X_minus
 
+    # Project the error covariance ahead
+    P = A * P_minus * A.T + Q
+
+    return x, P
+
+
+def _update(X_predicted, P_predicted, R, I, H, lng, lat, a_east, a_north):
+    # Compute the Kalman Gain
+    S = H * P_predicted * H.T + R
+    K = (P_predicted * H.T) * np.linalg.pinv(S)
+
+    # Update the estimate via z
+    Z = np.array([lng, lat, a_east, a_north]).reshape(H.shape[0], 1)
+    y = Z - (H * X_predicted)  # Innovation or Residual
+    x = X_predicted + (K * y)
+
+    # Update the error covariance
+    P = (I - (K * H)) * P_predicted
+
+    return x, P
 
 
 def get_kalmaned_coordinates(path_acc, path_gps):
+    # http: // geopandas.org /
+
     acc = get_acceleration_data(path_acc)
     gps = get_gps_data(path_gps)
 
-    # http: // geopandas.org /
+    std_devs = _pass_std_devs(acc)
 
     init_params = initial_params.get_initial_params()
+    X = init_params['X']
     P = init_params['P']
     H = init_params['H']
     R = init_params['R']
-    Q = init_params['Q']
     A = init_params['F']
     I = init_params['I']
-
-    std_devs = _pass_std_devs(acc)
+    Q = init_params['Q']
+    # Multiplying Q with std_devs
+    std_dev = (std_devs['std_dev_acc_east'] + std_devs['std_dev_acc_east']) / 2
+    Q = Q * std_dev ** 2
 
     interpolated_attribute_table = interpolate_and_trim_gps_data(acc, gps)
-    table = interpolated_attribute_table()
-
-    """
-    MIAFASZ, MIÉRT KELL A V ÉS MIÉRT A VLNG VLAT??? JA MÁR TUDOM
-    v - DEAL WITH DATA WHERE LOCATION IS 0
-    VLNG, VLAT- NEM KELL MERT NEM ISMERT
-    
-    """
-
     acc_time = interpolated_attribute_table['acc_time']
     acc_east = interpolated_attribute_table['acc_east']
     acc_north = interpolated_attribute_table['acc_north']
     acc_down = interpolated_attribute_table['acc_down']
     gps_lng = interpolated_attribute_table['lng']
     gps_lat = interpolated_attribute_table['lat']
+    # to v out points where speed is 0
     gps_v = interpolated_attribute_table['v']
     gps_hdop = interpolated_attribute_table['hdop']
 
-    # fused = {**acc, **gps}
-    # sorted_timestamps_of_all_measurements = sorted(list(fused.keys()))
-    # print('Length of steps is: {}'.format(len(sorted_timestamps_of_all_measurements)))
+    # Measurements
+    measurements_count = len(acc_time)
+    # allocation
+    x_minus = []
+    P_minus = []
+    x_list = []
+    og_lng = []
+    og_lat = []
+    lng_to_plot = []
+    lat_to_plot = []
+    is_first_step = 1
 
-    m = len(acc_time)  # Measurements
+    for a_east, a_north, lat, lng, v, hdop in zip(acc_east, acc_north, gps_lat, gps_lng, gps_v, gps_hdop):
+        if(v < 1.0):
+            print('yay')
+            continue
+        og_lng.append(lng)
+        og_lat.append(lat)
+        if is_first_step:
+            is_first_step = 0
+            x_minus = np.matrix([[lng, lat, 0.0, 0.0, a_east, a_north]]).T
+            P_minus = P
 
+        # Time Update (Prediction)
+        # ========================
+        x_predicted, P_predicted = _predict(x_minus, P_minus, A, Q)
+
+        sigma_pos = hdop ** 2
+        sigma_acc = std_dev ** 2
+        R = np.matrix([[sigma_pos, 0.0, 0.0, 0.0],
+                       [0.0, sigma_pos, 0.0, 0.0],
+                       [0.0, 0.0, sigma_acc, 0.0],
+                       [0.0, 0.0, 0.0, sigma_acc]])
+
+        # Measurement Update (Correction) AND IT BECOMES LAST STATE
+        x_minus, P_minus = _update(x_predicted, P_predicted, R, I, H, lng, lat, a_east, a_north)
+        x_list.append(x_minus)
+        lng_to_plot.append(float(x_minus[0]))
+        lat_to_plot.append(float(x_minus[1]))
+
+        # Save states for Plotting
+        # savestates(x, Z, P, K)
+    print('END', len(lng_to_plot))
+    plt.plot(og_lng, og_lat, 'bs', lng_to_plot, lat_to_plot, 'ro')
+    plt.show()
+    return x_list
     sp = 1.0  # Sigma for position !!!!! THIS IS HDOP
     px = 0.0  # x Position
     py = 0.0  # y Position
 
-    mpx = np.array(px + sp * np.random.randn(m))
-    mpy = np.array(py + sp * np.random.randn(m))
-
-    # Generate GPS Trigger
-    GPS = np.ndarray(m, dtype='bool')
-    GPS[0] = True
-    # Less new position updates
-    for i in range(1, m):
-        if i % 10 == 0:
-            GPS[i] = True
-        else:
-            mpx[i] = mpx[i - 1]
-            mpy[i] = mpy[i - 1]
-            GPS[i] = False
+    mp_lng = gps_lng
+    mp_lat = gps_lat
 
     # Acceleration --> MOVE THIS TO THE FOR LOOP
-    sa = 0.1  # Sigma for acceleration THIS IS STD_DEV((acc_x+acc_y)/2)
+    sa = 0.1  # Sigma for acceleration !!!! THIS IS STD_DEV((acc_x+acc_y)/2)
     ax = 0.0  # in X
     ay = 0.0  # in Y
 
     # GPS --> MOVE THIS TO FOOR LOOP
-    mx = np.array(ax + sa * np.random.randn(m))
-    my = np.array(ay + sa * np.random.randn(m))
+    ma_e = acc_east
+    ma_n = acc_north
 
-    measurements = np.vstack((mpx, mpy, mx, my))
+    measurements = np.vstack((mp_lng, mp_lat, ma_e, ma_n, gps_hdop))
     print(measurements.shape)
-    return
 
     def plot_m():
-        fig = plt.figure(figsize=(16, 9))
-        plt.subplot(211)
-        plt.step(range(m), mpx, label='$x$')
-        plt.step(range(m), mpy, label='$y$')
-        plt.ylabel(r'Position $m$')
-        plt.title('Measurements')
-        plt.ylim([-10, 10])
+        fig_acc = plt.figure(figsize=(16, 9))
+        plt.step(range(measurements_count), ma_e, label='$a_x$')
+        plt.step(range(measurements_count), ma_n, label='$a_y$')
+        plt.step(range(measurements_count), acc_down, label='$a_z$')
+        plt.ylabel(r'Acceleration $g$')
+        plt.ylim([-2, 2])
         plt.legend(loc='best', prop={'size': 18})
 
-        plt.subplot(212)
-        plt.step(range(m), mx, label='$a_x$')
-        plt.step(range(m), my, label='$a_y$')
-        plt.ylabel(r'Acceleration $m/s^2$')
-        plt.ylim([-1, 1])
-        plt.legend(loc='best', prop={'size': 18})
+        plt.savefig('Kalman-Filter-CA-Acceleration-Measurements.png', dpi=72, transparent=True, bbox_inches='tight')
 
-        plt.savefig('Kalman-Filter-CA-Measurements.png', dpi=72, transparent=True, bbox_inches='tight')
+        fig_gps = plt.figure(figsize=(16, 16))
+        # plt.rcParams['figure.facecolor'] = 'white'
+        # fig_gps.patch.set_facecolor('white')
+        plt.scatter(mp_lng, mp_lat)
+        plt.xlabel(r'LNG $g$')
+        plt.ylabel(r'LAT $g$')
+        plt.grid()
+        plt.savefig('Kalman-Filter-CA-GPS-Measurements.png', dpi=72, transparent=True, bbox_inches='tight')
 
     plot_m()
-
-    # Preallocation for Plotting
-    xt = []
-    yt = []
-    dxt = []
-    dyt = []
-    ddxt = []
-    ddyt = []
-    Zx = []
-    Zy = []
-    Px = []
-    Py = []
-    Pdx = []
-    Pdy = []
-    Pddx = []
-    Pddy = []
-    Kx = []
-    Ky = []
-    Kdx = []
-    Kdy = []
-    Kddx = []
-    Kddy = []
-
-    def savestates(x, Z, P, K):
-        xt.append(float(x[0]))
-        yt.append(float(x[1]))
-        dxt.append(float(x[2]))
-        dyt.append(float(x[3]))
-        ddxt.append(float(x[4]))
-        ddyt.append(float(x[5]))
-        Zx.append(float(Z[0]))
-        Zy.append(float(Z[1]))
-        Px.append(float(P[0, 0]))
-        Py.append(float(P[1, 1]))
-        Pdx.append(float(P[2, 2]))
-        Pdy.append(float(P[3, 3]))
-        Pddx.append(float(P[4, 4]))
-        Pddy.append(float(P[5, 5]))
-        Kx.append(float(K[0, 0]))
-        Ky.append(float(K[1, 0]))
-        Kdx.append(float(K[2, 0]))
-        Kdy.append(float(K[3, 0]))
-        Kddx.append(float(K[4, 0]))
-        Kddy.append(float(K[5, 0]))
-
-        for filterstep in range(m):
-
-            # Time Update (Prediction)
-            # ========================
-            # Project the state ahead
-            x = A * x
-
-            # Project the error covariance ahead
-            P = A * P * A.T + Q
-
-            # Measurement Update (Correction)
-            # ===============================
-            # if there is a GPS Measurement
-            if GPS[filterstep]:
-                # Compute the Kalman Gain
-                S = H * P * H.T + R
-                K = (P * H.T) * np.linalg.pinv(S)
-
-                # Update the estimate via z
-                Z = measurements[:, filterstep].reshape(H.shape[0], 1)
-                y = Z - (H * x)  # Innovation or Residual
-                x = x + (K * y)
-
-                # Update the error covariance
-                P = (I - (K * H)) * P
-
-            # Save states for Plotting
-            savestates(x, Z, P, K)
-
-    # plot_P()
-    #
-    # plot_P2()
-    #
-    # plot_K()
-    #
-    # plot_x()
-    #
-    # plot_xy()
-
-    dist = np.cumsum(np.sqrt(np.diff(xt) ** 2 + np.diff(yt) ** 2))
-    print('Your drifted %dm from origin.' % dist[-1])
+    return
 
 
+# plot_P()
+#
+# plot_P2()
+#
+# plot_K()
+#
+# plot_x()
+#
+# plot_xy()
+
+# dist = np.cumsum(np.sqrt(np.diff(xt) ** 2 + np.diff(yt) ** 2))
+# print('Your drifted %dm from origin.' % dist[-1])
+
+# Preallocation for Plotting
+# xt = []
+# yt = []
+# dxt = []
+# dyt = []
+# ddxt = []
+# ddyt = []
+# Zx = []
+# Zy = []
+# Px = []
+# Py = []
+# Pdx = []
+# Pdy = []
+# Pddx = []
+# Pddy = []
+# Kx = []
+# Ky = []
+# Kdx = []
+# Kdy = []
+# Kddx = []
+# Kddy = []
+#
+# def savestates(x, Z, P, K):
+#     xt.append(float(x[0]))
+#     yt.append(float(x[1]))
+#     dxt.append(float(x[2]))
+#     dyt.append(float(x[3]))
+#     ddxt.append(float(x[4]))
+#     ddyt.append(float(x[5]))
+#     Zx.append(float(Z[0]))
+#     Zy.append(float(Z[1]))
+#     Px.append(float(P[0, 0]))
+#     Py.append(float(P[1, 1]))
+#     Pdx.append(float(P[2, 2]))
+#     Pdy.append(float(P[3, 3]))
+#     Pddx.append(float(P[4, 4]))
+#     Pddy.append(float(P[5, 5]))
+#     Kx.append(float(K[0, 0]))
+#     Ky.append(float(K[1, 0]))
+#     Kdx.append(float(K[2, 0]))
+#     Kdy.append(float(K[3, 0]))
+#     Kddx.append(float(K[4, 0]))
+#     Kddy.append(float(K[5, 0]))
 
 def do_pothole_extraction(acc, gps):
     """
@@ -334,6 +358,7 @@ def do_pothole_extraction(acc, gps):
     fig.savefig('first_potholes_manually_extracted.pdf', dpi=fig.dpi)
     return acc_down
 
+
 """
 --------------------------------------------------------------------------------------------
 """
@@ -360,111 +385,3 @@ def do_pothole_extraction(acc, gps):
     https://towardsdatascience.com/kalman-filter-an-algorithm-for-making-sense-from-the-insights-of-various-sensors-fused-together-ddf67597f35e
     https://gist.github.com/manicai/922976
 """
-
-
-def plot_P():
-    fig = plt.figure(figsize=(16, 9))
-    plt.subplot(211)
-    plt.plot(range(len(measurements[0])), Px, label='$x$')
-    plt.plot(range(len(measurements[0])), Py, label='$y$')
-    plt.title('Uncertainty (Elements from Matrix $P$)')
-    plt.legend(loc='best', prop={'size': 22})
-    plt.subplot(212)
-    plt.plot(range(len(measurements[0])), Pddx, label='$\ddot x$')
-    plt.plot(range(len(measurements[0])), Pddy, label='$\ddot y$')
-
-    plt.xlabel('Filter Step')
-    plt.ylabel('')
-    plt.legend(loc='best', prop={'size': 22})
-
-
-def plot_P2():
-    fig = plt.figure(figsize=(6, 6))
-    im = plt.imshow(P, interpolation="none", cmap=plt.get_cmap('binary'))
-    plt.title('Covariance Matrix $P$ (after %i Filter Steps)' % (m))
-    ylocs, ylabels = plt.yticks()
-    # set the locations of the yticks
-    plt.yticks(np.arange(7))
-    # set the locations and labels of the yticks
-    plt.yticks(np.arange(6), ('$x$', '$y$', '$\dot x$', '$\dot y$', '$\ddot x$', '$\ddot y$'), fontsize=22)
-
-    xlocs, xlabels = plt.xticks()
-    # set the locations of the yticks
-    plt.xticks(np.arange(7))
-    # set the locations and labels of the yticks
-    plt.xticks(np.arange(6), ('$x$', '$y$', '$\dot x$', '$\dot y$', '$\ddot x$', '$\ddot y$'), fontsize=22)
-
-    plt.xlim([-0.5, 5.5])
-    plt.ylim([5.5, -0.5])
-
-    from mpl_toolkits.axes_grid1 import make_axes_locatable
-    divider = make_axes_locatable(plt.gca())
-    cax = divider.append_axes("right", "5%", pad="3%")
-    plt.colorbar(im, cax=cax)
-
-    plt.tight_layout()
-    plt.savefig('Kalman-Filter-CA-CovarianceMatrix.png', dpi=72, transparent=True, bbox_inches='tight')
-
-
-def plot_K():
-    fig = plt.figure(figsize=(16, 9))
-    plt.plot(range(len(measurements[0])), Kx, label='Kalman Gain for $x$')
-    plt.plot(range(len(measurements[0])), Ky, label='Kalman Gain for $y$')
-    plt.plot(range(len(measurements[0])), Kdx, label='Kalman Gain for $\dot x$')
-    plt.plot(range(len(measurements[0])), Kdy, label='Kalman Gain for $\dot y$')
-    plt.plot(range(len(measurements[0])), Kddx, label='Kalman Gain for $\ddot x$')
-    plt.plot(range(len(measurements[0])), Kddy, label='Kalman Gain for $\ddot y$')
-
-    plt.xlabel('Filter Step')
-    plt.ylabel('')
-    plt.title('Kalman Gain (the lower, the more the measurement fullfill the prediction)')
-    plt.legend(loc='best', prop={'size': 18})
-
-
-def plot_x():
-    fig = plt.figure(figsize=(16, 16))
-
-    plt.subplot(311)
-    plt.step(range(len(measurements[0])), ddxt, label='$\ddot x$')
-    plt.step(range(len(measurements[0])), ddyt, label='$\ddot y$')
-
-    plt.title('Estimate (Elements from State Vector $x$)')
-    plt.legend(loc='best', prop={'size': 22})
-    plt.ylabel(r'Acceleration $m/s^2$')
-    plt.ylim([-.1, .1])
-
-    plt.subplot(312)
-    plt.step(range(len(measurements[0])), dxt, label='$\dot x$')
-    plt.step(range(len(measurements[0])), dyt, label='$\dot y$')
-
-    plt.ylabel('')
-    plt.legend(loc='best', prop={'size': 22})
-    plt.ylabel(r'Velocity $m/s$')
-    plt.ylim([-1, 1])
-
-    plt.subplot(313)
-    plt.step(range(len(measurements[0])), xt, label='$x$')
-    plt.step(range(len(measurements[0])), yt, label='$y$')
-
-    plt.xlabel('Filter Step')
-    plt.ylabel('')
-    plt.legend(loc='best', prop={'size': 22})
-    plt.ylabel(r'Position $m$')
-    plt.ylim([-1, 1])
-
-    plt.savefig('Kalman-Filter-CA-StateEstimated.png', dpi=72, transparent=True, bbox_inches='tight')
-
-
-def plot_xy():
-    fig = plt.figure(figsize=(16, 16))
-    plt.plot(xt, yt, label='State', alpha=0.5)
-    plt.scatter(xt[0], yt[0], s=100, label='Start', c='g')
-    plt.scatter(xt[-1], yt[-1], s=100, label='Goal', c='r')
-
-    plt.xlabel('X')
-    plt.ylabel('Y')
-    plt.title('Position')
-    plt.legend(loc='best')
-    plt.xlim([-5, 5])
-    plt.ylim([-5, 5])
-    plt.savefig('Kalman-Filter-CA-Position.png', dpi=72, transparent=True, bbox_inches='tight')

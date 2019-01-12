@@ -124,3 +124,9 @@ teszt/
 *.png
 *.jpg
 *.pdf
+
+# ignoring folders
+old_stuff/
+tests/
+teszt/
+utils/
