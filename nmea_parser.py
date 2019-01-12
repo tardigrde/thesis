@@ -24,7 +24,7 @@ def _transform_vtg(parsed_sentence):
     vel_lng = float(v_ms) * math.cos(t)
     vel_lat = float(v_ms) * math.sin(t)
 
-    vtg = {'t': t, 'v': v_ms, 'vlng': vel_lng, 'vlat': vel_lat}
+    vtg = {'t': t, 'v': int(v_ms), 'vlng': vel_lng, 'vlat': vel_lat}
     return vtg
 
 

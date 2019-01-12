@@ -1,4 +1,4 @@
-from lib.madgwick import MadgwickAHRS
+from lib.madgwick.madgwickahrs import MadgwickAHRS
 from pyquaternion import Quaternion
 import pandas as pd
 import numpy as np
