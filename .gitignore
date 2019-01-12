@@ -126,7 +126,9 @@ teszt/
 *.pdf
 
 # ignoring folders
-old_stuff/
+etc/
 tests/
 teszt/
 utils/
+lib/
+thesis/

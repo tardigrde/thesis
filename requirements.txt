@@ -1,0 +1,10 @@
+pip install matplotlib
+pip install numpy
+pip install pandas
+pip install pyproj
+pip install Geohash
+pip install python-geohash
+pip install pynmea2
+pip install pyquaternion
+conda install geopandas
+conda install shapely

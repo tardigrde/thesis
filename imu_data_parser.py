@@ -1,6 +1,5 @@
-from madgwick.madgwickahrs import MadgwickAHRS
+from lib.madgwick import MadgwickAHRS
 from pyquaternion import Quaternion
-import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import math

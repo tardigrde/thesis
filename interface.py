@@ -6,8 +6,12 @@ from kalman import Kalman
 import nmea_parser
 import imu_data_parser
 import numpy as np
-import initial_params
-
+import initital_parameters
+import pandas as pd
+from shapely.geometry import Point
+import pandas as pd
+import geopandas
+from shapely.geometry import Point
 
 def get_acceleration_data(path_imu):
     imu_list_of_dicts = imu_data_parser.get_imu_dictionary(path_imu)
@@ -147,7 +151,7 @@ def get_kalmaned_coordinates(path_acc, path_gps):
 
     std_devs = _pass_std_devs(acc)
 
-    init_params = initial_params.get_initial_params()
+    init_params = initital_parameters.get_initial_params()
     X = init_params['X']
     P = init_params['P']
     H = init_params['H']
@@ -183,7 +187,7 @@ def get_kalmaned_coordinates(path_acc, path_gps):
     is_first_step = 1
 
     for a_east, a_north, lat, lng, v, hdop in zip(acc_east, acc_north, gps_lat, gps_lng, gps_v, gps_hdop):
-        if(v < 1.0):
+        if (v < 3.0):
             print('yay')
             continue
         og_lng.append(lng)
@@ -213,8 +217,35 @@ def get_kalmaned_coordinates(path_acc, path_gps):
         # Save states for Plotting
         # savestates(x, Z, P, K)
     print('END', len(lng_to_plot))
-    plt.plot(og_lng, og_lat, 'bs', lng_to_plot, lat_to_plot, 'ro')
-    plt.show()
+    fig_gps = plt.figure(figsize=(16, 16))
+    # plt.rcParams['figure.facecolor'] = 'white'
+    # fig_gps.patch.set_facecolor('white')
+    plt.scatter(og_lng, og_lat)
+    plt.scatter(lng_to_plot, lat_to_plot)
+    plt.xlabel(r'LNG $g$')
+    plt.ylabel(r'LAT $g$')
+    plt.grid()
+    plt.savefig('Kalman-Filter-RESULTS1.png', dpi=72, transparent=True, bbox_inches='tight')
+
+    df = pd.DataFrame({
+        'lng': lng_to_plot,
+        'lat': lat_to_plot,
+    })
+    df['Coordinates'] = list(zip(df.lng, df.lat))
+    df['Coordinates'] = df['Coordinates'].apply(Point)
+    crs = {'init': 'epsg:23700'}
+    gdf = geopandas.GeoDataFrame(df, crs=crs, geometry='Coordinates')
+    print(gdf.head())
+    gdf.to_file(driver='ESRI Shapefile', filename="result.shp")
+    gdf.to_file("result2.shp")
+
+
+
+    #print(df.head())
+    geometry = [Point(xy) for xy in zip(df['lng'], df['lng'])]
+
+    # plt.plot(og_lng, og_lat, 'bs', lng_to_plot, lat_to_plot, 'ro')
+    # plt.show()
     return x_list
     sp = 1.0  # Sigma for position !!!!! THIS IS HDOP
     px = 0.0  # x Position

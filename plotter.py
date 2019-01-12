@@ -1,3 +1,7 @@
+"""
+CC-BY-SA2.0 Lizenz
+"""
+
 import matplotlib.pyplot as plt
 
 def plot_P():
