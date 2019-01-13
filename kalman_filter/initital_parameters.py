@@ -2,7 +2,7 @@ import numpy as np
 
 
 def get_initial_params():
-    dt = 1
+    dt = 0.1
 
     I = np.eye(6)
     print(I, I.shape)
@@ -12,7 +12,7 @@ def get_initial_params():
     print('X:\n', X, X.shape)
 
     # initial state covariance(4)
-    P = np.diag([100.0, 100.0, 10.0, 10.0, 1.0, 1.0])
+    P = np.diag([100.0, 100.0, 10.0, 10.0, 2.0, 2.0])
     print('P:\n', P, P.shape)
 
     # F - state transition matrix (4x4)
@@ -47,8 +47,8 @@ def get_initial_params():
     print('R:\n', R, R.shape)
 
     # Q - process noise covariance matrix(6x6)
-    G = np.matrix([[1 / 2.0 * dt ** 2],
-                   [1 / 2.0 * dt ** 2],
+    G = np.matrix([[0.5 * dt ** 2],
+                   [0.5 * dt ** 2],
                    [dt],
                    [dt],
                    [1.0],

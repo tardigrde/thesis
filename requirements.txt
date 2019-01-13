@@ -6,5 +6,7 @@ pip install Geohash
 pip install python-geohash
 pip install pynmea2
 pip install pyquaternion
+pip install peakutils
 conda install geopandas
 conda install shapely
+
