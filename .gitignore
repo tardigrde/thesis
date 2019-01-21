@@ -126,6 +126,9 @@ teszt/
 *.pdf
 
 # ignoring folders
+.idea/
+.ipynb_checkpoints/
+.vscode/
 etc/
 tests/
 teszt/
