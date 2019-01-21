@@ -24,8 +24,9 @@ TODO:
 # path_gps = '*.log'
 # acc, gyro, magnetometer, timestamp inputfile
 
-path_imu = r'D:/PyCharmProjects/thesis/teszt/szeged_trolli_teszt/mlt_20181210_163817_190.csv'
-path_gps = r'D:/PyCharmProjects/thesis/teszt/szeged_trolli_teszt/nmea.log'
+path_imu = r'D:\PyCharmProjects\thesis\teszt\20190115\harmadik\msrmnt.csv'
+# path_imu = r'C:\Users\leven\Desktop\20190115\mlt_20190117_121118_300.csv'
+path_gps = r'D:\PyCharmProjects\thesis\teszt\20190115\harmadik\nmea.log'
 metadata = {
     'created': '20181210_163817',
     'vehicle': "trolleybus",
@@ -35,7 +36,7 @@ metadata = {
 measurement = Measurement(path_imu, path_gps, metadata)
 measurement.preprocess()
 measurement.do_kalman_filtering()
-measurement.segment_data()
+#measurement.segment_data()
 
 
 

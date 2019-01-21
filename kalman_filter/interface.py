@@ -166,6 +166,8 @@ def get_kalmaned_datatable(acc, gps):
     Q = init_params['Q']
     # Multiplying Q with std_devs
     std_dev_acc = (std_devs['std_dev_acc_east'] + std_devs['std_dev_acc_east']) / 2
+    print('stdv', std_dev_acc)
+    std_dev_acc = 0.1
     Q = Q * std_dev_acc
 
     dataset = interpolate_and_trim_data(acc, gps)
@@ -249,11 +251,11 @@ def get_kalmaned_datatable(acc, gps):
     og_df = pd.DataFrame(og_coordinates)
     df = pd.DataFrame(result)
 
-    plot_result(og_coordinates, result)
-    res_shp_path = r"teszt/szeged_trolli_teszt/shapes/"
+    #plot_result(og_coordinates, result)
+    res_shp_path = r"teszt/20190115/harmadik/results/shapes/"
     output_file_path = form_filename_dynamically(res_shp_path)
 
-    # convert_result_to_shp(og_df, r"teszt/szeged_trolli_teszt/shapes/og_coordinates.shp")
+    convert_result_to_shp(og_df, r"teszt/20190115/harmadik/results/shapes/og_coordinates.shp")
     convert_result_to_shp(df, output_file_path)
 
     # plot_m(measurements_count, acc_east, acc_north, acc_down, gps_lng, gps_lat)
@@ -272,8 +274,12 @@ def form_filename_dynamically(dir_path):
             # we want to use the number after the result filename substring
             number = int(file.split('.')[0].split('t')[1])
             result_count.append(number)
+        # elif not 'og_coordinates' in file:
 
-    count = str(max(sorted(result_count)) + 1)
+    if not result_count:
+        count = str(0)
+    else:
+        count = str(max(sorted(result_count)) + 1)
     filepath = dir_path + 'result' + count + '.shp'
     return filepath
 
