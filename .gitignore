@@ -121,6 +121,10 @@ dmypy.json
 *.xml
 
 # ignoring folders
+.ipynb_checkpoints/
+.vscode/
+old_stuff/
+lib/
 teszt/
 etc/
 madgwick/
