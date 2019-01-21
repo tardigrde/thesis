@@ -14,7 +14,7 @@ class Measurement:
 
 
     def do_kalman_filtering(self):
-        self.kalmaned_data_table = interface.get_kalmaned_datatable(self.acc, self.gps, self.dir_path)
+        self.kalmaned_data_table, self.stats = interface.get_kalmaned_datatable(self.acc, self.gps, self.dir_path)
         pass
 
     def segment_data(self):

@@ -85,22 +85,36 @@ def segment_data(acc, gps):
     z_axis = dataset['down']
     lng = dataset['lng']
     lat = dataset['lat']
-    x = np.linspace(0, int(len(z_axis)), len(z_axis) + 1)
-    print(x)
+    # x = np.linspace(0, int(len(z_axis)), len(z_axis) + 1)
+    # print(x)
 
-    # max, _max = find_peaks(z_axis, 0.05)
-    # z_axis_min = [-z for z in z_axis]
-    # min, _m = find_peaks(z_axis_min, -0.05)
-    # print(len(min))
+    # maxx, _max = find_peaks(z_axis, 0.05)
+    # np.diff(maxx)
+    # plt.plot(z_axis)
+    # plt.plot(maxx, z_axis[maxx], "z")
+    # plt.show()
+    # # z_axis_min = [-z for z in z_axis]
+    # # min, _m = find_peaks(z_axis_min, -0.05)
+    # # print(len(min))
+    z_axis_min = [-z for z in z_axis]
 
-    max_indexes = peakutils.indexes(z_axis, thres=0.05)
+    max_indexes = peakutils.indexes(z_axis, thres=1, thres_abs=True)
+    result = []
+    for z in z_axis:
+        if not result:
+            result.append()
+
+    print('SEGMENTING')
+    print(max_indexes)
+
     print(len(max_indexes))
-    print(x[max_indexes], z_axis[max_indexes])
-    plt.figure(figsize=(10, 6))
-    plt.title("peaks")
-    plt.plot(x, z_axis)
-    # plt.plot(x, z_axis, max_indexes)
-    plt.show()
+
+    # # print(x[max_indexes], z_axis[max_indexes])
+    # plt.figure(figsize=(10, 6))
+    # plt.title("peaks")
+    # plt.plot(d_axis, z_axis,lw=0.4, alpha=0.4 )
+    # plt.plot(d_axis[max_indexes], z_axis[max_indexes],marker="o", ls="", ms=3 )
+    # plt.show()
 
     return max, min
 
@@ -255,7 +269,6 @@ def get_kalmaned_datatable(acc, gps, dir_path):
         "og_gps_length": len(gps),
         "kalman_count":kalman_count,
         "unused_count":unused_count,
-        "init_params":init_params,
     }
 
     create_outputs(dir_path, og_coordinates, result, end_count, P_minus, measurements_count,
@@ -263,7 +276,7 @@ def get_kalmaned_datatable(acc, gps, dir_path):
 
     # plt.plot(og_lng, og_lat, 'bs', lng_to_plot, lat_to_plot, 'ro')
     # plt.show()
-    return stats
+    return result, stats
 
 
 def create_outputs(dir_path, og_coordinates, result, end_count, P_minus, measurements_count, e, n, d, lat, lng):
@@ -276,11 +289,9 @@ def create_outputs(dir_path, og_coordinates, result, end_count, P_minus, measure
 
     file_count = form_filename_dynamically(shp_dir)
     shape_file_path = Path(str(shp_dir) + r'\result' + file_count + r'.shp')
-    print('got here 1')
     convert_result_to_shp(df, shape_file_path)
-    print('got here 2')
 
-    do_plotting(fig_dir, file_count, og_coordinates, result, end_count, P_minus, measurements_count, e, n, d, lat, lng)
+    # do_plotting(fig_dir, file_count, og_coordinates, result, end_count, P_minus, measurements_count, e, n, d, lat, lng)
 
 
 def check_folders(dir_path):
@@ -308,7 +319,6 @@ def form_filename_dynamically(dir_path):
         count = str(0)
     else:
         count = str(max(sorted(result_count)) + 1)
-    print('got here')
     return count
 
 
@@ -324,7 +334,6 @@ def convert_result_to_shp(df, out_path):
 
 def do_plotting(fig_dir, file_count, og_coordinates, result, end_count, P, measurements_count, e, n, d, lat, lng):
     start_time = time.time()
-    print('got here 3')
     if not file_count: return
     fig_dir_path = Path(str(fig_dir) + '\\' + file_count)
 
