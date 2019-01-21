@@ -129,8 +129,9 @@ teszt/
 .idea/
 .ipynb_checkpoints/
 .vscode/
+madgwick/
+old_stuff/
 etc/
-tests/
 teszt/
 utils/
 lib/
