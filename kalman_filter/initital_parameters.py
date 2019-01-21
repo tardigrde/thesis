@@ -53,7 +53,8 @@ def get_initial_params():
                    [dt],
                    [1.0],
                    [1.0]])
-    Q = G * G.T
-    print('G:\n', Q, Q.shape)
+    std_dev_acc = 0.053  # This is the std dev of a phone in peace
+    Q = G * G.T * std_dev_acc
+    print('Q:\n', Q, Q.shape)
 
     return {'X': X, 'P': P, 'F': F, 'I': I, 'H': H, 'R': R, 'Q': Q}

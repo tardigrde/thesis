@@ -14,6 +14,7 @@ from os import listdir, makedirs
 from os.path import isfile, join
 from pathlib import Path
 from kalman_filter import plotter
+import time
 
 
 def get_acceleration_data(path_imu):
@@ -148,18 +149,24 @@ def _predict(X_minus, P_minus, A, Q):
     return x, P
 
 
-def _update(X_predicted, P_predicted, I, H, lng, lat, a_east, a_north, hdop, std_dev_acc):
+def _update(X_predicted, P_predicted, I, H, lng, lat, a_east, a_north, a_down, hdop, result):
     sigma_pos = hdop
-    sigma_acc = std_dev_acc
+    sigma_acc = 0.053
 
     x, P, Z, K = kalman.kf_update(X_predicted, P_predicted, I, H, lng, lat, a_east, a_north, sigma_pos, sigma_acc)
 
-    return x, P, Z, K
+    result['lng'].append(float(x[0]))
+    result['lat'].append(float(x[1]))
+    result['vlg'].append(float(x[2]))
+    result['vlt'].append(float(x[3]))
+    result['east'].append(float(x[4]))
+    result['north'].append(float(x[5]))
+    result['down'].append(float(a_down))
+
+    return x, P, Z, K, result
 
 
 def get_kalmaned_datatable(acc, gps, dir_path):
-    std_devs = _pass_std_devs(acc)
-
     init_params = initital_parameters.get_initial_params()
     X = init_params['X']
     P = init_params['P']
@@ -168,15 +175,13 @@ def get_kalmaned_datatable(acc, gps, dir_path):
     A = init_params['F']
     I = init_params['I']
     Q = init_params['Q']
+
     # Multiplying Q with std_devs
-    std_dev_acc = (std_devs['std_dev_acc_east'] + std_devs['std_dev_acc_east']) / 2
-    print('stdv', std_dev_acc)
-    std_dev_acc = 0.1
-    Q = Q * std_dev_acc
+
+
 
     dataset = interpolate_and_trim_data(acc, gps)
     d = dataset
-    # Measurements
 
     og_coordinates = {
         'lng': d['lng'],
@@ -202,10 +207,9 @@ def get_kalmaned_datatable(acc, gps, dir_path):
     kalman_count = 0
     is_first_step = 1
 
-    for time, a_east, a_north, a_down, lat, lng, v, hdop in zip(d['time'], d['east'], d['north'], d['down'], d['lat'],
-                                                                d['lng'], d['vel'],
-                                                                d['hdop']):
-        # If velocity is lower than 1.5 m/s, we skipp the step
+    for time, a_east, a_north, a_down, lat, lng, v, hdop in zip(d['time'], d['east'], d['north'], d['down'],
+                                                                d['lat'], d['lng'], d['vel'], d['hdop']):
+        # If velocity is lower than 2 m/s, we skipp the step
         if (v <= 2):
             if unused_count >= 200:
                 measurement_usage[time] = 1
@@ -234,51 +238,53 @@ def get_kalmaned_datatable(acc, gps, dir_path):
         x_predicted, P_predicted = _predict(x_minus, P_minus, A, Q)
 
         # Measurement Update (Correction)
-        x_minus, P_minus, Z, K = _update(x_predicted, P_predicted, I, H, lng, lat, a_east, a_north, hdop, std_dev_acc)
+        x_minus, P_minus, Z, K, res = _update(x_predicted, P_predicted, I, H, lng, lat, a_east, a_north, a_down, hdop, result)
+        result = res
 
         x_list.append(x_minus)
 
-        result['lng'].append(float(x_minus[0]))
-        result['lat'].append(float(x_minus[1]))
-        result['vlg'].append(float(x_minus[2]))
-        result['vlt'].append(float(x_minus[3]))
-        result['east'].append(float(x_minus[4]))
-        result['north'].append(float(x_minus[5]))
-        result['down'].append(float(a_down))
-
         # Save states for Plotting
         # savestates(x_minus, Z, P_minus, K)
-    print('END', len(result['lng']))
-    print('kalman count', kalman_count)
     end_count = len(result['lng'])
+    print('END', end_count)
+    print('kalman count', kalman_count)
 
-    create_outputs(dir_path, og_coordinates, result, end_count, P_minus, measurements_count, d['east'], d['north'],
-                   d['down'], d['lat'], d['lng'])
+    stats ={
+        "og_length": measurements_count,
+        "used_msrmnts" :end_count,
+        "og_gps_length": len(gps),
+        "kalman_count":kalman_count,
+        "unused_count":unused_count,
+        "init_params":init_params,
+    }
+
+    create_outputs(dir_path, og_coordinates, result, end_count, P_minus, measurements_count,
+                   d['east'], d['north'], d['down'], d['lat'], d['lng'])
 
     # plt.plot(og_lng, og_lat, 'bs', lng_to_plot, lat_to_plot, 'ro')
     # plt.show()
-    return result
+    return stats
 
 
 def create_outputs(dir_path, og_coordinates, result, end_count, P_minus, measurements_count, e, n, d, lat, lng):
     og_df = pd.DataFrame(og_coordinates)
     df = pd.DataFrame(result)
     shp_dir, fig_dir = check_folders(dir_path)
-    og_coords_path = Path(shp_dir + r'\og_coordinates.shp')
+    og_coords_path = Path(str(shp_dir) + r'\og_coordinates.shp')
 
     if not og_coords_path.is_file(): convert_result_to_shp(og_df, og_coords_path)
 
     file_count = form_filename_dynamically(shp_dir)
-    shape_file_path = shp_dir + r'\result' + file_count + r'.shp'
+    shape_file_path = Path(str(shp_dir) + r'\result' + file_count + r'.shp')
     convert_result_to_shp(df, shape_file_path)
 
     do_plotting(fig_dir, file_count, og_coordinates, result, end_count, P_minus, measurements_count, e, n, d, lat, lng)
 
 
 def check_folders(dir_path):
-    output_dir_path = Path(dir_path + r'\results')
-    shapes_dir = Path(output_dir_path + r'\shapes')
-    figures_dir = Path(output_dir_path + r'\figures')
+    output_dir_path = Path(str(dir_path) + r'\results')
+    shapes_dir = Path(str(output_dir_path) + r'\shapes')
+    figures_dir = Path(str(output_dir_path) + r'\figures')
 
     if not output_dir_path.is_dir(): makedirs(output_dir_path)
     if not shapes_dir.is_dir(): makedirs(shapes_dir)
@@ -300,8 +306,7 @@ def form_filename_dynamically(dir_path):
         count = str(0)
     else:
         count = str(max(sorted(result_count)) + 1)
-    filepath = dir_path + 'result' + count + '.shp'
-    return filepath
+    return count
 
 
 def convert_result_to_shp(df, out_path):
@@ -313,6 +318,7 @@ def convert_result_to_shp(df, out_path):
 
 
 def do_plotting(fig_dir, file_count, og_coordinates, result, end_count, P, measurements_count, e, n, d, lat, lng):
+    start_time = time.time()
     if not file_count: return
     fig_dir_path = fig_dir + '\\' + file_count
 
@@ -331,7 +337,13 @@ def do_plotting(fig_dir, file_count, og_coordinates, result, end_count, P, measu
     plotter.plot_x(fig_dir_path, end_count)
 
     plotter.plot_xy(fig_dir_path)
+    print("Plotting took %s seconds " % (time.time() - start_time))
 
+
+# STD_DEV SHOULD ONLY BE COUNTED ON A PHONE IN PEACE!!!
+# std_devs = _pass_std_devs(acc)
+# std_dev_acc = (std_devs['std_dev_acc_east'] + std_devs['std_dev_acc_east']) / 2
+# print('stdv', std_dev_acc)
 
 # dist = np.cumsum(np.sqrt(np.diff(xt) ** 2 + np.diff(yt) ** 2))
 # print('Your drifted %dm from origin.' % dist[-1])

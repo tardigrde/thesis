@@ -6,7 +6,7 @@ THIS STARTS THE APPLICATION. IT IS A BLACK BOX NOW.
 """
 
 from os import listdir
-from os.path import isfile, join
+from os.path import isfile, join, isdir
 from pathlib import Path
 from kalman_filter.measurement import Measurement
 import time
@@ -31,20 +31,20 @@ CURRENT_TEST_SET = r'\harmadik'
 
 dir_path = DATA_BASE_DIR + CURRENT_TEST_RUN + CURRENT_TEST_SET
 
-input_dir_path = Path(dir_path + r'\measurement')
+input_dir_path = Path(dir_path + '\measurement')
 
 
 
 date_of_measurement = ''
-if input_dir_path.isdir():
+if input_dir_path.is_dir():
     only_files = [f for f in listdir(input_dir_path) if isfile(join(input_dir_path, f))]
     for file in only_files:
         if '.csv' in file:
-            path_imu = input_dir_path + '\\' + file
+            path_imu = Path(str(input_dir_path)+ '\\' + file)
             date_of_measurement = file.split('.')[0]
             print('Path of the IMU file: ', path_imu)
         elif '.log' in file:
-            path_gps = input_dir_path + '\\' + file
+            path_gps = Path(str(input_dir_path) + '\\' + file)
             print('Path of the GPS file: ', path_gps)
 
 # path_imu = r'C:\Users\leven\Desktop\20190115\mlt_20190117_121118_300.csv'
@@ -57,9 +57,9 @@ if input_dir_path.isdir():
 try:
     measurement = Measurement(path_imu, path_gps, dir_path)
     measurement.preprocess()
-    stats = measurement.get_stats()
     measurement.do_kalman_filtering()
     #measurement.segment_data()
+    # stats = measurement.get_stats()
 except Exception as e:
     print('An error occured:', e)
 
