@@ -58,7 +58,7 @@ def plot_result(fig_dir, og, res):
     TODO:
     -   make this dynamic so new files are created on every run
     """
-    plt.savefig(fig_dir +r'\Kalman-Filter-RESULTS.png', dpi=72, transparent=True, bbox_inches='tight')
+    plt.savefig(str(fig_dir) +r'\Kalman-Filter-RESULTS.png', dpi=72, transparent=True, bbox_inches='tight')
 
 
 def plot_m(fig_dir, measurements_count, ma_e, ma_n, acc_down, mp_lng, mp_lat):
@@ -70,14 +70,14 @@ def plot_m(fig_dir, measurements_count, ma_e, ma_n, acc_down, mp_lng, mp_lat):
     plt.ylim([-2, 2])
     plt.legend(loc='best', prop={'size': 18})
 
-    plt.savefig(fig_dir + r'\Kalman-Filter-CA-Acceleration-Measurements.png', dpi=72, transparent=True, bbox_inches='tight')
+    plt.savefig(str(fig_dir) + r'\Kalman-Filter-CA-Acceleration-Measurements.png', dpi=72, transparent=True, bbox_inches='tight')
 
     fig_gps = plt.figure(figsize=(16, 16))
     plt.scatter(mp_lng, mp_lat)
     plt.xlabel(r'LNG $g$')
     plt.ylabel(r'LAT $g$')
     plt.grid()
-    plt.savefig(fig_dir + r'\Kalman-Filter-CA-GPS-Measurements.png', dpi=72, transparent=True, bbox_inches='tight')
+    plt.savefig(str(fig_dir) + r'\Kalman-Filter-CA-GPS-Measurements.png', dpi=72, transparent=True, bbox_inches='tight')
 
 
 def plot_P(fig_dir, end_count):
@@ -94,8 +94,8 @@ def plot_P(fig_dir, end_count):
     plt.xlabel('Filter Step')
     plt.ylabel('')
     plt.legend(loc='best', prop={'size': 22})
-    plt.show()
-    plt.savefig(fig_dir + r'\Kalman-Filter-CA-XP.png', dpi=72, transparent=True, bbox_inches='tight')
+    #plt.show()
+    plt.savefig(str(fig_dir) + r'\Kalman-Filter-CA-XP.png', dpi=72, transparent=True, bbox_inches='tight')
 
 
 def plot_P2(fig_dir, P, end_count):
@@ -123,7 +123,7 @@ def plot_P2(fig_dir, P, end_count):
     plt.colorbar(im, cax=cax)
 
     plt.tight_layout()
-    plt.savefig(fig_dir + r'\Kalman-Filter-CA-CovarianceMatrix.png', dpi=72, transparent=True, bbox_inches='tight')
+    plt.savefig(str(fig_dir) + r'\Kalman-Filter-CA-CovarianceMatrix.png', dpi=72, transparent=True, bbox_inches='tight')
 
 
 def plot_K(fig_dir, end_count):
@@ -139,7 +139,7 @@ def plot_K(fig_dir, end_count):
     plt.ylabel('')
     plt.title('Kalman Gain (the lower, the more the measurement fullfill the prediction)')
     plt.legend(loc='best', prop={'size': 18})
-    plt.savefig(fig_dir + r'\Kalman-Filter-CA-KG.png', dpi=72, transparent=True, bbox_inches='tight')
+    plt.savefig(str(fig_dir) + r'\Kalman-Filter-CA-KG.png', dpi=72, transparent=True, bbox_inches='tight')
 
 
 def plot_x(fig_dir, end_count):
@@ -173,7 +173,7 @@ def plot_x(fig_dir, end_count):
     plt.ylabel(r'Position $m$')
     plt.ylim([-1, 1])
 
-    plt.savefig(fig_dir + '\Kalman-Filter-CA-StateEstimated.png', dpi=72, transparent=True, bbox_inches='tight')
+    plt.savefig(str(fig_dir) + '\Kalman-Filter-CA-StateEstimated.png', dpi=72, transparent=True, bbox_inches='tight')
 
 
 def plot_xy(fig_dir):
@@ -186,4 +186,4 @@ def plot_xy(fig_dir):
     plt.ylabel('Y')
     plt.title('Position')
     plt.legend(loc='best')
-    plt.savefig(fig_dir + '\Kalman-Filter-CA-Position.png', dpi=72, transparent=True, bbox_inches='tight')
+    plt.savefig(str(fig_dir) + '\Kalman-Filter-CA-Position.png', dpi=72, transparent=True, bbox_inches='tight')

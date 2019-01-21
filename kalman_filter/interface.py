@@ -244,7 +244,7 @@ def get_kalmaned_datatable(acc, gps, dir_path):
         x_list.append(x_minus)
 
         # Save states for Plotting
-        # savestates(x_minus, Z, P_minus, K)
+        plotter.savestates(x_minus, Z, P_minus, K)
     end_count = len(result['lng'])
     print('END', end_count)
     print('kalman count', kalman_count)
@@ -276,7 +276,9 @@ def create_outputs(dir_path, og_coordinates, result, end_count, P_minus, measure
 
     file_count = form_filename_dynamically(shp_dir)
     shape_file_path = Path(str(shp_dir) + r'\result' + file_count + r'.shp')
+    print('got here 1')
     convert_result_to_shp(df, shape_file_path)
+    print('got here 2')
 
     do_plotting(fig_dir, file_count, og_coordinates, result, end_count, P_minus, measurements_count, e, n, d, lat, lng)
 
@@ -293,7 +295,7 @@ def check_folders(dir_path):
 
 
 def form_filename_dynamically(dir_path):
-    onlyfiles = [f for f in listdir(dir_path) if isfile(join(dir_path, f))]
+    onlyfiles = [f for f in listdir(str(dir_path)) if isfile(join(str(dir_path), f))]
     result_count = []
     for file in onlyfiles:
         if 'result' in file and '.shp' in file and 'result.shp' not in file:
@@ -306,21 +308,25 @@ def form_filename_dynamically(dir_path):
         count = str(0)
     else:
         count = str(max(sorted(result_count)) + 1)
+    print('got here')
     return count
 
 
 def convert_result_to_shp(df, out_path):
+    start_time = time.time()
     df['Coordinates'] = list(zip(df.lng, df.lat))
     df['Coordinates'] = df['Coordinates'].apply(Point)
     crs = {'init': 'epsg:23700'}
     gdf = geopandas.GeoDataFrame(df, crs=crs, geometry='Coordinates')
     gdf.to_file(driver='ESRI Shapefile', filename=out_path)
+    print("Writing shapes took %s seconds " % (time.time() - start_time))
 
 
 def do_plotting(fig_dir, file_count, og_coordinates, result, end_count, P, measurements_count, e, n, d, lat, lng):
     start_time = time.time()
+    print('got here 3')
     if not file_count: return
-    fig_dir_path = fig_dir + '\\' + file_count
+    fig_dir_path = Path(str(fig_dir) + '\\' + file_count)
 
     if not fig_dir_path.is_dir(): makedirs(fig_dir_path)
 
@@ -334,7 +340,7 @@ def do_plotting(fig_dir, file_count, og_coordinates, result, end_count, P, measu
 
     plotter.plot_K(fig_dir_path, end_count)
 
-    plotter.plot_x(fig_dir_path, end_count)
+    # plotter.plot_x(fig_dir_path, end_count)
 
     plotter.plot_xy(fig_dir_path)
     print("Plotting took %s seconds " % (time.time() - start_time))
