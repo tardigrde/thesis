@@ -121,6 +121,7 @@ dmypy.json
 *.xml
 
 # ignoring folders
+.idea/
 .ipynb_checkpoints/
 .vscode/
 old_stuff/
