@@ -10,6 +10,10 @@ from scipy.misc import electrocardiogram
 from scipy.signal import find_peaks
 import peakutils
 from shapely.geometry import Point
+from os import listdir, makedirs
+from os.path import isfile, join
+from pathlib import Path
+from kalman_filter import plotter
 
 
 def get_acceleration_data(path_imu):
@@ -153,7 +157,7 @@ def _update(X_predicted, P_predicted, I, H, lng, lat, a_east, a_north, hdop, std
     return x, P, Z, K
 
 
-def get_kalmaned_datatable(acc, gps):
+def get_kalmaned_datatable(acc, gps, dir_path):
     std_devs = _pass_std_devs(acc)
 
     init_params = initital_parameters.get_initial_params()
@@ -198,8 +202,8 @@ def get_kalmaned_datatable(acc, gps):
     kalman_count = 0
     is_first_step = 1
 
-    for time, a_east, a_north, a_down, lng, lat, v, hdop in zip(d['time'], d['east'], d['north'], d['down'], d['lng'],
-                                                                d['lat'], d['vel'],
+    for time, a_east, a_north, a_down, lat, lng, v, hdop in zip(d['time'], d['east'], d['north'], d['down'], d['lat'],
+                                                                d['lng'], d['vel'],
                                                                 d['hdop']):
         # If velocity is lower than 1.5 m/s, we skipp the step
         if (v <= 2):
@@ -248,25 +252,41 @@ def get_kalmaned_datatable(acc, gps):
     print('kalman count', kalman_count)
     end_count = len(result['lng'])
 
-    og_df = pd.DataFrame(og_coordinates)
-    df = pd.DataFrame(result)
+    create_outputs(dir_path, og_coordinates, result, end_count, P_minus, measurements_count, d['east'], d['north'],
+                   d['down'], d['lat'], d['lng'])
 
-    #plot_result(og_coordinates, result)
-    res_shp_path = r"teszt/20190115/harmadik/results/shapes/"
-    output_file_path = form_filename_dynamically(res_shp_path)
-
-    convert_result_to_shp(og_df, r"teszt/20190115/harmadik/results/shapes/og_coordinates.shp")
-    convert_result_to_shp(df, output_file_path)
-
-    # plot_m(measurements_count, acc_east, acc_north, acc_down, gps_lng, gps_lat)
     # plt.plot(og_lng, og_lat, 'bs', lng_to_plot, lat_to_plot, 'ro')
     # plt.show()
     return result
 
 
+def create_outputs(dir_path, og_coordinates, result, end_count, P_minus, measurements_count, e, n, d, lat, lng):
+    og_df = pd.DataFrame(og_coordinates)
+    df = pd.DataFrame(result)
+    shp_dir, fig_dir = check_folders(dir_path)
+    og_coords_path = Path(shp_dir + r'\og_coordinates.shp')
+
+    if not og_coords_path.is_file(): convert_result_to_shp(og_df, og_coords_path)
+
+    file_count = form_filename_dynamically(shp_dir)
+    shape_file_path = shp_dir + r'\result' + file_count + r'.shp'
+    convert_result_to_shp(df, shape_file_path)
+
+    do_plotting(fig_dir, file_count, og_coordinates, result, end_count, P_minus, measurements_count, e, n, d, lat, lng)
+
+
+def check_folders(dir_path):
+    output_dir_path = Path(dir_path + r'\results')
+    shapes_dir = Path(output_dir_path + r'\shapes')
+    figures_dir = Path(output_dir_path + r'\figures')
+
+    if not output_dir_path.is_dir(): makedirs(output_dir_path)
+    if not shapes_dir.is_dir(): makedirs(shapes_dir)
+    if not figures_dir.is_dir(): makedirs(figures_dir)
+    return shapes_dir, figures_dir
+
+
 def form_filename_dynamically(dir_path):
-    from os import listdir
-    from os.path import isfile, join
     onlyfiles = [f for f in listdir(dir_path) if isfile(join(dir_path, f))]
     result_count = []
     for file in onlyfiles:
@@ -292,39 +312,25 @@ def convert_result_to_shp(df, out_path):
     gdf.to_file(driver='ESRI Shapefile', filename=out_path)
 
 
-def plot_result(og, res):
-    fig_gps = plt.figure(figsize=(16, 16))
-    plt.scatter(res['lng'], res['lat'])
-    plt.scatter(og['lng'], og['lat'])
-    plt.xlabel(r'LNG $g$')
-    plt.ylabel(r'LAT $g$')
-    plt.grid()
-    """
-    TODO:
-    -   make this dynamic so new files are created on every run
-    """
-    plt.savefig('teszt\szeged_trolli_teszt\Kalman-Filter-RESULTS.png', dpi=72, transparent=True, bbox_inches='tight')
+def do_plotting(fig_dir, file_count, og_coordinates, result, end_count, P, measurements_count, e, n, d, lat, lng):
+    if not file_count: return
+    fig_dir_path = fig_dir + '\\' + file_count
 
+    if not fig_dir_path.is_dir(): makedirs(fig_dir_path)
 
-def plot_m(measurements_count, ma_e, ma_n, acc_down, mp_lng, mp_lat):
-    fig_acc = plt.figure(figsize=(16, 9))
-    plt.step(range(measurements_count), ma_e, label='$a_x$')
-    plt.step(range(measurements_count), ma_n, label='$a_y$')
-    plt.step(range(measurements_count), acc_down, label='$a_z$')
-    plt.ylabel(r'Acceleration $g$')
-    plt.ylim([-2, 2])
-    plt.legend(loc='best', prop={'size': 18})
+    plotter.plot_result(fig_dir_path, og_coordinates, result)
 
-    plt.savefig('Kalman-Filter-CA-Acceleration-Measurements.png', dpi=72, transparent=True, bbox_inches='tight')
+    plotter.plot_m(fig_dir_path, measurements_count, e, n, d, lat, lng)
 
-    fig_gps = plt.figure(figsize=(16, 16))
-    # plt.rcParams['figure.facecolor'] = 'white'
-    # fig_gps.patch.set_facecolor('white')
-    plt.scatter(mp_lng, mp_lat)
-    plt.xlabel(r'LNG $g$')
-    plt.ylabel(r'LAT $g$')
-    plt.grid()
-    plt.savefig('Kalman-Filter-CA-GPS-Measurements.png', dpi=72, transparent=True, bbox_inches='tight')
+    plotter.plot_P(fig_dir_path, end_count)
+
+    plotter.plot_P2(fig_dir_path, P, end_count)
+
+    plotter.plot_K(fig_dir_path, end_count)
+
+    plotter.plot_x(fig_dir_path, end_count)
+
+    plotter.plot_xy(fig_dir_path)
 
 
 # dist = np.cumsum(np.sqrt(np.diff(xt) ** 2 + np.diff(yt) ** 2))
