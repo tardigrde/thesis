@@ -121,6 +121,9 @@ dmypy.json
 *.xml
 
 #ignoring folders
+.idea/
+.vscode/
+old_stuff/
 teszt/
 etc/
 madgwick/
