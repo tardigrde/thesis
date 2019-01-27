@@ -18,8 +18,7 @@ class Measurement:
         pass
 
     def segment_data(self):
-        pass
-        max, min = interface.segment_data(self.acc, self.gps)
+        n = interface.segment_data(self.acc, self.gps)
         # print(len(segmented_z_axis))
 
     def get_stats(self):

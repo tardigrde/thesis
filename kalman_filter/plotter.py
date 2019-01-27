@@ -58,7 +58,7 @@ def plot_result(fig_dir, og, res):
     TODO:
     -   make this dynamic so new files are created on every run
     """
-    plt.savefig(str(fig_dir) +r'\Kalman-Filter-RESULTS.png', dpi=72, transparent=True, bbox_inches='tight')
+    plt.savefig(str(fig_dir) + r'\Kalman-Filter-RESULTS.png', dpi=72, transparent=True, bbox_inches='tight')
 
 
 def plot_m(fig_dir, measurements_count, ma_e, ma_n, acc_down, mp_lng, mp_lat):
@@ -70,7 +70,8 @@ def plot_m(fig_dir, measurements_count, ma_e, ma_n, acc_down, mp_lng, mp_lat):
     plt.ylim([-2, 2])
     plt.legend(loc='best', prop={'size': 18})
 
-    plt.savefig(str(fig_dir) + r'\Kalman-Filter-CA-Acceleration-Measurements.png', dpi=72, transparent=True, bbox_inches='tight')
+    plt.savefig(str(fig_dir) + r'\Kalman-Filter-CA-Acceleration-Measurements.png', dpi=72, transparent=True,
+                bbox_inches='tight')
 
     fig_gps = plt.figure(figsize=(16, 16))
     plt.scatter(mp_lng, mp_lat)
@@ -94,7 +95,7 @@ def plot_P(fig_dir, end_count):
     plt.xlabel('Filter Step')
     plt.ylabel('')
     plt.legend(loc='best', prop={'size': 22})
-    #plt.show()
+    # plt.show()
     plt.savefig(str(fig_dir) + r'\Kalman-Filter-CA-XP.png', dpi=72, transparent=True, bbox_inches='tight')
 
 
@@ -187,3 +188,20 @@ def plot_xy(fig_dir):
     plt.title('Position')
     plt.legend(loc='best')
     plt.savefig(str(fig_dir) + '\Kalman-Filter-CA-Position.png', dpi=72, transparent=True, bbox_inches='tight')
+
+
+def plot_xyz_acc(acc):
+    ma_e = acc['acc_east']
+    ma_n = acc['acc_north']
+    ma_d = acc['acc_down']
+    measurements_count = len(ma_e)
+    fig_acc = plt.figure(figsize=(16, 9))
+    plt.step(range(measurements_count), ma_e, label='$a_x$')
+    plt.step(range(measurements_count), ma_n, label='$a_y$')
+    plt.step(range(measurements_count), ma_d, label='$a_z$')
+    plt.ylabel(r'Acceleration $g$')
+    plt.ylim([-2, 2])
+    plt.legend(loc='best', prop={'size': 18})
+    plt.show()
+
+    # plt.savefig(str(fig_dir) + r'\Kalman-Filter-CA-Acceleration-Measurements.png', dpi=72, transparent=True, bbox_inches = 'tight')

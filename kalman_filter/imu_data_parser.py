@@ -1,5 +1,6 @@
 from lib.madgwick.madgwickahrs import MadgwickAHRS
 from pyquaternion import Quaternion
+from kalman_filter import plotter, interface
 import pandas as pd
 import numpy as np
 import math
@@ -27,7 +28,7 @@ def _milisecondify(t):
 def _calculate_true_acceleration(acceleration):
     acc_east = acceleration[0]
     acc_north = acceleration[1]
-    acc_down = acceleration[2]
+    acc_down = acceleration[2] -1
     magnetic_declination_offset = 4.96666667  # CSONGRÁD MEGYE
 
     sin_magnetic_declination = math.sin(math.radians(magnetic_declination_offset))
@@ -93,6 +94,8 @@ def _iterate_through_table_and_do_calculations(df):
         list_of_dicts_of_imu_data.append(
             {'time': int(time[i]), 'acc_east': tru_acc['east'], 'acc_north': tru_acc['north'], 'acc_down': tru_acc['down']}
         )
+    acc = interface.pass_acc_list(imu_data_dict)
+    #plotter.plot_xyz_acc(acc)
     return imu_data_dict
 
 

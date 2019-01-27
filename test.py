@@ -34,6 +34,9 @@ dir_path = DATA_BASE_DIR + CURRENT_TEST_RUN + CURRENT_TEST_SET
 
 input_dir_path = Path(dir_path + '\measurement')
 
+path_imu = ''
+path_gps = ''
+
 date_of_measurement = ''
 if input_dir_path.is_dir():
     only_files = [f for f in listdir(input_dir_path) if isfile(join(input_dir_path, f))]
@@ -53,22 +56,21 @@ if input_dir_path.is_dir():
 
 
 stats = {}
-try:
-    measurement = Measurement(path_imu, path_gps, dir_path)
-    measurement.preprocess()
-    #measurement.do_kalman_filtering()
-    measurement.segment_data()
-    stats = measurement.get_stats()
-except Exception as e:
-    print('An error occured:', e)
+
+measurement = Measurement(path_imu, path_gps, dir_path)
+measurement.preprocess()
+# measurement.do_kalman_filtering()
+measurement.segment_data()
+# stats = measurement.get_stats()
+# except Exception as e:
+#     print('An error occured:', e)
 
 stats["created"] = date_of_measurement
 stats["vehicle"] = "Ford Fiesta"
 stats["intent"] = "development"
 
-
 path_stats = Path(str(dir_path) + r'\results\metadata.txt')
-with open(path_stats, 'w') as out:
-    out.write(json.dumps(stats, indent=4))
+# with open(path_stats, 'w') as out:
+#     out.write(json.dumps(stats, indent=4))
 
 print("--- %s seconds ---" % (time.time() - start_time))

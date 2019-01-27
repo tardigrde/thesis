@@ -15,6 +15,8 @@ from os.path import isfile, join
 from pathlib import Path
 from kalman_filter import plotter
 import time
+import json
+import copy
 
 
 def get_acceleration_data(path_imu):
@@ -80,43 +82,155 @@ def find_max_peaks(z_axis, height):
     return peaks, _
 
 
+def do_hamming(dataset, n):
+    window = np.hamming(n)
+    if len(dataset) != n:
+        window = np.hamming(len(dataset))
+    windowed_data = np.multiply(dataset, window)
+    # plt.plot(windowed_data)
+    # plt.title("Hamming window")
+    # plt.ylabel("Amplitude")
+    # plt.xlabel("Sample")
+    # plt.show()
+    return windowed_data
+
+
+def do_splitting(axis, hamming=True, window_size=100):
+    n = window_size
+    overlap_size = m = round(n / 4)
+    if hamming == False:
+        windows = [axis[i:i + n] for i in range(0, len(axis), n - m)]
+    else:
+        windows = [do_hamming(axis[i:i + n], n) for i in range(0, len(axis), n - m)]
+    return windows
+
+
 def segment_data(acc, gps):
+    #https://docs.scipy.org/doc/numpy-1.14.5/reference/generated/numpy.fft.fft.html#numpy.fft.fft
+    import time
+    start_time = time.time()
+
     dataset = interpolate_and_trim_data(acc, gps)
-    z_axis = dataset['down']
+    east = dataset['east']
+    north = dataset['north']
+    down = dataset['down']
+    # time = dataset['time']
     lng = dataset['lng']
     lat = dataset['lat']
-    # x = np.linspace(0, int(len(z_axis)), len(z_axis) + 1)
-    # print(x)
 
-    # maxx, _max = find_peaks(z_axis, 0.05)
-    # np.diff(maxx)
-    # plt.plot(z_axis)
-    # plt.plot(maxx, z_axis[maxx], "z")
-    # plt.show()
-    # # z_axis_min = [-z for z in z_axis]
-    # # min, _m = find_peaks(z_axis_min, -0.05)
-    # # print(len(min))
-    z_axis_min = [-z for z in z_axis]
+    east_subsets = do_splitting(east)
+    north_subsets = do_splitting(north)
+    down_subsets = do_splitting(down)
+    lng_subsets = do_splitting(lng, False)
+    lat_subsets = do_splitting(lat, False)
+    windows = {
+        "east": east_subsets,
+        "north": north_subsets,
+        "down": down_subsets,
+        "lng": lng_subsets,
+        "lat": lat_subsets,
+    }
 
-    max_indexes = peakutils.indexes(z_axis, thres=1, thres_abs=True)
-    result = []
-    for z in z_axis:
-        if not result:
-            result.append()
 
-    print('SEGMENTING')
-    print(max_indexes)
+    st = calculate_stats(windows)
+    potholes = choose_potholes(st)
+    # print(st[0])
+    # print(json.dumps(st[0], indent=4, sort_keys=True))
+    # print(json.dumps(st[200], indent=4, sort_keys=True))
+    # print(json.dumps(st[400], indent=4, sort_keys=True))
+    # max_indexes = peakutils.indexes(down, thres=1, thres_abs=True)
+    print("--- Segmentation took %s seconds ---" % (time.time() - start_time))
+    return windows
 
-    print(len(max_indexes))
 
-    # # print(x[max_indexes], z_axis[max_indexes])
-    # plt.figure(figsize=(10, 6))
-    # plt.title("peaks")
-    # plt.plot(d_axis, z_axis,lw=0.4, alpha=0.4 )
-    # plt.plot(d_axis[max_indexes], z_axis[max_indexes],marker="o", ls="", ms=3 )
-    # plt.show()
+def choose_potholes(stats):
+    #TODO:
+    # - high pass filter
+    # -
+    down_means = []
 
-    return max, min
+    bad_segments = {
+        "lng": [],
+        "lat": [],
+        "class": [],
+    }
+    counter = 0
+    for st in stats:
+        for ln, lt in zip(st['lng'], st['lat']):
+            bad_segments['lng'].append(ln)
+            bad_segments['lat'].append(lt)
+            if st['max']['d'] > 0.2 or st['min']['d'] < -0.2:
+                bad_segments['class'].append('1')
+                counter = counter + 1
+            else:
+                bad_segments['class'].append('0')
+        # print(st['max']['d'],st['min']['d'])
+
+
+    print('len of windows: {}, or: {}'.format(len(stats), len(bad_segments['lng'])))
+    print('len of potholes: {}'.format(counter))
+    print(bad_segments)
+    df = pd.DataFrame(bad_segments)
+    convert_result_to_shp(df, r'D:\PyCharmProjects\thesis\data\20190115\harmadik\results\potholes\result')
+    print('done')
+
+
+def calculate_stats(windows):
+    stats_array = []
+    stats = {
+        "lng": [],
+        "lat": [],
+        "max": {},
+        "min": {},
+        "max_peaks": {},
+        "min_peaks": {},
+        "mean": {},
+        "std_dev": {},
+        "variance": {},
+        "p2p": {},
+        "sma": {},
+        "ar_coef": {},
+        "tilt_angles": {},
+        "rms": {},
+        "abs_correlation": "",
+    }
+    lengths = []
+    # max_indexes = peakutils.indexes(down, thres=1, thres_abs=True)
+    for e, n, d, ln, lt in zip(windows['east'], windows['north'], windows['down'], windows['lng'], windows['lat']):
+        stats['mean']['e'] = np.mean(e)
+        stats['mean']['n'] = np.mean(n)
+        stats['mean']['d'] = np.mean(d)
+        stats['min']['e'] = min(e)
+        stats['min']['n'] = min(n)
+        stats['min']['d'] = min(d)
+        stats['max']['e'] = max(e)
+        stats['max']['n'] = max(n)
+        stats['max']['d'] = max(d)
+        stats['max_peaks']['e'] = len(peakutils.indexes(e))  # thres=1, thres_abs=True
+        stats['max_peaks']['n'] = len(peakutils.indexes(n))
+        stats['max_peaks']['d'] = len(peakutils.indexes(d))
+        stats['min_peaks']['e'] = len(peakutils.indexes([(-v) for v in e]))
+        stats['min_peaks']['n'] = len(peakutils.indexes([(-v) for v in n]))
+        stats['min_peaks']['d'] = len(peakutils.indexes([(-v) for v in d]))
+        stats['std_dev']['e'] = np.std(e)
+        stats['std_dev']['n'] = np.std(n)
+        stats['std_dev']['d'] = np.std(d)
+        stats['variance']['e'] = np.var(e)
+        stats['variance']['n'] = np.var(n)
+        stats['variance']['d'] = np.var(d)
+        stats['rms']['e'] = np.sqrt(np.mean([v ** 2 for v in e]))
+        stats['rms']['n'] = np.sqrt(np.mean([v ** 2 for v in n]))
+        stats['rms']['d'] = np.sqrt(np.mean([v ** 2 for v in d]))
+        stats['lng'] = ln
+        stats['lat'] = lt
+        stats_array.append(copy.deepcopy(stats))
+
+    print('stats array', len(stats_array))
+    return stats_array
+
+        # for e, n, d, ln, lt in zip(window_t[0], window_t[1], window_t[2], window_t[3], window_t[4]):
+
+
 
 
 def interpolate_and_trim_data(acc, gps):
@@ -192,8 +306,6 @@ def get_kalmaned_datatable(acc, gps, dir_path):
 
     # Multiplying Q with std_devs
 
-
-
     dataset = interpolate_and_trim_data(acc, gps)
     d = dataset
 
@@ -252,7 +364,8 @@ def get_kalmaned_datatable(acc, gps, dir_path):
         x_predicted, P_predicted = _predict(x_minus, P_minus, A, Q)
 
         # Measurement Update (Correction)
-        x_minus, P_minus, Z, K, res = _update(x_predicted, P_predicted, I, H, lng, lat, a_east, a_north, a_down, hdop, result)
+        x_minus, P_minus, Z, K, res = _update(x_predicted, P_predicted, I, H, lng, lat, a_east, a_north, a_down, hdop,
+                                              result)
         result = res
 
         x_list.append(x_minus)
@@ -263,12 +376,12 @@ def get_kalmaned_datatable(acc, gps, dir_path):
     print('END', end_count)
     print('kalman count', kalman_count)
 
-    stats ={
+    stats = {
         "og_length": measurements_count,
-        "used_msrmnts" :end_count,
+        "used_msrmnts": end_count,
         "og_gps_length": len(gps),
-        "kalman_count":kalman_count,
-        "unused_count":unused_count,
+        "kalman_count": kalman_count,
+        "unused_count": unused_count,
     }
 
     create_outputs(dir_path, og_coordinates, result, end_count, P_minus, measurements_count,
@@ -291,7 +404,7 @@ def create_outputs(dir_path, og_coordinates, result, end_count, P_minus, measure
     shape_file_path = Path(str(shp_dir) + r'\result' + file_count + r'.shp')
     convert_result_to_shp(df, shape_file_path)
 
-    # do_plotting(fig_dir, file_count, og_coordinates, result, end_count, P_minus, measurements_count, e, n, d, lat, lng)
+    do_plotting(fig_dir, file_count, og_coordinates, result, end_count, P_minus, measurements_count, e, n, d, lat, lng)
 
 
 def check_folders(dir_path):
@@ -412,13 +525,9 @@ def do_plotting(fig_dir, file_count, og_coordinates, result, end_count, P, measu
 """
 """
     TODO:
-    - check/adjust velocity
+    - check/adjust velocity (on nointerpolation branch)
     - try 2x1D
-    - make it OO for real
-    - make cross-terms 0
-    - try like this: https://github.com/balzer82/Kalman/blob/master/Kalman-Filter-CA-2.ipynb?create=1
-    - try it like it was before interpolation kinda ok, but not really
-    - geohash 
+    
 
 
     https://github.com/akshaychawla/1D-Kalman-Filter
