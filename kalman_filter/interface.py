@@ -146,7 +146,7 @@ def segment_data(acc, gps):
 def choose_potholes(stats):
     #TODO:
     # - high pass filter
-    # -
+    # - fft
     down_means = []
 
     bad_segments = {

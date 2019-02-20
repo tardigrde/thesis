@@ -17,6 +17,17 @@ from numpy.linalg import inv
 
 
 def kf_predict(X_minus, P_minus, A, Q):
+    """
+
+    Args:
+        X_minus:
+        P_minus:
+        A:
+        Q:
+
+    Returns:
+
+    """
     # Project the state ahead
     x = A * X_minus
 
@@ -35,6 +46,23 @@ def kf_predict(X_minus, P_minus, A, Q):
 
 
 def kf_update(X_predicted, P_predicted, I, H, lng, lat, a_east, a_north, sigma_pos, sigma_acc):
+    """
+
+    Args:
+        X_predicted:
+        P_predicted:
+        I:
+        H:
+        lng:
+        lat:
+        a_east:
+        a_north:
+        sigma_pos:
+        sigma_acc:
+
+    Returns:
+
+    """
     R = np.matrix([[sigma_pos, 0.0, 0.0, 0.0],
                    [0.0, sigma_pos, 0.0, 0.0],
                    [0.0, 0.0, sigma_acc, 0.0],
@@ -55,22 +83,32 @@ def kf_update(X_predicted, P_predicted, I, H, lng, lat, a_east, a_north, sigma_p
     return x, P, Z, K
 
 
-"""
-    def gauss_pdf(self, X, M, S):
-        if M.shape()[1] == 1:
-            DX = X - tile(M, X.shape()[1])
-            E = 0.5 * sum(DX * (np.dot(np.inv(S), DX)), axis=0)
-            E = E + 0.5 * M.shape()[0] * log(2 * pi) + 0.5 * log(linalg.det(S))
-            P = exp(-E)
-        elif X.shape()[1] == 1:
-            DX = tile(X, M.shape()[1])- M
-            E = 0.5 * sum(DX * (np.dot(inv(S), DX)), axis=0)
-            E = E + 0.5 * M.shape()[0] * log(2 * pi) + 0.5 * log(linalg.det(S))
-            P = exp(-E)
-        else:
-            DX = X-M
-            E = 0.5 * np.dot(DX.T, np.dot(inv(S), DX))
-            E = E + 0.5 * M.shape()[0] * log(2 * pi) + 0.5 * log(linalg.det(S))
-            P = exp(-E)
-        return (P[0],E[0]),
+def gauss_pdf(self, X, M, S):
     """
+    https://www.khanacademy.org/math/statistics-probability/random-variables-stats-library/random-variables-continuous/v/probability-density-functions
+    https://en.wikipedia.org/wiki/Probability_density_function
+    Args:
+        self:
+        X:
+        M:
+        S:
+
+    Returns:
+
+    """
+    if M.shape()[1] == 1:
+        DX = X - tile(M, X.shape()[1])
+        E = 0.5 * sum(DX * (np.dot(np.inv(S), DX)), axis=0)
+        E = E + 0.5 * M.shape()[0] * log(2 * pi) + 0.5 * log(linalg.det(S))
+        P = exp(-E)
+    elif X.shape()[1] == 1:
+        DX = tile(X, M.shape()[1]) - M
+        E = 0.5 * sum(DX * (np.dot(inv(S), DX)), axis=0)
+        E = E + 0.5 * M.shape()[0] * log(2 * pi) + 0.5 * log(linalg.det(S))
+        P = exp(-E)
+    else:
+        DX = X - M
+        E = 0.5 * np.dot(DX.T, np.dot(inv(S), DX))
+        E = E + 0.5 * M.shape()[0] * log(2 * pi) + 0.5 * log(linalg.det(S))
+        P = exp(-E)
+    return (P[0], E[0]),
