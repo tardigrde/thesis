@@ -6,11 +6,11 @@ THIS STARTS THE APPLICATION. IT IS A BLACK BOX NOW.
 """
 
 from os import listdir
-from os.path import isfile, join, isdir
+from os.path import isfile, join
 from pathlib import Path
-from kalman_filter.measurement import Measurement
+from measurement import Measurement
+from dsp_library import dsp
 import time
-import json
 
 start_time = time.time()
 
@@ -26,9 +26,9 @@ DATA_BASE_DIR = r'D:\PyCharmProjects\thesis\data'
 
 # CURRENT_TEST_RUN = r'\roszke-szeged'
 # CURRENT_TEST_RUN = r'\szeged_trolli_teszt'
-CURRENT_TEST_RUN = r'\20190115'
+CURRENT_TEST_RUN = r'\trolli_playground'
 
-CURRENT_TEST_SET = r'\harmadik'
+CURRENT_TEST_SET = r'\constacc'
 
 dir_path = DATA_BASE_DIR + CURRENT_TEST_RUN + CURRENT_TEST_SET
 
@@ -49,18 +49,19 @@ if input_dir_path.is_dir():
             path_gps = Path(str(input_dir_path) + '\\' + file)
             print('Path of the GPS file: ', path_gps)
 
-# path_imu = r'C:\Users\leven\Desktop\20190115\mlt_20190117_121118_300.csv'
-
-# path_imu = r'D:\PyCharmProjects\thesis\teszt\20190115\harmadik\msrmnt.csv'
-# path_gps = r'D:\PyCharmProjects\thesis\teszt\20190115\harmadik\nmea.log'
 
 
 stats = {}
 
 measurement = Measurement(path_imu, path_gps, dir_path)
 measurement.preprocess()
+#measurement.get_filtered_acc()
+#acc, gps = measurement.get_state_of(['acc', 'gps'])
+acc, gps = measurement.get_lists_of_measurements();
+
+segmented = dsp.segment_data(acc, gps, dir_path)
 # measurement.do_kalman_filtering()
-measurement.segment_data()
+# measurement.segment_data()
 # stats = measurement.get_stats()
 # except Exception as e:
 #     print('An error occured:', e)
@@ -68,6 +69,7 @@ measurement.segment_data()
 stats["created"] = date_of_measurement
 stats["vehicle"] = "Ford Fiesta"
 stats["intent"] = "development"
+
 
 path_stats = Path(str(dir_path) + r'\results\metadata.txt')
 # with open(path_stats, 'w') as out:

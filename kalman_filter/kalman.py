@@ -74,16 +74,20 @@ def kf_update(X_predicted, P_predicted, I, H, lng, lat, a_east, a_north, sigma_p
 
     # Update the estimate via z
     Z = np.array([lng, lat, a_east, a_north]).reshape(H.shape[0], 1)
-    y = Z - (H * X_predicted)  # Innovation or Residual
+    IM = H * X_predicted
+    y = Z - IM  # Innovation or Residual
     x = X_predicted + (K * y)
 
     # Update the error covariance
     P = (I - (K * H)) * P_predicted
+    LH = gauss_pdf(y, IM, S)
+    print('nyeh')
+    print('YAY', LH)
 
     return x, P, Z, K
 
 
-def gauss_pdf(self, X, M, S):
+def gauss_pdf(X, M, S):
     """
     https://www.khanacademy.org/math/statistics-probability/random-variables-stats-library/random-variables-continuous/v/probability-density-functions
     https://en.wikipedia.org/wiki/Probability_density_function
@@ -111,4 +115,4 @@ def gauss_pdf(self, X, M, S):
         E = 0.5 * np.dot(DX.T, np.dot(inv(S), DX))
         E = E + 0.5 * M.shape()[0] * log(2 * pi) + 0.5 * log(linalg.det(S))
         P = exp(-E)
-    return (P[0], E[0]),
+    return (P[0], E[0])
