@@ -55,11 +55,10 @@ stats = {}
 
 measurement = Measurement(path_imu, path_gps, dir_path)
 measurement.preprocess()
-#measurement.get_filtered_acc()
-#acc, gps = measurement.get_state_of(['acc', 'gps'])
+
 acc, gps = measurement.get_lists_of_measurements();
 
-segmented = dsp.segment_data(acc, gps, dir_path)
+potholes = dsp.classify_windows(acc, gps, dir_path)
 # measurement.do_kalman_filtering()
 # measurement.segment_data()
 # stats = measurement.get_stats()

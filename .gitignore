@@ -263,7 +263,6 @@ fabric.properties
 
 
 # ignoring sample csv-s
-teszt/
 *.csv
 
 # ignoring xmls
@@ -281,9 +280,7 @@ madgwick/
 old_stuff/
 etc/
 teszt/
-utils/
 lib/
 thesis/
 data/
-dsp_library/
 workspace.xml

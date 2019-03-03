@@ -6,8 +6,5 @@ python 3.6.8
 KELL:
 osm referencia
 
-regarding to segmentation:
-- first just use same windows with 20% overlap eg
-
 
 
