@@ -1,6 +1,6 @@
-from kalman_filter import interface
+from kalman_filter.interpolation.constant_acceleration import interface
 from dsp_library import dsp
-from utils import auxiliary, imu_data_parser, nmea_parser
+from utils import imu_data_parser, nmea_parser
 
 
 class Measurement:
