@@ -6,18 +6,43 @@ import math
 
 
 def _read_log_file(path):
+    """
+
+    Args:
+        path:
+
+    Returns:
+
+    """
     with open(path, 'rt') as inputfile:
         read_data = inputfile.readlines()
     return read_data
 
 
 def _transform_gsa(parsed_sentence):
+    """
+
+    Args:
+        parsed_sentence:
+
+    Returns:
+
+    """
+
     hdop = float(parsed_sentence.hdop)
     gsa = {'hdop': hdop}
     return gsa
 
 
 def _transform_vtg(parsed_sentence):
+    """
+
+    Args:
+        parsed_sentence:
+
+    Returns:
+
+    """
     v_ms = float(parsed_sentence.spd_over_grnd_kmph) / 3.6
     t = parsed_sentence.true_track
 
@@ -29,6 +54,14 @@ def _transform_vtg(parsed_sentence):
 
 
 def _transform_gga(parsed_sentence):
+    """
+
+    Args:
+        parsed_sentence:
+
+    Returns:
+
+    """
     ts = parsed_sentence.timestamp
     time = (ts.hour * 60 * 60 * 1000) + (ts.minute * 60 * 1000) + (ts.second * 1000) + ts.microsecond
 
@@ -47,6 +80,14 @@ def _transform_gga(parsed_sentence):
 
 
 def _transform_data_to_dictionary(extracted_data):
+    """
+
+    Args:
+        extracted_data:
+
+    Returns:
+
+    """
     measurement_dictionary = {}
 
     gsa_list = extracted_data[0::3]
@@ -66,12 +107,29 @@ def _transform_data_to_dictionary(extracted_data):
 
 
 def _get_ghashed_eov_coordinates(lng, lat):
+    """
+
+    Args:
+        lng:
+        lat:
+
+    Returns:
+
+    """
     ghashed = Geohash.encode(lng, lat, precision=11)
     lng_to_tf, lat_to_tf = Geohash.decode(ghashed)
     return {'lng': lng_to_tf, 'lat': lat_to_tf}
 
 
 def _remove_redundant_points(msrmnt_dict):
+    """
+
+    Args:
+        msrmnt_dict:
+
+    Returns:
+
+    """
     in_proj = Proj(init='epsg:4326')
     out_proj = Proj(init='epsg:23700')
     time_list = sorted(list(msrmnt_dict.keys()))
@@ -93,7 +151,7 @@ def _remove_redundant_points(msrmnt_dict):
             't': m['t'], 'v': m['v'],
             'lng': lng, 'lat': lat,
         }
-        #print('THIS LOK AT THIS', measurment_attributes)
+        # print('THIS LOK AT THIS', measurment_attributes)
         """
         TODO:
         - refactor list_of_dicts_of_gps_data
@@ -112,12 +170,41 @@ def _remove_redundant_points(msrmnt_dict):
 
 
 def get_gps_dataframe(gps_data_dict):
+    """
+
+    Args:
+        gps_data_dict:
+
+    Returns:
+
+    """
     gps_dataframe = pd.DataFrame(gps_data_dict)
     return gps_dataframe
 
 
+def pass_gps_dict_of_lists(gps):
+    time, ln, la, v, t, hdop = [], [], [], [], [], []
+    timestamps = sorted(list(gps.keys()))
+    for t in timestamps:
+        values = gps[t]
+        v.append(values['v'])
+        hdop.append(values['hdop'])
+        time.append(values['time'])
+        ln.append(values['lng'])
+        la.append(values['lat'])
+    return {'ln': ln, 'la': la, 'hdop': hdop, 'time': time, }
+
+
 # Call this and on the result of this you can call get_gps_dataframe.
-def get_gps_dictionary(path):
+def get_gps_dictionary(path, data='lists'):
+    """
+
+    Args:
+        path:
+
+    Returns:
+
+    """
     read_data = _read_log_file(path)
 
     extracted_data = []
@@ -135,4 +222,10 @@ def get_gps_dictionary(path):
 
     msrmnt_dict = _transform_data_to_dictionary(extracted_data)
     gps_data_dict = _remove_redundant_points(msrmnt_dict)
-    return gps_data_dict
+
+    if data == 'lists':
+        return pass_gps_dict_of_lists(gps_data_dict)
+    elif data == 'df':
+        return get_gps_dataframe(gps_data_dict)
+    elif data == 'dicts':
+        return gps_data_dict

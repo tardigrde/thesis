@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-THIS STARTS THE APPLICATION. IT IS A BLACK BOX NOW.
+THIS STARTS THE APPLICATION.
 
 """
 
@@ -14,20 +14,9 @@ import time
 
 start_time = time.time()
 
-"""
-TODO:
-- make the code into a black box package => 
-        class is a measurement which has multipiple properties
-        like path_gps and path_imu and date 
-- call the package from outside
-"""
 
-DATA_BASE_DIR = r'D:\PyCharmProjects\thesis\data'
-
-# CURRENT_TEST_RUN = r'\roszke-szeged'
-# CURRENT_TEST_RUN = r'\szeged_trolli_teszt'
+DATA_BASE_DIR = r'D:\code\PyCharmProjects\thesis\data'
 CURRENT_TEST_RUN = r'\trolli_playground'
-
 CURRENT_TEST_SET = r'\constacc'
 
 dir_path = DATA_BASE_DIR + CURRENT_TEST_RUN + CURRENT_TEST_SET

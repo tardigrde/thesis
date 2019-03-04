@@ -1,7 +1,8 @@
 """
 CC-BY-SA2.0 Lizenz
 """
-from kalman_filter.interpolation.constant_acceleration import kalman, initital_parameters
+from kalman_filter.interpolation.one_axis.constant_acceleration import initital_parameters
+from kalman_filter.interpolation.one_axis.constant_acceleration import kalman
 import numpy as np
 
 from utils import auxiliary
@@ -90,13 +91,6 @@ def get_kalmaned_datatable(acc, gps, dir_path):
                 unused_count = unused_count + 1
                 continue
 
-        """
-        TODO:
-        - idea1: if for more than lets say 500(5 secs) measurments are near 0,
-                we start another kalman filter from the next value
-        - idea2: leave the 0 velocity measurments as they are, but then do something with the
-        """
-
         if is_first_step:
             is_first_step = 0
             kalman_count = kalman_count + 1
@@ -136,9 +130,6 @@ def get_kalmaned_datatable(acc, gps, dir_path):
     return result, stats
 
 
-
-
-
 # STD_DEV SHOULD ONLY BE COUNTED ON A PHONE IN PEACE!!!
 # std_devs = _pass_std_devs(acc)
 # std_dev_acc = (std_devs['std_dev_acc_east'] + std_devs['std_dev_acc_east']) / 2
@@ -147,48 +138,6 @@ def get_kalmaned_datatable(acc, gps, dir_path):
 # dist = np.cumsum(np.sqrt(np.diff(xt) ** 2 + np.diff(yt) ** 2))
 # print('Your drifted %dm from origin.' % dist[-1])
 
-
-# def do_pothole_extraction(acc, gps):
-#     """
-#
-#     :param acc: Dict of lists of acceleration data.
-#     :param gps: Dict of lists of gps data.
-#     :return:
-#     """
-#     interpolated_attribute_table = interpolate_and_trim_gps_data(acc, gps)
-#     acc_time = interpolated_attribute_table['acc_time']
-#     acc_east = interpolated_attribute_table['acc_east']
-#     acc_north = interpolated_attribute_table['acc_north']
-#     acc_down = interpolated_attribute_table['acc_down']
-#     gps_lng = interpolated_attribute_table['lng']
-#     gps_lat = interpolated_attribute_table['lat']
-#     gps_v = interpolated_attribute_table['v']
-#     gps_hdop = interpolated_attribute_table['hdop']
-#     print('Count of acc_down is {}'.format(len(acc_down)))
-#     print('Biggest value is {}'.format(max(acc_down)))
-#     print('Lowest value is {}'.format(min(acc_down)))
-#
-#     out_weka = './teszt/szeged_trolli_teszt/nointerpolation/for_weka.csv'
-#     with open(out_weka, 'w') as out:
-#         for d in acc_down:
-#             out.write(str(d) + ',' + '' + '\n')
-#     return
-#
-#     p_lng = []
-#     p_lat = []
-#     # for lng, lat, down in zip(gps_lng, gps_lat, acc_down):
-#     #     if down > 1.2 or 0.4 < down < 0.8:
-#     #         p_lng.append(lng)
-#     #         p_lat.append(lat)
-#     # pothole = [value for value in acc_down if value > 1.2 or 0.4 < value < 0.8]
-#     # print('Count of pothole is {}'.format(len(pothole)))
-#     # plt.plot(acc_down, 'b--')
-#     # plt.show()
-#     fig = plt.figure()
-#     plt.plot(gps_lng, gps_lat, 'b--', p_lng, p_lat, 'rs')
-#     plt.show()
-#     fig.savefig('first_potholes_manually_extracted.pdf', dpi=fig.dpi)
-#     return acc_down
 
 
 """

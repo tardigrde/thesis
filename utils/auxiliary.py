@@ -27,11 +27,10 @@ def interpolate_gps_datalists(time, gps_data):
     return gtime, lng, lat, p, v
 
 
-# def _pass_std_devs(acc):
-#     acc_lists = pass_acc_dict_of_lists(acc)
-#     std_dev_acc_east = np.std(acc_lists['acc_east'])
-#     std_dev_acc_north = np.std(acc_lists['acc_north'])
-#     return {'std_dev_acc_east': std_dev_acc_east, 'std_dev_acc_north': std_dev_acc_north}
+def _pass_std_devs(acc):
+    std_dev_acc_east = np.std(acc['acc_east'])
+    std_dev_acc_north = np.std(acc['acc_north'])
+    return {'std_dev_acc_east': std_dev_acc_east, 'std_dev_acc_north': std_dev_acc_north}
 
 
 def interpolate_and_trim_data(acc_lists, gps_lists):

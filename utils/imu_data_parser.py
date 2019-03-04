@@ -173,5 +173,3 @@ def get_imu_dictionary(path, data='lists'):
         return get_imu_dataframe(imu_data_dict)
     elif data == 'dicts':
         return imu_data_dict
-
-

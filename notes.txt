@@ -6,5 +6,44 @@ python 3.6.8
 KELL:
 osm referencia
 
+### rlabbe book
+- init parameters should be a class, with different variables based on some parameters
+- constanc velocity, constant acceleration models
+- solution to the constant acc approach's problem might be found on page 276
+- constacc possible solution : page 284
+- adaptive filter !!!!!
+- pdf works with z-Hx
+- if there is a bad point, leave it out with geohash, and adapt your matrices so it only takes 1/n weight(n=number of bad points in a sequence)
+- ADAPTIVE FILTER
+- how to apply v into vx and vy : page 474
+- !!! filterpy // RLABBBBBBBE !!! (Design.., Adaptive..)
+- measurement, filter, results osztályok, akár sub-routine osztályok is, kalman osztály, dsp osztály, neurális háló osztály???
 
 
+- eddig az volt a baj(page: 479), hogy én aconstant acceleration modellel de gyorsulási adatok számbavételével szeretnék dolgozni, de 
+a filter ezt nem tudja kezelni, ergo shiftel oldalra. jövök én, majd felemelem a Q értékét. gyorsabban a jó útra téved, de wibblie-wobblie lesz
+
+
+### Methods to think about:
+- adjusting process noise(483)
+	> epsilon = measurment - predicted
+	> os_data_delta = measurment - updated
+	> if epsilon exceeds a limit you turn the fucking process noise UP, then after the the manuveur chills you, switch back to process noise
+	> derive the needed scaling factor with experiments (5-6 * std_dev can be used)
+
+- fading memory method(493)
+	> weigthen the P when the Eps is bogger than a value 
+
+- multiple-model estimation(49
+	> when a car is turning, it is not linear!! (EKF, UKF for turns only?)
+	> run constvel and constacc paralell; after every update state, check the Eps; 
+	if Eps is bigger than a threshold, use constacc, otherwise constvel
+	> might not be sufficient
+
+- multi-model adaptive estimator
+	>
+
+
+
+
+# ANN which has on input from kalman fitlered data,  /// MI???

@@ -1,16 +1,324 @@
 """
 CC-BY-SA2.0 Lizenz
 """
+from kalman_filter.nointerpolation.one_axis import initital_parameters, kalman
+from utils import auxiliary
 import matplotlib.pyplot as plt
-from kalman_filter import nmea_parser, initital_parameters, imu_data_parser, kalman
-import numpy as np
 import pandas as pd
+import numpy as np
 import geopandas
-from scipy.misc import electrocardiogram
-from scipy.signal import find_peaks
-import peakutils
-from shapely.geometry import Point
 
+
+def _predict(X_minus, P_minus, A, Q):
+    """
+    :param X_minus:
+    :param P_minus:
+    :param A:
+    :param Q:
+    :return:
+    """
+    x, P = kalman.kf_predict(X_minus, P_minus, A, Q)
+
+    return x, P
+
+
+def _update(X_predicted, P_predicted, I, H, lng, lat, a_east, a_north, hdop, std_dev_acc):
+    sigma_pos = hdop
+    sigma_acc = std_dev_acc
+
+    x, P, Z, K = kalman.kf_update(X_predicted, P_predicted, I, H, lng, lat, a_east, a_north, sigma_pos, sigma_acc)
+
+    return x, P, Z, K
+
+
+def get_kalmaned_datatable(acc, gps):
+    init = initital_parameters.get_initial_params()
+    X = init['X']
+    P = init['P']
+    H = init['H']
+    R = init['R']
+    F = init['F']
+    I = init['I']
+    B = init['B']
+    Q = init['Q']
+
+    std_dev = 0.1
+    # Measurements
+
+    og_coordinates = {
+        'lng': gps['lng'],
+        'lat': gps['lat'],
+    }
+    result = {'lng': [], 'lat': [], 'vlg': [], 'vlt': [], 'east': [], 'north': [], 'down': [], }
+
+    # allocation
+    x_minus = []
+    P_minus = []
+    is_first_step = 1
+
+    fused = {**acc, **gps}
+    sorted_timestamps_of_all_measurements = sorted(list(fused.keys()))
+
+    updated = []
+    predicted = []
+    last_step = []
+    each_state = []
+    X = 0
+    X_minus = 0
+    counter = 0
+    dt = 0.01
+    for t in sorted_timestamps_of_all_measurements:
+        # THIS HAS TO BE CHECKED!
+        measurement = fused[t]
+        # print(measurement)
+
+        # if we got a measurement from GPS
+        if (len(measurement) == 8):
+            if len(last_step) != 0:
+                last_step_was = last_step[len(last_step) - 1]
+
+            R[0, 0] = measurement['hdop'] * measurement['hdop']
+            R[1, 1] = measurement['hdop'] * measurement['hdop']
+            R[2, 2] = measurement['hdop']
+            R[3, 3] = measurement['hdop']
+
+            # so predict will be the first, but a state has to be initialized
+            if len(predicted) == 0:
+                X = np.transpose([measurement['lng'], measurement['lat'], measurement['vlng'], measurement['vlat']])
+                updated.append({'X': X, 'P': P})
+                each_state.append(X)
+                last_step.append('updated')
+                continue
+            # if last step was a predcition, use its state as the state input, and this measurement for Y
+            elif (last_step_was == 'predicted'):
+
+                X = np.transpose([measurement['lng'], measurement['lat'], measurement['vlng'], measurement['vlat']])
+                Y = H * X + R
+                P_minus = predicted[len(predicted) - 1]['P']
+                X_minus = predicted[len(predicted) - 1]['X']
+                if (len(X_minus) > 4):
+                    print(X_minus)
+                    break
+                update = kalman.kf_update(X_minus, P_minus, Y, H, R)
+
+                update['X'] = np.transpose([update['X'][0][0], update['X'][1][1], update['X'][2][2], update['X'][3][3]])
+                updated.append(update)
+                last_step.append('updated')
+                # if last step was an update, use its state as the state input, and this measurement for Y
+            elif (last_step_was == 'updated'):
+
+                X = np.transpose([measurement['lng'], measurement['lat'], measurement['vlng'], measurement['vlat']])
+                Y = H * X + R
+                P_minus = updated[len(updated) - 1]['P']
+                X_minus = np.transpose(updated[len(updated) - 1]['X'])
+                if (len(X_minus) > 4):
+                    print(X_minus)
+                    break
+                update = kalman.kf_update(X_minus, P, Y, H, R)
+                update['X'] = [update['X'][0][0], update['X'][1][1], update['X'][2][2], update['X'][3][3]]
+                updated.append(update)
+                last_step.append('updated')
+
+        # if we got a control vector
+        elif (len(measurement) == 4):
+            if len(last_step) != 0:
+                last_step_was = last_step[len(last_step) - 1]
+
+            Q[0, 0] = std_dev * dt * dt
+            Q[1, 1] = std_dev * dt * dt
+            Q[2, 2] = std_dev * dt
+            Q[3, 3] = std_dev * dt
+            Q[0, 2] = std_dev * std_dev
+            Q[1, 3] = std_dev * std_dev
+
+            U = np.transpose([measurement['acc_east'], measurement['acc_north']])
+            if len(predicted) == 0:
+                # if updated is empty, do it first
+                if len(updated) == 0:
+                    continue
+                # otherwise use last state from measurement
+                else:
+                    X_minus = updated[len(updated) - 1]['X']
+                    P_minus = updated[len(updated) - 1]['P']
+                    predict = kalman.kf_predict(X_minus, P, F, Q, B, U)
+                    predicted.append(predict)
+                    last_step.append('predicted')
+            # if last step was prediction, use the parameters from the last predicted state
+            elif (last_step_was == 'predicted'):  # good
+                P_minus = predicted[len(predicted) - 1]['P']
+                X_minus = predicted[len(predicted) - 1]['X']
+                if (len(X_minus) > 4):
+                    print(X_minus)
+                    break
+                predict = kalman.kf_predict(X_minus, P, F, Q, B, U)
+                predicted.append(predict)
+                last_step.append('predicted')
+            # if last step was update, use the state from the last updated state
+            elif (last_step_was == 'updated'):
+                P_minus = updated[len(updated) - 1]['P']
+                X_minus = np.transpose(updated[len(updated) - 1]['X'])
+                if (len(X_minus) > 4):
+                    print(X_minus)
+                    break
+                predict = kalman.kf_predict(X_minus, P, F, Q, B, U)
+                predicted.append(predict)
+                last_step.append('predicted')
+        else:
+            plotter.savestates(x_minus, Z, P_minus, K)
+            print('kalman filter can\'t apply your shit man')
+            break
+    kalmaned_coordinates = [i['X'] for i in updated]
+    print('Length of updated states')
+    # print(kalmaned_coordinates)
+    print(len(last_step))
+    print(len(kalmaned_coordinates))
+    print(len(kalmaned_coordinates[0]))
+    print(kalmaned_coordinates[0::100])
+
+    x_to_plot = []
+    y_to_plot = []
+    for i in kalmaned_coordinates:
+        # print(i)
+        x_to_plot.append(i[0])
+        y_to_plot.append(i[1])
+
+    end_count = len(result['lng'])
+    print('END', end_count)
+    # print('kalman count', kalman_count)
+
+    # stats = {
+    #     "og_length": measurements_count,
+    #     "used_msrmnts": end_count,
+    #     "og_gps_length": len(gps),
+    #     "kalman_count": kalman_count,
+    #     "unused_count": unused_count,
+    # }
+
+    auxiliary.create_outputs(dir_path, og_coordinates, result, end_count, P_minus, measurements_count,
+                             d['east'], d['north'], d['down'], d['lat'], d['lng'])
+
+    # plt.plot(gps_lists['ln'], gps_lists['la'], 'bs', x_to_plot, y_to_plot, 'r--')
+    # plt.show()
+
+    # std_dev_acc = (std_devs['std_dev_acc_east'] + std_devs['std_dev_acc_east']) / 2
+    # std_devs = auxiliary._pass_std_devs(acc)
+    # print('stdv', std_dev_acc)
+    # Q = Q * std_dev_acc
+    return updated
+
+    """
+    x_to_plot = []
+    y_to_plot = []
+    for i in kalmaned_coordinates:
+        #print(i)
+        x_to_plot.append(i[0][0])
+        y_to_plot.append(i[1][1])
+
+result['lng'].append(float(x_minus[0]))
+result['lat'].append(float(x_minus[1]))
+result['vlg'].append(float(x_minus[2]))
+result['vlt'].append(float(x_minus[3]))
+result['east'].append(float(x_minus[4]))
+result['north'].append(float(x_minus[5]))
+result['down'].append(float(a_down))
+
+# Save states for Plotting
+# savestates(x_minus, Z, P_minus, K)
+print('END', len(result['lng']))
+print('kalman count', kalman_count)
+end_count = len(result['lng'])
+
+og_df = pd.DataFrame(og_coordinates)
+df = pd.DataFrame(result)
+
+# #plot_result(og_coordinates, result)
+# res_shp_path = r"teszt/20190115/harmadik/results/shapes/"
+# output_file_path = form_filename_dynamically(res_shp_path)
+#
+# convert_result_to_shp(og_df, r"teszt/20190115/harmadik/results/shapes/og_coordinates.shp")
+# convert_result_to_shp(df, output_file_path)
+
+# plot_m(measurements_count, acc_east, acc_north, acc_down, gps_lng, gps_lat)
+# plt.plot(og_lng, og_lat, 'bs', lng_to_plot, lat_to_plot, 'ro')
+# plt.show()
+return result
+
+
+
+
+# def do_pothole_extraction(acc, gps):
+#     """
+
+
+#
+#     :param acc: Dict of lists of acceleration data.
+#     :param gps: Dict of lists of gps data.
+#     :return:
+#     """
+#     interpolated_attribute_table = interpolate_and_trim_gps_data(acc, gps)
+#     acc_time = interpolated_attribute_table['acc_time']
+#     acc_east = interpolated_attribute_table['acc_east']
+#     acc_north = interpolated_attribute_table['acc_north']
+#     acc_down = interpolated_attribute_table['acc_down']
+#     gps_lng = interpolated_attribute_table['lng']
+#     gps_lat = interpolated_attribute_table['lat']
+#     gps_v = interpolated_attribute_table['v']
+#     gps_hdop = interpolated_attribute_table['hdop']
+#     print('Count of acc_down is {}'.format(len(acc_down)))
+#     print('Biggest value is {}'.format(max(acc_down)))
+#     print('Lowest value is {}'.format(min(acc_down)))
+#
+#     out_weka = './teszt/szeged_trolli_teszt/nointerpolation/for_weka.csv'
+#     with open(out_weka, 'w') as out:
+#         for d in acc_down:
+#             out.write(str(d) + ',' + '' + '\n')
+#     return
+#
+#     p_lng = []
+#     p_lat = []
+#     # for lng, lat, down in zip(gps_lng, gps_lat, acc_down):
+#     #     if down > 1.2 or 0.4 < down < 0.8:
+#     #         p_lng.append(lng)
+#     #         p_lat.append(lat)
+#     # pothole = [value for value in acc_down if value > 1.2 or 0.4 < value < 0.8]
+#     # print('Count of pothole is {}'.format(len(pothole)))
+#     # plt.plot(acc_down, 'b--')
+#     # plt.show()
+#     fig = plt.figure()
+#     plt.plot(gps_lng, gps_lat, 'b--', p_lng, p_lat, 'rs')
+#     plt.show()
+#     fig.savefig('first_potholes_manually_extracted.pdf', dpi=fig.dpi)
+#     return acc_down
+
+
+"""
+--------------------------------------------------------------------------------------------
+"""
+"""
+    TODO:
+    - check/adjust velocity
+    - try 2x1D
+    - make it OO for real
+    - make cross-terms 0
+    - try like this: https://github.com/balzer82/Kalman/blob/master/Kalman-Filter-CA-2.ipynb?create=1
+    - try it like it was before interpolation kinda ok, but not really
+    - geohash 
+
+
+    https://github.com/akshaychawla/1D-Kalman-Filter
+    https://dsp.stackexchange.com/questions/8860/kalman-filter-for-position-and-velocity-introducing-speed-estimates
+    https://dsp.stackexchange.com/questions/38045/even-more-on-kalman-filter-for-position-and-velocity?noredirect=1&lq=1
+    https://dsp.stackexchange.com/questions/48343/python-how-can-i-improve-my-1d-kalman-filter-estimate
+    https://stackoverflow.com/questions/13901997/kalman-2d-filter-in-python
+    https://medium.com/@jaems33/understanding-kalman-filters-with-python-2310e87b8f48
+    https://www.reddit.com/r/computervision/comments/35y4kj/looking_for_a_python_example_of_a_simple_2d/
+    https://github.com/balzer82/Kalman/blob/master/Kalman-Filter-CA-2.ipynb?create=1 !!!!!!!!!!!!!!!!
+    https://balzer82.github.io/Kalman/
+    https://towardsdatascience.com/kalman-filter-an-algorithm-for-making-sense-from-the-insights-of-various-sensors-fused-together-ddf67597f35e
+    https://gist.github.com/manicai/922976
+"""
+
+"""
 
 def get_acceleration_data(path_imu):
     imu_list_of_dicts = imu_data_parser.get_imu_dictionary(path_imu)
@@ -130,140 +438,6 @@ def interpolate_and_trim_data(acc, gps):
 
     return dataset
 
-
-def _predict(X_minus, P_minus, A, Q):
-    """
-    :param X_minus:
-    :param P_minus:
-    :param A:
-    :param Q:
-    :return:
-    """
-    x, P = kalman.kf_predict(X_minus, P_minus, A, Q)
-
-    return x, P
-
-
-def _update(X_predicted, P_predicted, I, H, lng, lat, a_east, a_north, hdop, std_dev_acc):
-    sigma_pos = hdop
-    sigma_acc = std_dev_acc
-
-    x, P, Z, K = kalman.kf_update(X_predicted, P_predicted, I, H, lng, lat, a_east, a_north, sigma_pos, sigma_acc)
-
-    return x, P, Z, K
-
-
-def get_kalmaned_datatable(acc, gps):
-    std_devs = _pass_std_devs(acc)
-
-    init_params = initital_parameters.get_initial_params()
-    X = init_params['X']
-    P = init_params['P']
-    H = init_params['H']
-    R = init_params['R']
-    A = init_params['F']
-    I = init_params['I']
-    Q = init_params['Q']
-    # Multiplying Q with std_devs
-    std_dev_acc = (std_devs['std_dev_acc_east'] + std_devs['std_dev_acc_east']) / 2
-    print('stdv', std_dev_acc)
-    std_dev_acc = 0.1
-    Q = Q * std_dev_acc
-
-    dataset = interpolate_and_trim_data(acc, gps)
-    d = dataset
-    # Measurements
-
-    og_coordinates = {
-        'lng': d['lng'],
-        'lat': d['lat'],
-    }
-    result = {
-        'lng': [],
-        'lat': [],
-        'vlg': [],
-        'vlt': [],
-        'east': [],
-        'north': [],
-        'down': [],
-    }
-
-    measurements_count = len(d["time"])
-    # allocation
-    x_minus = []
-    P_minus = []
-    x_list = []
-    unused_count = 0
-    measurement_usage = {}
-    kalman_count = 0
-    is_first_step = 1
-
-    for time, a_east, a_north, a_down, lng, lat, v, hdop in zip(d['time'], d['east'], d['north'], d['down'], d['lng'],
-                                                                d['lat'], d['vel'],
-                                                                d['hdop']):
-        # If velocity is lower than 1.5 m/s, we skipp the step
-        if (v <= 2):
-            if unused_count >= 200:
-                measurement_usage[time] = 1
-                is_first_step = 1
-                unused_count = 0
-            else:
-                measurement_usage[time] = 0
-                unused_count = unused_count + 1
-                continue
-
-        """
-        TODO:
-        - idea1: if for more than lets say 500(5 secs) measurments are near 0,
-                we start another kalman filter from the next value
-        - idea2: leave the 0 velocity measurments as they are, but then do something with the
-        """
-
-        if is_first_step:
-            is_first_step = 0
-            kalman_count = kalman_count + 1
-            x_minus = np.matrix([[lng, lat, 0.0, 0.0, a_east, a_north]]).T
-            P_minus = P
-
-        # Time Update (Prediction)
-        # ========================
-        x_predicted, P_predicted = _predict(x_minus, P_minus, A, Q)
-
-        # Measurement Update (Correction)
-        x_minus, P_minus, Z, K = _update(x_predicted, P_predicted, I, H, lng, lat, a_east, a_north, hdop, std_dev_acc)
-
-        x_list.append(x_minus)
-
-        result['lng'].append(float(x_minus[0]))
-        result['lat'].append(float(x_minus[1]))
-        result['vlg'].append(float(x_minus[2]))
-        result['vlt'].append(float(x_minus[3]))
-        result['east'].append(float(x_minus[4]))
-        result['north'].append(float(x_minus[5]))
-        result['down'].append(float(a_down))
-
-        # Save states for Plotting
-        # savestates(x_minus, Z, P_minus, K)
-    print('END', len(result['lng']))
-    print('kalman count', kalman_count)
-    end_count = len(result['lng'])
-
-    og_df = pd.DataFrame(og_coordinates)
-    df = pd.DataFrame(result)
-
-    #plot_result(og_coordinates, result)
-    res_shp_path = r"teszt/20190115/harmadik/results/shapes/"
-    output_file_path = form_filename_dynamically(res_shp_path)
-
-    convert_result_to_shp(og_df, r"teszt/20190115/harmadik/results/shapes/og_coordinates.shp")
-    convert_result_to_shp(df, output_file_path)
-
-    # plot_m(measurements_count, acc_east, acc_north, acc_down, gps_lng, gps_lat)
-    # plt.plot(og_lng, og_lat, 'bs', lng_to_plot, lat_to_plot, 'ro')
-    # plt.show()
-    return result
-
-
 def form_filename_dynamically(dir_path):
     from os import listdir
     from os.path import isfile, join
@@ -300,103 +474,32 @@ def plot_result(og, res):
     plt.ylabel(r'LAT $g$')
     plt.grid()
     """
-    TODO:
-    -   make this dynamic so new files are created on every run
-    """
-    plt.savefig('teszt\szeged_trolli_teszt\Kalman-Filter-RESULTS.png', dpi=72, transparent=True, bbox_inches='tight')
+
+"""
+plt.savefig('teszt\szeged_trolli_teszt\Kalman-Filter-RESULTS.png', dpi=72, transparent=True, bbox_inches='tight')
 
 
 def plot_m(measurements_count, ma_e, ma_n, acc_down, mp_lng, mp_lat):
-    fig_acc = plt.figure(figsize=(16, 9))
-    plt.step(range(measurements_count), ma_e, label='$a_x$')
-    plt.step(range(measurements_count), ma_n, label='$a_y$')
-    plt.step(range(measurements_count), acc_down, label='$a_z$')
-    plt.ylabel(r'Acceleration $g$')
-    plt.ylim([-2, 2])
-    plt.legend(loc='best', prop={'size': 18})
+fig_acc = plt.figure(figsize=(16, 9))
+plt.step(range(measurements_count), ma_e, label='$a_x$')
+plt.step(range(measurements_count), ma_n, label='$a_y$')
+plt.step(range(measurements_count), acc_down, label='$a_z$')
+plt.ylabel(r'Acceleration $g$')
+plt.ylim([-2, 2])
+plt.legend(loc='best', prop={'size': 18})
 
-    plt.savefig('Kalman-Filter-CA-Acceleration-Measurements.png', dpi=72, transparent=True, bbox_inches='tight')
+plt.savefig('Kalman-Filter-CA-Acceleration-Measurements.png', dpi=72, transparent=True, bbox_inches='tight')
 
-    fig_gps = plt.figure(figsize=(16, 16))
-    # plt.rcParams['figure.facecolor'] = 'white'
-    # fig_gps.patch.set_facecolor('white')
-    plt.scatter(mp_lng, mp_lat)
-    plt.xlabel(r'LNG $g$')
-    plt.ylabel(r'LAT $g$')
-    plt.grid()
-    plt.savefig('Kalman-Filter-CA-GPS-Measurements.png', dpi=72, transparent=True, bbox_inches='tight')
+fig_gps = plt.figure(figsize=(16, 16))
+# plt.rcParams['figure.facecolor'] = 'white'
+# fig_gps.patch.set_facecolor('white')
+plt.scatter(mp_lng, mp_lat)
+plt.xlabel(r'LNG $g$')
+plt.ylabel(r'LAT $g$')
+plt.grid()
+plt.savefig('Kalman-Filter-CA-GPS-Measurements.png', dpi=72, transparent=True, bbox_inches='tight')
 
 
 # dist = np.cumsum(np.sqrt(np.diff(xt) ** 2 + np.diff(yt) ** 2))
 # print('Your drifted %dm from origin.' % dist[-1])
-
-
-# def do_pothole_extraction(acc, gps):
-#     """
-#
-#     :param acc: Dict of lists of acceleration data.
-#     :param gps: Dict of lists of gps data.
-#     :return:
-#     """
-#     interpolated_attribute_table = interpolate_and_trim_gps_data(acc, gps)
-#     acc_time = interpolated_attribute_table['acc_time']
-#     acc_east = interpolated_attribute_table['acc_east']
-#     acc_north = interpolated_attribute_table['acc_north']
-#     acc_down = interpolated_attribute_table['acc_down']
-#     gps_lng = interpolated_attribute_table['lng']
-#     gps_lat = interpolated_attribute_table['lat']
-#     gps_v = interpolated_attribute_table['v']
-#     gps_hdop = interpolated_attribute_table['hdop']
-#     print('Count of acc_down is {}'.format(len(acc_down)))
-#     print('Biggest value is {}'.format(max(acc_down)))
-#     print('Lowest value is {}'.format(min(acc_down)))
-#
-#     out_weka = './teszt/szeged_trolli_teszt/nointerpolation/for_weka.csv'
-#     with open(out_weka, 'w') as out:
-#         for d in acc_down:
-#             out.write(str(d) + ',' + '' + '\n')
-#     return
-#
-#     p_lng = []
-#     p_lat = []
-#     # for lng, lat, down in zip(gps_lng, gps_lat, acc_down):
-#     #     if down > 1.2 or 0.4 < down < 0.8:
-#     #         p_lng.append(lng)
-#     #         p_lat.append(lat)
-#     # pothole = [value for value in acc_down if value > 1.2 or 0.4 < value < 0.8]
-#     # print('Count of pothole is {}'.format(len(pothole)))
-#     # plt.plot(acc_down, 'b--')
-#     # plt.show()
-#     fig = plt.figure()
-#     plt.plot(gps_lng, gps_lat, 'b--', p_lng, p_lat, 'rs')
-#     plt.show()
-#     fig.savefig('first_potholes_manually_extracted.pdf', dpi=fig.dpi)
-#     return acc_down
-
-
-"""
---------------------------------------------------------------------------------------------
-"""
-"""
-    TODO:
-    - check/adjust velocity
-    - try 2x1D
-    - make it OO for real
-    - make cross-terms 0
-    - try like this: https://github.com/balzer82/Kalman/blob/master/Kalman-Filter-CA-2.ipynb?create=1
-    - try it like it was before interpolation kinda ok, but not really
-    - geohash 
-
-
-    https://github.com/akshaychawla/1D-Kalman-Filter
-    https://dsp.stackexchange.com/questions/8860/kalman-filter-for-position-and-velocity-introducing-speed-estimates
-    https://dsp.stackexchange.com/questions/38045/even-more-on-kalman-filter-for-position-and-velocity?noredirect=1&lq=1
-    https://dsp.stackexchange.com/questions/48343/python-how-can-i-improve-my-1d-kalman-filter-estimate
-    https://stackoverflow.com/questions/13901997/kalman-2d-filter-in-python
-    https://medium.com/@jaems33/understanding-kalman-filters-with-python-2310e87b8f48
-    https://www.reddit.com/r/computervision/comments/35y4kj/looking_for_a_python_example_of_a_simple_2d/
-    https://github.com/balzer82/Kalman/blob/master/Kalman-Filter-CA-2.ipynb?create=1 !!!!!!!!!!!!!!!!
-    https://balzer82.github.io/Kalman/
-    https://towardsdatascience.com/kalman-filter-an-algorithm-for-making-sense-from-the-insights-of-various-sensors-fused-together-ddf67597f35e
-    https://gist.github.com/manicai/922976
 """
