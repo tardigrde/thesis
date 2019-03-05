@@ -41,7 +41,8 @@ a filter ezt nem tudja kezelni, ergo shiftel oldalra. jövök én, majd felemelem a
 	> might not be sufficient
 
 - multi-model adaptive estimator
-	>
+	>ok, but has problems
+	>once the probability becomes very small it can never recover
 
 
 
