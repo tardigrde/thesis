@@ -30,7 +30,7 @@ class Measurement:
 
     def do_kalman_filtering(self):
         # self.kalmaned_data_table, self.stats = interface.get_kalmaned_datatable(self.acc, self.gps, self.dir_path)
-        kf = interface.do_ukf(self.acc, self.gps)
+        kf = interface.do_ukf(self.dir_path, self.acc, self.gps)
         pass
 
     # def segment_data(self):

@@ -3,6 +3,8 @@ C:\Users\leven\AppData\Local\conda\conda\envs
 python 3.6.8
 
 
+
+
 KELL:
 osm referencia
 
