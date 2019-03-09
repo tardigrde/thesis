@@ -8,15 +8,18 @@ import pandas as pd
 import geopandas
 import time
 
-def prepare_data_for_batch_kf(acc, gps)
-    pass
+
+def prepare_data_for_batch_kf(acc, gps):
+    # for a in acc['time']:
+    #     for t, ln, la, hdop in gps
+    return acc, gps
 
 
 def trim_and_sync_dataset(acc_msrmnt, gps_msrmnt):
     # TODO:
     # - if last gps was 5 secs ago, new sublist --> new kalman
-    gps = trim_gps(gps_msrmnt)
-    acc = trim_and_sync_acc(acc_msrmnt, gps['time'])
+    gps_msrmnt = trim_gps(gps_msrmnt)
+    acc, gps = trim_and_sync_acc(acc_msrmnt, gps_msrmnt)
     return acc, gps
 
 
@@ -33,13 +36,14 @@ def trim_gps(gps):
     return gps
 
 
-def trim_and_sync_acc(acc, gps_time):
-    # todo
-    first_measurement = gps_time[0]
-    last_measurement = gps_time[len(gps_time) - 1]
+def trim_and_sync_acc(acc, gps):
+    gps_time = gps['time']
+    # TODO:
+    # - maybe trim very low speed gps-es
+    first_measurement, last_measurement = gps_time[0], gps_time[len(gps_time) - 1]
     at = acc['_time']
-    a_first_index = 0
-    a_last_index = 0
+    a_first_index, a_last_index = 0, 0
+
     for i in range(len(at)):
         try:
             if first_measurement >= at[i] and first_measurement <= at[i + 1]:
@@ -47,34 +51,60 @@ def trim_and_sync_acc(acc, gps_time):
             elif last_measurement >= at[i] and last_measurement <= at[i + 1]:
                 a_last_index = i + 1
         except IndexError as error:
-            # print('Index out of range: ', error)
             a_last_index = i
             break
-    to_trim = [a_first_index - 1, len(at) - a_last_index - 1]
+    to_trim = [(a_first_index - 1), (len(at) - a_last_index - 1)]
 
     columns = list(acc.keys())
     for c in columns:
-        # print('pre', c, len(acc[c]))
         del (acc[c][:to_trim[0]], acc[c][-to_trim[1]:])
-        # print('post', c, len(acc[c]))
-    acc['time'] = syncronize_timestamps(at, gps_time)
-    return acc
+
+    acc['_time'] = round_acc_timestamps(acc['_time'], gps_time)
+    acc, gps = remove_accleration_where_no_valid_gps(acc, gps)
+    return acc, gps
+
+def split_measurement_lists_at_void(data):
+    time = data['time'] if 'time' in list(data.keys()) else data['_time']
+    last_msrmnt_ts = time[0]
+    to_break = [0]
+    no_measurment_intervals = []
+    for i,t in enumerate(time):
+        if t - last_msrmnt_ts > 4999:
+            to_break.append(i)
+            no_measurment_intervals.append([last_msrmnt_ts, t])
+        last_msrmnt_ts = t
+    for c in list(data.keys()):
+        l = data[c]
+        data[c] = [l[i:j] for i, j in zip(to_break, to_break[1:] + [None])]
+    return data, no_measurment_intervals
 
 
-def syncronize_timestamps(acc_time, gps_time):
-    #TODO:
-    # - TEST THIS!!!!!!!!!!!
+def remove_accleration_where_no_valid_gps(acc, gps):
 
-    """
+    gps_time = gps['time']
+    acc_time = acc['_time']
 
-    Args:
-        acc_time:
-        gps_time:
+    gps,no_measurement_intervals=split_measurement_lists_at_void(gps)
 
-    Returns:
+    voidable = []
+    for void in no_measurement_intervals:
+        for t in range(len(acc_time)):
+            if acc_time[t] > void[0] and acc_time[t] < void[1]:
+                voidable.append(t)
 
-    """
+    for i in reversed(voidable):
+        del acc['_time'][i]
+        del acc['east'][i]
+        del acc['north'][i]
+        del acc['down'][i]
+
+    acc, _ = split_measurement_lists_at_void(acc)
+    return acc, gps
+
+
+def round_acc_timestamps(acc_time, gps_time):
     for gt in gps_time:
+        last_gps_ts = gt
         for i in range(len(acc_time)):
             try:
                 at = acc_time[i]
@@ -106,6 +136,7 @@ def syncronize_timestamps(acc_time, gps_time):
     print(acc_time[0], acc_time[len(acc_time) - 1])
     return acc_time
 
+
 def interpolate_and_trim_data(acc_lists, gps_lists):
     c = list(acc_lists.keys())
 
@@ -133,6 +164,7 @@ def interpolate_and_trim_data(acc_lists, gps_lists):
         del (dataset[c][:five_percent], dataset[c][-five_percent:])
 
     return dataset
+
 
 def interpolate_gps_datalists(time, gps_data):
     gps_time = gps_data['time']
@@ -234,4 +266,3 @@ def do_plotting(fig_dir, file_count, og_coordinates, result, end_count, P, measu
     # plotter.plot_ned_acc()
 
     print("Plotting took %s seconds " % (time.time() - start_time))
-

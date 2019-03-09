@@ -11,9 +11,8 @@ class Measurement:
         self.stats = {}
 
     def preprocess(self):
-        acc = imu_data_parser.get_imu_dictionary(self.path_imu, data='lists')
-        gps = nmea_parser.get_gps_dictionary(self.path_gps,data='lists')
-        self.acc, self.gps = auxiliary.trim_and_sync_dataset(acc, gps)
+        self.acc = imu_data_parser.get_imu_dictionary(self.path_imu, data='lists')
+        self.gps = nmea_parser.get_gps_dictionary(self.path_gps, data='lists')
 
     def get_lists_of_measurements(self):
         acc_lists = self.acc
@@ -26,10 +25,11 @@ class Measurement:
         Returns:
 
         """
-        return auxiliary.prepare_data_for_batch_kf(self. acc, self.gps)
+        acc, gps = auxiliary.trim_and_sync_dataset(self.acc, self.gps)
+        self.acc, self.gps = auxiliary.prepare_data_for_batch_kf(acc, gps)
 
     def do_kalman_filtering(self):
-        #self.kalmaned_data_table, self.stats = interface.get_kalmaned_datatable(self.acc, self.gps, self.dir_path)
+        # self.kalmaned_data_table, self.stats = interface.get_kalmaned_datatable(self.acc, self.gps, self.dir_path)
         kf = interface.do_ukf(self.acc, self.gps)
         pass
 

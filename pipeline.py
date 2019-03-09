@@ -45,7 +45,7 @@ stats = {}
 measurement = Measurement(path_imu, path_gps, dir_path)
 measurement.preprocess()
 
-acc, gps = measurement.get_lists_of_measurements()
+measurement.get_list_prepeared_for_batch_filtering()
 
 measurement.do_kalman_filtering()
 #potholes = dsp.classify_windows(acc, gps, dir_path)
