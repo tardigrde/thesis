@@ -8,30 +8,103 @@ import pandas as pd
 import geopandas
 import time
 
+def prepare_data_for_batch_kf(acc, gps)
+    pass
 
 
-
-def interpolate_gps_datalists(time, gps_data):
-    gps_time = gps_data['time']
-    ln = gps_data['ln']
-    lt = gps_data['la']
-    hdop = gps_data['hdop']
-    v = gps_data['v']
-
-    gtime = np.interp(time, gps_time, gps_time).tolist()
-    lng = np.interp(time, gps_time, ln).tolist()
-    lat = np.interp(time, gps_time, lt).tolist()
-    p = np.interp(time, gps_time, hdop).tolist()
-    v = np.interp(time, gps_time, v).tolist()
-
-    return gtime, lng, lat, p, v
+def trim_and_sync_dataset(acc_msrmnt, gps_msrmnt):
+    # TODO:
+    # - if last gps was 5 secs ago, new sublist --> new kalman
+    gps = trim_gps(gps_msrmnt)
+    acc = trim_and_sync_acc(acc_msrmnt, gps['time'])
+    return acc, gps
 
 
-def _pass_std_devs(acc):
-    std_dev_acc_east = np.std(acc['acc_east'])
-    std_dev_acc_north = np.std(acc['acc_north'])
-    return {'std_dev_acc_east': std_dev_acc_east, 'std_dev_acc_north': std_dev_acc_north}
+def trim_gps(gps):
+    columns = list(gps.keys())
+    count = len(gps['time'])
+    five_percent = int(round(count / 10, 0))
 
+    for c in columns:
+        if c in gps and len(gps[c]) == count:
+            del (gps[c][:five_percent], gps[c][-five_percent:])
+        else:
+            print('ERROR: trimming gps fails!')
+    return gps
+
+
+def trim_and_sync_acc(acc, gps_time):
+    # todo
+    first_measurement = gps_time[0]
+    last_measurement = gps_time[len(gps_time) - 1]
+    at = acc['_time']
+    a_first_index = 0
+    a_last_index = 0
+    for i in range(len(at)):
+        try:
+            if first_measurement >= at[i] and first_measurement <= at[i + 1]:
+                a_first_index = i
+            elif last_measurement >= at[i] and last_measurement <= at[i + 1]:
+                a_last_index = i + 1
+        except IndexError as error:
+            # print('Index out of range: ', error)
+            a_last_index = i
+            break
+    to_trim = [a_first_index - 1, len(at) - a_last_index - 1]
+
+    columns = list(acc.keys())
+    for c in columns:
+        # print('pre', c, len(acc[c]))
+        del (acc[c][:to_trim[0]], acc[c][-to_trim[1]:])
+        # print('post', c, len(acc[c]))
+    acc['time'] = syncronize_timestamps(at, gps_time)
+    return acc
+
+
+def syncronize_timestamps(acc_time, gps_time):
+    #TODO:
+    # - TEST THIS!!!!!!!!!!!
+
+    """
+
+    Args:
+        acc_time:
+        gps_time:
+
+    Returns:
+
+    """
+    for gt in gps_time:
+        for i in range(len(acc_time)):
+            try:
+                at = acc_time[i]
+                at_post = acc_time[i + 1]
+                if gt == acc_time[i]:
+                    # print('Lucky you. They are the same: ', gt, ' = ', acc_time[i])
+                    break
+                if gt > acc_time[i] and gt < acc_time[i + 1]:
+                    diff_prior = abs(gt - acc_time[i])
+                    diff_posterior = abs(gt - acc_time[i + 1])
+                    if diff_prior <= diff_posterior:
+                        # both if prior is smaller and if prior and posterior are the same, prior should equal the gt's ts
+                        # print('was smaller or equals')
+                        acc_time[i] = gt
+                    else:
+                        # print('was bigger')
+                        acc_time[i + 1] = gt
+                    break
+            except IndexError as error:
+                # print('index out of range: ', error)
+                break
+    print(gps_time)
+    i = []
+    for a in acc_time:
+        if a % 1000 == 0:
+            i.append(a)
+    print('acc ', i)
+    print(gps_time[0], gps_time[len(gps_time) - 1])
+    print(acc_time[0], acc_time[len(acc_time) - 1])
+    return acc_time
 
 def interpolate_and_trim_data(acc_lists, gps_lists):
     c = list(acc_lists.keys())
@@ -60,6 +133,27 @@ def interpolate_and_trim_data(acc_lists, gps_lists):
         del (dataset[c][:five_percent], dataset[c][-five_percent:])
 
     return dataset
+
+def interpolate_gps_datalists(time, gps_data):
+    gps_time = gps_data['time']
+    ln = gps_data['ln']
+    lt = gps_data['la']
+    hdop = gps_data['hdop']
+    v = gps_data['v']
+
+    gtime = np.interp(time, gps_time, gps_time).tolist()
+    lng = np.interp(time, gps_time, ln).tolist()
+    lat = np.interp(time, gps_time, lt).tolist()
+    p = np.interp(time, gps_time, hdop).tolist()
+    v = np.interp(time, gps_time, v).tolist()
+
+    return gtime, lng, lat, p, v
+
+
+def _pass_std_devs(acc):
+    std_dev_acc_east = np.std(acc['acc_east'])
+    std_dev_acc_north = np.std(acc['acc_north'])
+    return {'std_dev_acc_east': std_dev_acc_east, 'std_dev_acc_north': std_dev_acc_north}
 
 
 def create_outputs(dir_path, og_coordinates, result, end_count, P_minus, measurements_count, e, n, d, lat, lng):
@@ -111,6 +205,7 @@ def convert_result_to_shp(df, out_path):
     df['Coordinates'] = df['Coordinates'].apply(Point)
     crs = {'init': 'epsg:23700'}
     gdf = geopandas.GeoDataFrame(df, crs=crs, geometry='Coordinates')
+    print(out_path)
     gdf.to_file(driver='ESRI Shapefile', filename=out_path)
     print("Writing shapes took %s seconds " % (time.time() - start_time))
 
@@ -136,41 +231,7 @@ def do_plotting(fig_dir, file_count, og_coordinates, result, end_count, P, measu
 
     plotter.plot_xy(fig_dir_path)
 
-    plotter.plot_ned_acc()
+    # plotter.plot_ned_acc()
 
     print("Plotting took %s seconds " % (time.time() - start_time))
 
-
-
-# def pass_gps_dict_of_lists(gps):
-#     time, ln, la, v, t, hdop = [], [], [], [], [], []
-#     timestamps = sorted(list(gps.keys()))
-#     for t in timestamps:
-#         values = gps[t]
-#         v.append(values['v'])
-#         hdop.append(values['hdop'])
-#         time.append(values['time'])
-#         ln.append(values['lng'])
-#         la.append(values['lat'])
-#     return {'ln': ln, 'la': la, 'v': v, 't': t, 'hdop': hdop, 'time': time, }
-#
-# def pass_acc_dict_of_lists(path_imu):
-#     acc = imu_data_parser.get_imu_dictionary(path_imu)
-#     timestamps = sorted(list(acc.keys()))
-#     acc_time, acc_east, acc_north, acc_down = [], [], [], []
-#     for t in timestamps:
-#         values = acc[t]
-#         acc_east.append(values['acc_east'])
-#         acc_north.append(values['acc_north'])
-#         acc_down.append(values['acc_down'])
-#         acc_time.append(values['time'])
-#     return {'acc_east': acc_east, 'acc_north': acc_north, 'acc_down': acc_down, 'acc_time': acc_time}
-#
-# def get_acceleration_data(path_imu):
-#     imu_list_of_dicts = imu_data_parser.get_imu_dictionary(path_imu)
-#     return imu_list_of_dicts
-#
-#
-# def get_gps_data(path_gps):
-#     gps_list_of_dicts = nmea_parser.get_gps_dictionary(path_gps)
-#     return gps_list_of_dicts

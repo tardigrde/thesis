@@ -45,10 +45,10 @@ stats = {}
 measurement = Measurement(path_imu, path_gps, dir_path)
 measurement.preprocess()
 
-acc, gps = measurement.get_lists_of_measurements();
+acc, gps = measurement.get_lists_of_measurements()
 
-potholes = dsp.classify_windows(acc, gps, dir_path)
-# measurement.do_kalman_filtering()
+measurement.do_kalman_filtering()
+#potholes = dsp.classify_windows(acc, gps, dir_path)
 # measurement.segment_data()
 # stats = measurement.get_stats()
 # except Exception as e:

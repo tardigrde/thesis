@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import math
 from math import pi
-from numpy import dot, sum, tile, linalg, exp, log
+from numpy import dot, sum, tile, linalg, exp, log, shape, ndim
 from numpy.linalg import inv
 
 """
@@ -80,11 +80,38 @@ def kf_update(X_predicted, P_predicted, I, H, lng, lat, a_east, a_north, sigma_p
 
     # Update the error covariance
     P = (I - (K * H)) * P_predicted
-    LH = gauss_pdf(y, IM, S)
-    print('nyeh')
-    print('YAY', LH)
+    #LH = gauss_pdf(y, IM, S)
+    rows = []
+    cols = []
 
-    return x, P, Z, K
+    for row in S:
+        #print(np.array(row)[0])
+        for col in np.array(row)[0]:
+            #print('c',col)
+            if col > 1e19:
+                col = 1e18
+            cols.append(col)
+        # cols[3] *=1.000011
+        # cols[2] *= 1.000012
+        # cols[0] *= 1.000013
+        # cols[1] *= 1.000014
+
+        rows.append(np.array(cols))
+        cols = []
+
+    S = np.array(rows)
+    print(type(S))
+    print(S)
+    eps = np.dot(y.T, S).dot(y)
+
+    print('EPSILON', eps.A[0])
+    print(type(eps.A[0][0]))
+    if(eps.A[0][0]) > 10000:
+        print('bigger', eps)
+
+    # print('YAY', LH)
+
+    return x, P, Z, K, eps.A[0][0]
 
 
 def gauss_pdf(X, M, S):
@@ -100,7 +127,7 @@ def gauss_pdf(X, M, S):
     Returns:
 
     """
-    if M.shape()[1] == 1:
+    if ndim(M) == 1:
         DX = X - tile(M, X.shape()[1])
         E = 0.5 * sum(DX * (np.dot(np.inv(S), DX)), axis=0)
         E = E + 0.5 * M.shape()[0] * log(2 * pi) + 0.5 * log(linalg.det(S))

@@ -26,7 +26,7 @@ def _update(X_predicted, P_predicted, I, H, lng, lat, a_east, a_north, a_down, h
     sigma_pos = hdop
     sigma_acc = 0.053
 
-    x, P, Z, K = kalman.kf_update(X_predicted, P_predicted, I, H, lng, lat, a_east, a_north, sigma_pos, sigma_acc)
+    x, P, Z, K, eps = kalman.kf_update(X_predicted, P_predicted, I, H, lng, lat, a_east, a_north, sigma_pos, sigma_acc)
 
     result['lng'].append(float(x[0]))
     result['lat'].append(float(x[1]))
@@ -36,7 +36,7 @@ def _update(X_predicted, P_predicted, I, H, lng, lat, a_east, a_north, a_down, h
     result['north'].append(float(x[5]))
     result['down'].append(float(a_down))
 
-    return x, P, Z, K, result
+    return x, P, Z, K, result, eps
 
 
 def get_kalmaned_datatable(acc, gps, dir_path):
@@ -77,6 +77,8 @@ def get_kalmaned_datatable(acc, gps, dir_path):
     measurement_usage = {}
     kalman_count = 0
     is_first_step = 1
+    epsilon = 0
+    count = 0
 
     for time, a_east, a_north, a_down, lat, lng, v, hdop in zip(d['time'], d['east'], d['north'], d['down'],
                                                                 d['lat'], d['lng'], d['vel'], d['hdop']):
@@ -96,14 +98,22 @@ def get_kalmaned_datatable(acc, gps, dir_path):
             kalman_count = kalman_count + 1
             x_minus = np.matrix([[lng, lat, 0.0, 0.0, a_east, a_north]]).T
             P_minus = P
+        if epsilon > 5:
+            Q = Q*1000
+            count += 1
+        elif count > 0:
+            Q = Q/1000
+            count-=1
 
         # Time Update (Prediction)
         # ========================
         x_predicted, P_predicted = _predict(x_minus, P_minus, A, Q)
 
         # Measurement Update (Correction)
-        x_minus, P_minus, Z, K, res = _update(x_predicted, P_predicted, I, H, lng, lat, a_east, a_north, a_down, hdop,
+        x_minus, P_minus, Z, K, res, eps = _update(x_predicted, P_predicted, I, H, lng, lat, a_east, a_north, a_down, hdop,
                                               result)
+        epsilon = eps
+        print('eps',epsilon)
         result = res
 
         x_list.append(x_minus)

@@ -1,6 +1,6 @@
-from kalman_filter.interpolation.one_axis.constant_acceleration import interface
+from kalman_filter.ukf.cv import interface
 from dsp_library import dsp
-from utils import imu_data_parser, nmea_parser
+from utils import imu_data_parser, nmea_parser, auxiliary
 
 
 class Measurement:
@@ -11,16 +11,26 @@ class Measurement:
         self.stats = {}
 
     def preprocess(self):
-        self.acc = imu_data_parser.get_imu_dictionary(self.path_imu, data='lists')
-        self.gps = nmea_parser.get_gps_dictionary(self.path_gps,data='lists')
+        acc = imu_data_parser.get_imu_dictionary(self.path_imu, data='lists')
+        gps = nmea_parser.get_gps_dictionary(self.path_gps,data='lists')
+        self.acc, self.gps = auxiliary.trim_and_sync_dataset(acc, gps)
 
     def get_lists_of_measurements(self):
         acc_lists = self.acc
         gps_lists = self.gps
         return acc_lists, gps_lists
 
+    def get_list_prepeared_for_batch_filtering(self):
+        """
+        Must be called after preprocess.
+        Returns:
+
+        """
+        return auxiliary.prepare_data_for_batch_kf(self. acc, self.gps)
+
     def do_kalman_filtering(self):
-        self.kalmaned_data_table, self.stats = interface.get_kalmaned_datatable(self.acc, self.gps, self.dir_path)
+        #self.kalmaned_data_table, self.stats = interface.get_kalmaned_datatable(self.acc, self.gps, self.dir_path)
+        kf = interface.do_ukf(self.acc, self.gps)
         pass
 
     # def segment_data(self):

@@ -44,6 +44,8 @@ a filter ezt nem tudja kezelni, ergo shiftel oldalra. jövök én, majd felemelem a
 	>ok, but has problems
 	>once the probability becomes very small it can never recover
 
+SPECIAL TOPICS KF
+
 
 
 

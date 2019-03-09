@@ -4,7 +4,7 @@ import numpy as np
 def get_initial_params():
     dt = 0.1
 
-    I = np.eye(4)
+    I = np.eye(6)
     print(I, I.shape)
 
     # initial state matrix(4x1)
@@ -23,6 +23,9 @@ def get_initial_params():
                    [0.0, 0.0, 0.0, 0.0, 1.0, 0.0],
                    [0.0, 0.0, 0.0, 0.0, 0.0, 1.0]])
     print('F:\n', F, F.shape)
+    # F = np.eye(6)
+    # F[0,2], F[1,3], F[2,4],F[3,5] = dt, dt, dt, dt
+    # F[0, 4], F[1,5] = (dt**2)/2,(dt**2)/2
 
     # B - control matrix(4x2)
     B = np.zeros((4, 2))

@@ -152,7 +152,7 @@ def pass_acc_dict_of_lists(acc):
         acc_north.append(values['acc_north'])
         acc_down.append(values['acc_down'])
         acc_time.append(int(values['time']))
-    return {'acc_east': acc_east, 'acc_north': acc_north, 'acc_down': acc_down, 'acc_time': acc_time}
+    return {'east': acc_east, 'north': acc_north, 'down': acc_down, '_time': acc_time}
 
 # Call this and on the result of this you can call get_gps_dataframe.
 def get_imu_dictionary(path, data='lists'):
