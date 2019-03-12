@@ -1,12 +1,4 @@
-from shapely.geometry import Point
-from os import listdir, makedirs
-from os.path import isfile, join
-from pathlib import Path
-from utils import plotter
 import numpy as np
-import pandas as pd
-import geopandas
-import time
 
 
 def prepare_data_for_batch_kf(acc, gps):
@@ -117,10 +109,8 @@ def round_acc_timestamps(acc_time, gps_time):
                     diff_posterior = abs(gt - acc_time[i + 1])
                     if diff_prior <= diff_posterior:
                         # both if prior is smaller and if prior and posterior are the same, prior should equal the gt's ts
-                        # print('was smaller or equals')
                         acc_time[i] = gt
                     else:
-                        # print('was bigger')
                         acc_time[i + 1] = gt
                     break
             except IndexError as error:
@@ -188,81 +178,3 @@ def _pass_std_devs(acc):
     return {'std_dev_acc_east': std_dev_acc_east, 'std_dev_acc_north': std_dev_acc_north}
 
 
-def create_outputs(dir_path, og_coordinates, result, end_count, P_minus, measurements_count, e, n, d, lat, lng):
-    og_df = pd.DataFrame(og_coordinates)
-    df = pd.DataFrame(result)
-    shp_dir, fig_dir = check_folders(dir_path)
-    og_coords_path = Path(str(shp_dir) + r'\og_coordinates.shp')
-
-    if not og_coords_path.is_file(): convert_result_to_shp(og_df, og_coords_path)
-
-    file_count = form_filename_dynamically(shp_dir)
-    shape_file_path = Path(str(shp_dir) + r'\result' + file_count + r'.shp')
-    convert_result_to_shp(df, shape_file_path)
-
-    do_plotting(fig_dir, file_count, og_coordinates, result, end_count, P_minus, measurements_count, e, n, d, lat, lng)
-
-
-def check_folders(dir_path):
-    output_dir_path = Path(str(dir_path) + r'\results')
-    shapes_dir = Path(str(output_dir_path) + r'\shapes')
-    figures_dir = Path(str(output_dir_path) + r'\figures')
-
-    if not output_dir_path.is_dir(): makedirs(output_dir_path)
-    if not shapes_dir.is_dir(): makedirs(shapes_dir)
-    if not figures_dir.is_dir(): makedirs(figures_dir)
-    return shapes_dir, figures_dir
-
-
-def form_filename_dynamically(dir_path):
-    onlyfiles = [f for f in listdir(str(dir_path)) if isfile(join(str(dir_path), f))]
-    result_count = []
-    for file in onlyfiles:
-        if 'result' in file and '.shp' in file and 'result.shp' not in file:
-            # we want to use the number after the result filename substring
-            number = int(file.split('.')[0].split('t')[1])
-            result_count.append(number)
-        # elif not 'og_coordinates' in file:
-
-    if not result_count:
-        count = str(0)
-    else:
-        count = str(max(sorted(result_count)) + 1)
-    return count
-
-
-def convert_result_to_shp(df, out_path):
-    start_time = time.time()
-    df['Coordinates'] = list(zip(df.lng, df.lat))
-    df['Coordinates'] = df['Coordinates'].apply(Point)
-    crs = {'init': 'epsg:23700'}
-    gdf = geopandas.GeoDataFrame(df, crs=crs, geometry='Coordinates')
-    print(out_path)
-    gdf.to_file(driver='ESRI Shapefile', filename=out_path)
-    print("Writing shapes took %s seconds " % (time.time() - start_time))
-
-
-def do_plotting(fig_dir, file_count, og_coordinates, result, end_count, P, measurements_count, e, n, d, lat, lng):
-    start_time = time.time()
-    if not file_count: return
-    fig_dir_path = Path(str(fig_dir) + '\\' + file_count)
-
-    if not fig_dir_path.is_dir(): makedirs(fig_dir_path)
-
-    plotter.plot_result(fig_dir_path, og_coordinates, result)
-
-    plotter.plot_m(fig_dir_path, measurements_count, e, n, d, lat, lng)
-
-    plotter.plot_P(fig_dir_path, end_count)
-
-    plotter.plot_P2(fig_dir_path, P, end_count)
-
-    plotter.plot_K(fig_dir_path, end_count)
-
-    # plotter.plot_x(fig_dir_path, end_count)
-
-    plotter.plot_xy(fig_dir_path)
-
-    # plotter.plot_ned_acc()
-
-    print("Plotting took %s seconds " % (time.time() - start_time))

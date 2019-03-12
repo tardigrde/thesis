@@ -2,64 +2,64 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import numpy as np
 
-# Preallocation for Plotting
-xt = []
-yt = []
-dxt = []
-dyt = []
-ddxt = []
-ddyt = []
-Zx = []
-Zy = []
-Px = []
-Py = []
-Pdx = []
-Pdy = []
-Pddx = []
-Pddy = []
-Kx = []
-Ky = []
-Kdx = []
-Kdy = []
-Kddx = []
-Kddy = []
+"""
+what to plot:
+    - og vs estimated vs res
+    - kalman gains
+    - likelihood
+    - p -> that is covariance matrix
+    - 
+
+"""
 
 
-def savestates(x, Z, P, K):
-    xt.append(float(x[0]))
-    yt.append(float(x[1]))
-    dxt.append(float(x[2]))
-    dyt.append(float(x[3]))
-    ddxt.append(float(x[4]))
-    ddyt.append(float(x[5]))
-    Zx.append(float(Z[0]))
-    Zy.append(float(Z[1]))
-    Px.append(float(P[0, 0]))
-    Py.append(float(P[1, 1]))
-    Pdx.append(float(P[2, 2]))
-    Pdy.append(float(P[3, 3]))
-    Pddx.append(float(P[4, 4]))
-    Pddy.append(float(P[5, 5]))
-    Kx.append(float(K[0, 0]))
-    Ky.append(float(K[1, 0]))
-    Kdx.append(float(K[2, 0]))
-    Kdy.append(float(K[3, 0]))
-    Kddx.append(float(K[4, 0]))
-    Kddy.append(float(K[5, 0]))
 
-
-def plot_result(fig_dir, og, res):
+def plot_result(fig_dir, result):
     fig_gps = plt.figure(figsize=(16, 16))
-    plt.scatter(res['lng'], res['lat'])
-    plt.scatter(og['lng'], og['lat'])
+    plt.scatter(result['oglng'], result['oglat'],color='blue',label='og')
+    plt.scatter(result['priolng'], result['priolat'],color='orange',label='prio')
+    plt.scatter(result['lng'], result['lat'],color='red',label='kf')
     plt.xlabel(r'LNG $g$')
     plt.ylabel(r'LAT $g$')
+    plt.legend(loc='best', prop={'size': 22})
     plt.grid()
-    """
-    TODO:
-    -   make this dynamic so new files are created on every run
-    """
-    plt.savefig(str(fig_dir) + r'\Kalman-Filter-RESULTS.png', dpi=72, transparent=True, bbox_inches='tight')
+    plt.savefig(str(fig_dir) + r'\KF_OG_PRIO_RES.png', dpi=72, transparent=True, bbox_inches='tight')
+
+def plot_P(fig_dir, matrices):
+    fig = plt.figure(figsize=(16, 9))
+    Px, Py = [], []
+
+    for p in matrices['P']:
+        Px.append(np.diagonal(p)[0])
+        Py.append(np.diagonal(p)[2])
+    range_of_dts = range(matrices['length'])
+
+    plt.plot(range_of_dts, Px, label='$x$')
+    plt.plot(range_of_dts, Py, label='$y$')
+
+    plt.title('Uncertainty (Elements from Matrix $P$)')
+    plt.legend(loc='best', prop={'size': 22})
+    plt.xlabel('Filter Step')
+    plt.ylabel('Covariance matrix')
+    plt.legend(loc='best', prop={'size': 22})
+    plt.savefig(str(fig_dir) + r'\Kalman-Filter-CA-XP.png', dpi=72, transparent=True, bbox_inches='tight')
+
+def plot_K(fig_dir, matrices):
+    end_count = matrices['length']
+    fig = plt.figure(figsize=(16, 9))
+    K = matrices['K']
+    def get_K_list(index):
+        return [i[index,0] for i in K]
+    plt.plot(range(end_count), get_K_list(0), label='Kalman Gain for $x$')
+    plt.plot(range(end_count), get_K_list(1), label='Kalman Gain for $y$')
+    plt.plot(range(end_count), get_K_list(2), label='Kalman Gain for $\dot x$')
+    plt.plot(range(end_count), get_K_list(3), label='Kalman Gain for $\dot y$')
+
+    plt.xlabel('Filter Step')
+    plt.ylabel('')
+    plt.title('Kalman Gain (the lower, the more the measurement fullfill the prediction)')
+    plt.legend(loc='best', prop={'size': 18})
+    plt.savefig(str(fig_dir) + r'\Kalman-Filter-CA-KG.png', dpi=72, transparent=True, bbox_inches='tight')
 
 
 def plot_m(fig_dir, measurements_count, ma_e, ma_n, acc_down, mp_lng, mp_lat):
@@ -82,22 +82,7 @@ def plot_m(fig_dir, measurements_count, ma_e, ma_n, acc_down, mp_lng, mp_lat):
     plt.savefig(str(fig_dir) + r'\Kalman-Filter-CA-GPS-Measurements.png', dpi=72, transparent=True, bbox_inches='tight')
 
 
-def plot_P(fig_dir, end_count):
-    fig = plt.figure(figsize=(16, 9))
-    plt.subplot(211)
-    plt.plot(range(end_count), Px, label='$x$')
-    plt.plot(range(end_count), Py, label='$y$')
-    plt.title('Uncertainty (Elements from Matrix $P$)')
-    plt.legend(loc='best', prop={'size': 22})
-    plt.subplot(212)
-    plt.plot(range(end_count), Pddx, label='$\ddot x$')
-    plt.plot(range(end_count), Pddy, label='$\ddot y$')
 
-    plt.xlabel('Filter Step')
-    plt.ylabel('')
-    plt.legend(loc='best', prop={'size': 22})
-    # plt.show()
-    plt.savefig(str(fig_dir) + r'\Kalman-Filter-CA-XP.png', dpi=72, transparent=True, bbox_inches='tight')
 
 
 def plot_P2(fig_dir, P, end_count):
@@ -128,20 +113,7 @@ def plot_P2(fig_dir, P, end_count):
     plt.savefig(str(fig_dir) + r'\Kalman-Filter-CA-CovarianceMatrix.png', dpi=72, transparent=True, bbox_inches='tight')
 
 
-def plot_K(fig_dir, end_count):
-    fig = plt.figure(figsize=(16, 9))
-    plt.plot(range(end_count), Kx, label='Kalman Gain for $x$')
-    plt.plot(range(end_count), Ky, label='Kalman Gain for $y$')
-    plt.plot(range(end_count), Kdx, label='Kalman Gain for $\dot x$')
-    plt.plot(range(end_count), Kdy, label='Kalman Gain for $\dot y$')
-    plt.plot(range(end_count), Kddx, label='Kalman Gain for $\ddot x$')
-    plt.plot(range(end_count), Kddy, label='Kalman Gain for $\ddot y$')
 
-    plt.xlabel('Filter Step')
-    plt.ylabel('')
-    plt.title('Kalman Gain (the lower, the more the measurement fullfill the prediction)')
-    plt.legend(loc='best', prop={'size': 18})
-    plt.savefig(str(fig_dir) + r'\Kalman-Filter-CA-KG.png', dpi=72, transparent=True, bbox_inches='tight')
 
 
 def plot_x(fig_dir, end_count):
@@ -219,3 +191,48 @@ def plot_ned_acc(fig_dir, time, axis):
     #plt.show()
     plt.savefig(r'D:\PyCharmProjects\thesis\data\trolli_playground\constacc\results\figures\Kalman-Filter-CA-Acc_NED.png')#Path(str(fig_dir) + r'\results\figures\Acc.png'))
     print('yes')
+
+# Preallocation for Plotting
+xt = []
+yt = []
+dxt = []
+dyt = []
+ddxt = []
+ddyt = []
+Zx = []
+Zy = []
+Px = []
+Py = []
+Pdx = []
+Pdy = []
+Pddx = []
+Pddy = []
+Kx = []
+Ky = []
+Kdx = []
+Kdy = []
+Kddx = []
+Kddy = []
+
+
+def savestates(x, Z, P, K):
+    xt.append(float(x[0]))
+    yt.append(float(x[1]))
+    dxt.append(float(x[2]))
+    dyt.append(float(x[3]))
+    ddxt.append(float(x[4]))
+    ddyt.append(float(x[5]))
+    Zx.append(float(Z[0]))
+    Zy.append(float(Z[1]))
+    Px.append(float(P[0, 0]))
+    Py.append(float(P[1, 1]))
+    Pdx.append(float(P[2, 2]))
+    Pdy.append(float(P[3, 3]))
+    Pddx.append(float(P[4, 4]))
+    Pddy.append(float(P[5, 5]))
+    Kx.append(float(K[0, 0]))
+    Ky.append(float(K[1, 0]))
+    Kdx.append(float(K[2, 0]))
+    Kdy.append(float(K[3, 0]))
+    Kddx.append(float(K[4, 0]))
+    Kddy.append(float(K[5, 0]))
