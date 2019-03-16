@@ -1,8 +1,7 @@
 """
 CC-BY-SA2.0 Lizenz
 """
-from kalman_filter.interpolation.one_axis.constant_acceleration import initital_parameters
-from kalman_filter.interpolation.one_axis.constant_acceleration import kalman
+from kalman_filter.archive.interpolation.one_axis.constant_acceleration import kalman, initital_parameters
 import numpy as np
 
 from utils import auxiliary

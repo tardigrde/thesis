@@ -23,6 +23,7 @@ def plot_result(fig_dir, result):
     plt.ylabel(r'LAT $g$')
     plt.legend(loc='best', prop={'size': 22})
     plt.grid()
+    plt.show()
     plt.savefig(str(fig_dir) + r'\KF_OG_PRIO_RES.png', dpi=72, transparent=True, bbox_inches='tight')
 
 def plot_P(fig_dir, matrices):

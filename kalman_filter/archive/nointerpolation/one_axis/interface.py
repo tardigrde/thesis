@@ -1,12 +1,10 @@
 """
 CC-BY-SA2.0 Lizenz
 """
-from kalman_filter.nointerpolation.one_axis import initital_parameters, kalman
+from kalman_filter.archive.nointerpolation.one_axis import kalman
+from kalman_filter.archive.nointerpolation.one_axis import initital_parameters
 from utils import auxiliary
-import matplotlib.pyplot as plt
-import pandas as pd
 import numpy as np
-import geopandas
 
 
 def _predict(X_minus, P_minus, A, Q):

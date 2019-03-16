@@ -1,4 +1,5 @@
-from kalman_filter.ukf.cv import interface
+from kalman_filter.ukf.cv import interfacecv
+from kalman_filter.ukf.ca import interfaceca
 from dsp_library import dsp
 from utils import imu_data_parser, nmea_parser, auxiliary
 
@@ -30,7 +31,9 @@ class Measurement:
 
     def do_kalman_filtering(self):
         # self.kalmaned_data_table, self.stats = interface.get_kalmaned_datatable(self.acc, self.gps, self.dir_path)
-        kf = interface.do_ukf(self.dir_path, self.acc, self.gps)
+        #kfcv = interfacecv.do_ukf(self.dir_path, self.acc, self.gps)
+        kf = interfaceca.do_ukf_with_acc(self.dir_path, self.acc, self.gps)
+
         pass
 
     # def segment_data(self):

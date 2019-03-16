@@ -41,3 +41,4 @@ def initialize_const_accel(f):
     f.P = np.eye(3) * 3
 
 def do_adaptive_filtering():
+    pass

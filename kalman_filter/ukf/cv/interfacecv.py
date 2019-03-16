@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from utils.output_creator import create_outputs
 
 
-def do_ukf(dir_path,acc, gps):
+def do_ukf(dir_path, acc, gps):
     # TODO:
     # finish breaking into lists and prepear data for batch filtering til the set is over -->20:00
     dt = 1
@@ -23,7 +23,7 @@ def do_ukf(dir_path,acc, gps):
 
     states = []
     covariances = []
-    for i,zs in enumerate(etaps):
+    for i, zs in enumerate(etaps):
         ukf.x = np.array([zs[0][0], 0., zs[0][1], 0.])
         ukf.R = np.diag([std ** 2, std ** 2])
         ukf.Q[0:2, 0:2] = Q_discrete_white_noise(2, dt=dt, var=1)
@@ -37,10 +37,10 @@ def do_ukf(dir_path,acc, gps):
     create_outputs(dir_path, saver)
 
 
-
 def f_cv(x, dt):
     """ state transition function for a
     constant velocity aircraft"""
+    print('______________',x,dt)
 
     F = np.array([[1, dt, 0, 0],
                   [0, 1, 0, 0],

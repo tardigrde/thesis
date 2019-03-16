@@ -42,10 +42,10 @@ def write_result_to_json(json_dir, data):
 
 def create_needed_attributes_from_saver_object(saved):
     if saved._dim_z[0] == 2:
-        lng = saved.x_post[:, 0]
-        lat = saved.x_post[:, 2]
-        priolng = saved.x_prior[:, 0]
-        priolat = saved.x_prior[:, 2]
+        lng = [ln[0] for ln in saved.x_post]
+        lat = [lt[2] for lt in saved.x_post]
+        priolng = [ln[0] for ln in saved.x_prior]
+        priolat = [lt[2] for lt in saved.x_prior]
         # oglng= saved.z[:, 0]
         # oglat=saved.z[:, 1]
     elif saved._dim_z[0] == 4:
@@ -57,8 +57,8 @@ def create_needed_attributes_from_saver_object(saved):
         'lat': lat,
         'priolng': priolng,
         'priolat': priolat,
-        'oglng': saved.z[:, 0],
-        'oglat': saved.z[:, 1],
+        'oglng': [lt[0] for lt in saved.z],
+        'oglat': [lt[1] for lt in saved.z],
         # 'likelihood': saved.likelihood,
         # 'K': saved.K,
         # 'P': saved.P_post,
@@ -127,7 +127,7 @@ def do_plotting(fig_dir, result, matrices, file_count):
 
     plotter.plot_result(fig_dir_path, result)
 
-    plotter.plot_P(fig_dir_path, matrices)
+    #plotter.plot_P(fig_dir_path, matrices)
 
     # plotter.plot_m(fig_dir_path, measurements_count, e, n, d, lat, lng)
     #
