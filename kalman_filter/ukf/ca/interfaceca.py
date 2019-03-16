@@ -5,6 +5,7 @@ from filterpy.common import Q_discrete_white_noise, Saver
 import numpy as np
 import matplotlib.pyplot as plt
 from utils.output_creator import create_outputs
+from numpy.linalg import inv
 
 
 def do_ukf_with_acc(dir_path, acc, gps):
@@ -36,6 +37,7 @@ def do_ukf_with_acc(dir_path, acc, gps):
     ukf.R = np.diag([std ** 2, std ** 2])
     ukf.Q[0:2, 0:2] = Q_discrete_white_noise(2, dt=dt, var=1)
     ukf.Q[2:4, 2:4] = Q_discrete_white_noise(2, dt=dt, var=1)
+    epsilons=[]
     for i, etap in enumerate(etaps_acc):
         ukf.x = np.array([etaps_gps[i][0][1], 0., etaps_gps[i][0][2], 0.])
         for j, acc_msrmnt in enumerate(etap):
@@ -48,18 +50,19 @@ def do_ukf_with_acc(dir_path, acc, gps):
                     measurements=[etaps_gps[i][count][1], etaps_gps[i][count][2]]
                     ukf.update(measurements)
                     saver_updated.save()
+                    y, S = ukf.y, ukf.S
+                    eps = np.dot(y.T, inv(S)).dot(y)
+                    epsilons.append(eps)
                     count = count + 1
             except Exception as e:
                 print(e)
             saver_predicted.save()
+        # epsilons.append(0)
         count = 0
 
-        # xs, _ = ukf.batch_filter(zs, saver=saver)
+    print('epsilons', len(epsilons))
 
-        # plt.plot(xs[:, 0], xs[:, 2])
-        # plt.show()
-
-    create_outputs(dir_path, saver_updated)
+    create_outputs(dir_path, saver_updated, epsilons)
 
 
 def f_ca(x, dt, **kwargs):

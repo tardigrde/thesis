@@ -19,7 +19,7 @@ start_time = time.time()
 # CURRENT_TEST_RUN = r'\trolli_playground'
 # CURRENT_TEST_SET = r'\ukf'
 DATA_BASE_DIR = r'D:\code\PyCharmProjects\thesis\data'
-CURRENT_TEST_RUN = r'\20190115\harmadik'
+CURRENT_TEST_RUN = r'\trolli_playground'
 CURRENT_TEST_SET = r'\ukf'
 dir_path = DATA_BASE_DIR + CURRENT_TEST_RUN + CURRENT_TEST_SET
 

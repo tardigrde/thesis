@@ -5,6 +5,8 @@ from filterpy.common import Q_discrete_white_noise, Saver
 import numpy as np
 import matplotlib.pyplot as plt
 from utils.output_creator import create_outputs
+from numpy.linalg import inv
+
 
 
 def do_ukf(dir_path, acc, gps):
@@ -21,20 +23,18 @@ def do_ukf(dir_path, acc, gps):
 
     saver = Saver(ukf)
 
-    states = []
-    covariances = []
     for i, zs in enumerate(etaps):
         ukf.x = np.array([zs[0][0], 0., zs[0][1], 0.])
         ukf.R = np.diag([std ** 2, std ** 2])
         ukf.Q[0:2, 0:2] = Q_discrete_white_noise(2, dt=dt, var=1)
         ukf.Q[2:4, 2:4] = Q_discrete_white_noise(2, dt=dt, var=1)
         xs, _ = ukf.batch_filter(zs, saver=saver)
-        saver.to_array()
-        plt.plot(xs[:, 0], xs[:, 2])
-        # plt.show()
+    epsilons = ukf.epsilon
 
 
-    create_outputs(dir_path, saver)
+    saver.to_array()
+
+    create_outputs(dir_path, saver, epsilons)
 
 
 def f_cv(x, dt):

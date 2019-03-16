@@ -1,4 +1,4 @@
-from kalman_filter.archive.interpolation.one_axis.constant_acceleration import interface
+from kalman_filter.archive.interpolation.constant_acceleration import interface
 
 
 def do_kalmaning_with_interpolation(acc, gps, fig_dir):

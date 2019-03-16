@@ -10,16 +10,15 @@ import time
 import re
 
 
-def create_outputs(dir_path, saver):
+def create_outputs(dir_path, saver, epsilons):
     # if not len(og_coordinates) == len(saved):
     #     print('Error: there is a mismatch between the length of the inputs and outputs! No outputs will be generated.')
     #     return
 
     result , matrices= create_needed_attributes_from_saver_object(saver)
-    """
-    paraaaaaaaa a result objecttel
-    """
+
     df = pd.DataFrame(result)
+    result['epsilons'] = epsilons
     print(df.head())
     shp_dir, fig_dir, json_dir = check_folders(dir_path)
     og_coords_path = Path(str(shp_dir) + r'\og_coordinates.shp')
@@ -59,10 +58,10 @@ def create_needed_attributes_from_saver_object(saved):
         'priolat': priolat,
         'oglng': [lt[0] for lt in saved.z],
         'oglat': [lt[1] for lt in saved.z],
-        # 'likelihood': saved.likelihood,
+        'likelihood': saved._likelihood,
         # 'K': saved.K,
         # 'P': saved.P_post,
-        # 'length': len(saved._dt),
+        #'length': len(saved._dt),
     }
     matrices= {
         'likelihood': saved.likelihood,
@@ -127,19 +126,19 @@ def do_plotting(fig_dir, result, matrices, file_count):
 
     plotter.plot_result(fig_dir_path, result)
 
-    #plotter.plot_P(fig_dir_path, matrices)
+    plotter.plot_P(fig_dir_path, matrices)
+
+    plotter.plot_K(fig_dir_path, matrices)
+
+    plotter.plot_llh(fig_dir_path, result)
+
+    plotter.plot_epsilons(fig_dir_path, result)
+
 
     # plotter.plot_m(fig_dir_path, measurements_count, e, n, d, lat, lng)
-    #
     # plotter.plot_P2(fig_dir_path, P, end_count)
-    #
-    print(matrices['K'][0])
-    plotter.plot_K(fig_dir_path, matrices)
-    #
     # # plotter.plot_x(fig_dir_path, end_count)
-    #
     # plotter.plot_xy(fig_dir_path)
-    #
     # # plotter.plot_ned_acc()
 
     print("Plotting took %s seconds " % (time.time() - start_time))

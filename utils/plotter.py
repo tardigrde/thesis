@@ -2,16 +2,6 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import numpy as np
 
-"""
-what to plot:
-    - og vs estimated vs res
-    - kalman gains
-    - likelihood
-    - p -> that is covariance matrix
-    - 
-
-"""
-
 
 
 def plot_result(fig_dir, result):
@@ -61,6 +51,22 @@ def plot_K(fig_dir, matrices):
     plt.title('Kalman Gain (the lower, the more the measurement fullfill the prediction)')
     plt.legend(loc='best', prop={'size': 18})
     plt.savefig(str(fig_dir) + r'\Kalman-Filter-CA-KG.png', dpi=72, transparent=True, bbox_inches='tight')
+
+
+def plot_llh(fig_dir, result):
+    end_count = len(result['lng'])
+    fig = plt.figure(figsize=(16, 9))
+    plt.plot(range(end_count), result['likelihood'], label='likelihood')
+    plt.title('Likelihood')
+    plt.savefig(str(fig_dir) + r'\Kalman-Filter-likelihood.png', dpi=72, transparent=True, bbox_inches='tight')
+
+def plot_epsilons(fig_dir, result):
+    end_count = len(result['epsilons'])
+    fig = plt.figure(figsize=(16, 9))
+    plt.plot(range(end_count),result['epsilons'], label='likelihood')
+    plt.title('Epsilons')
+    plt.show()
+    plt.savefig(str(fig_dir) + r'\Kalman-Filter-epsilons.png', dpi=72, transparent=True, bbox_inches='tight')
 
 
 def plot_m(fig_dir, measurements_count, ma_e, ma_n, acc_down, mp_lng, mp_lat):

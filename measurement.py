@@ -30,9 +30,8 @@ class Measurement:
         self.acc, self.gps = auxiliary.prepare_data_for_batch_kf(acc, gps)
 
     def do_kalman_filtering(self):
-        # self.kalmaned_data_table, self.stats = interface.get_kalmaned_datatable(self.acc, self.gps, self.dir_path)
-        #kfcv = interfacecv.do_ukf(self.dir_path, self.acc, self.gps)
-        kf = interfaceca.do_ukf_with_acc(self.dir_path, self.acc, self.gps)
+        kfcv = interfacecv.do_ukf(self.dir_path, self.acc, self.gps)
+        # kfca = interfaceca.do_ukf_with_acc(self.dir_path, self.acc, self.gps)
 
         pass
 
