@@ -263,12 +263,12 @@ fabric.properties
 
 
 # ignoring sample csv-s
-teszt/
 *.csv
 
 # ignoring xmls
 *.xml
 
+<<<<<<< HEAD
 *.png
 *.jpg
 *.pdf
@@ -300,7 +300,17 @@ workspace.xml
 .vscode/
 old_stuff/
 lib/
+=======
+#ignoring folders
+.idea/
+.vscode/
+old_stuff/
+>>>>>>> nointerpolation
 teszt/
 etc/
 madgwick/
 thesis/
+<<<<<<< HEAD
+=======
+data/
+>>>>>>> nointerpolation
