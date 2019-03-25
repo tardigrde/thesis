@@ -12,6 +12,8 @@ from measurement import Measurement
 from dsp_library import dsp
 import time
 
+from utils.auxiliary import fix_shapes
+
 start_time = time.time()
 
 
@@ -45,11 +47,18 @@ if input_dir_path.is_dir():
 stats = {}
 
 measurement = Measurement(path_imu, path_gps, dir_path)
-measurement.preprocess()
 
-measurement.get_list_prepeared_for_batch_filtering()
+fix_shapes(DATA_BASE_DIR)
 
-measurement.do_kalman_filtering()
+
+
+
+
+# measurement.preprocess()
+#
+# measurement.get_list_prepeared_for_batch_filtering()
+#
+# measurement.do_kalman_filtering()
 #potholes = dsp.classify_windows(acc, gps, dir_path)
 # measurement.segment_data()
 # stats = measurement.get_stats()

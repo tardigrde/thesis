@@ -1,4 +1,6 @@
 import numpy as np
+from shapely.geometry import Point
+from pathlib import Path
 
 
 def prepare_data_for_batch_kf(acc, gps):
@@ -55,12 +57,13 @@ def trim_and_sync_acc(acc, gps):
     acc, gps = remove_accleration_where_no_valid_gps(acc, gps)
     return acc, gps
 
+
 def split_measurement_lists_at_void(data):
     time = data['time'] if 'time' in list(data.keys()) else data['_time']
     last_msrmnt_ts = time[0]
     to_break = [0]
     no_measurment_intervals = []
-    for i,t in enumerate(time):
+    for i, t in enumerate(time):
         if t - last_msrmnt_ts > 4999:
             to_break.append(i)
             no_measurment_intervals.append([last_msrmnt_ts, t])
@@ -72,11 +75,10 @@ def split_measurement_lists_at_void(data):
 
 
 def remove_accleration_where_no_valid_gps(acc, gps):
-
     gps_time = gps['time']
     acc_time = acc['_time']
 
-    gps,no_measurement_intervals=split_measurement_lists_at_void(gps)
+    gps, no_measurement_intervals = split_measurement_lists_at_void(gps)
 
     voidable = []
     for void in no_measurement_intervals:
@@ -178,3 +180,137 @@ def _pass_std_devs(acc):
     return {'std_dev_acc_east': std_dev_acc_east, 'std_dev_acc_north': std_dev_acc_north}
 
 
+"""
+bullshit
+"""
+
+import os
+
+
+def fix_shapes(dir):
+    for root, dirs, files in os.walk(dir):
+        dir = str(dir)
+        if files:
+            for file in files:
+                size_of_file = os.stat(Path(root + '\\' + file)).st_size
+                if '.dbf' in file and size_of_file > 0:
+                    if 'new' in file or 'osm' in file:
+                        break
+                    rewrite_shape_file(root, file)
+        elif not files and dirs:
+            for dirr in dirs:
+                path = Path(root + '\\' + dirr)
+                fix_shapes(path)
+
+
+def rewrite_shape_file(dir, file):
+    from dbfread import DBF
+    from pandas import DataFrame
+    import geopandas
+    path_of_file = Path(dir + '\\' + file)
+    dbf = DBF(path_of_file)
+    df = DataFrame(iter(dbf))
+    try:
+        df['Coordinates'] = list(zip(df.lng, df.lat))
+    except Exception as e:
+        print(e)
+        try:
+            df['Coordinates'] = list(zip(df.ln, df.lt))
+        except Exception as e:
+            print('MÁÁÁÁÁÁÁÁÁÁR MEGINT', e)
+
+    df['Coordinates'] = df['Coordinates'].apply(Point)
+    crs = {'init': 'epsg:23700'}
+    gdf = geopandas.GeoDataFrame(df, crs=crs, geometry='Coordinates')
+    pathh = Path(dir + '\\' + r'new' + file)
+    print(pathh)
+    gdf.to_file(driver='ESRI Shapefile', filename=pathh)
+
+
+"""
+
+from dbfread import DBF
+from pandas import DataFrame
+import shapefile
+
+
+dbf = DBF(r'D:\thesis\data\szeged_osm_data\gis_osm_roads_free_1.shp',encoding='utf-8')
+frame = DataFrame(iter(dbf))
+
+print(frame)
+import os"""
+
+"""
+Midpoint
+
+This is the half-way point along a great circle path between the two points.1
+Formula: 	Bx = cos φ2 ⋅ cos Δλ
+	By = cos φ2 ⋅ sin Δλ
+	φm = atan2( sin φ1 + sin φ2, √(cos φ1 + Bx)² + By² )
+	λm = λ1 + atan2(By, cos(φ1)+Bx)
+JavaScript:
+(all angles
+in radians)
+	
+
+var Bx = Math.cos(φ2) * Math.cos(λ2-λ1);
+var By = Math.cos(φ2) * Math.sin(λ2-λ1);
+var φ3 = Math.atan2(Math.sin(φ1) + Math.sin(φ2),
+                    Math.sqrt( (Math.cos(φ1)+Bx)*(Math.cos(φ1)+Bx) + By*By ) );
+var λ3 = λ1 + Math.atan2(By, Math.cos(φ1) + Bx);
+
+	The longitude can be normalised to −180…+180 using (lon+540)%360-180
+
+Just as the initial bearing may vary from the final bearing, the midpoint may not be located half-way between latitudes/longitudes; the midpoint between 35°N,45°E and 35°N,135°E is around 45°N,90°E.
+Intermediate point
+
+An intermediate point at any fraction along the great circle path between two points can also be calculated.1
+Formula: 	a = sin((1−f)⋅δ) / sin δ
+	b = sin(f⋅δ) / sin δ
+	x = a ⋅ cos φ1 ⋅ cos λ1 + b ⋅ cos φ2 ⋅ cos λ2
+	y = a ⋅ cos φ1 ⋅ sin λ1 + b ⋅ cos φ2 ⋅ sin λ2
+	z = a ⋅ sin φ1 + b ⋅ sin φ2
+	φi = atan2(z, √x² + y²)
+	λi = atan2(y, x)
+where 	f is fraction along great circle route (f=0 is point 1, f=1 is point 2), δ is the angular distance d/R between the two points.
+"""
+
+#  * Returns the point at given fraction between ‘this’ point and given point.
+#  *
+#  * @param   {LatLon} point - Latitude/longitude of destination point.
+#  * @param   {number} fraction - Fraction between the two points (0 = this point, 1 = specified point).
+#  * @returns {LatLon} Intermediate point between this point and destination point.
+#  *
+#  * @example
+#  *   const p1 = new LatLon(52.205, 0.119);
+#  *   const p2 = new LatLon(48.857, 2.351);
+#  *   const pInt = p1.intermediatePointTo(p2, 0.25); // 51.3721°N, 000.7073°E
+#
+# intermediatePointTo(point, fraction) {
+#     if (!(point instanceof LatLonSpherical)) point = LatLonSpherical.parse(point); // allow literal forms
+#
+#     const φ1 = this.lat.toRadians(), λ1 = this.lon.toRadians();
+#     const φ2 = point.lat.toRadians(), λ2 = point.lon.toRadians();
+#
+#     // distance between points
+#     const Δφ = φ2 - φ1;
+#     const Δλ = λ2 - λ1;
+#     const a = Math.sin(Δφ/2) * Math.sin(Δφ/2)
+#         + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
+#     const δ = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+#
+#     const A = Math.sin((1-fraction)*δ) / Math.sin(δ);
+#     const B = Math.sin(fraction*δ) / Math.sin(δ);
+#
+#     const x = A * Math.cos(φ1) * Math.cos(λ1) + B * Math.cos(φ2) * Math.cos(λ2);
+#     const y = A * Math.cos(φ1) * Math.sin(λ1) + B * Math.cos(φ2) * Math.sin(λ2);
+#     const z = A * Math.sin(φ1) + B * Math.sin(φ2);
+#
+#     const φ3 = Math.atan2(z, Math.sqrt(x*x + y*y));
+#     const λ3 = Math.atan2(y, x);
+#
+#     const lat = φ3.toDegrees();
+#     const lon = λ3.toDegrees();
+#
+#     return new LatLonSpherical(lat, Dms.wrap180(lon));
+# }
