@@ -39,7 +39,7 @@ def write_result_to_json(json_dir, data):
         json.dump(data, outfile)
 
 
-def create_needed_attributes_from_saver_object(saved):
+def create_needed_attributes_from_saver_object(saved, epsilons):
     if saved._dim_z[0] == 2:
         lng = [ln[0] for ln in saved.x_post]
         lat = [lt[2] for lt in saved.x_post]
@@ -59,9 +59,7 @@ def create_needed_attributes_from_saver_object(saved):
         'oglng': [lt[0] for lt in saved.z],
         'oglat': [lt[1] for lt in saved.z],
         'likelihood': saved._likelihood,
-        # 'K': saved.K,
-        # 'P': saved.P_post,
-        #'length': len(saved._dt),
+        'epsilons': epsilons,
     }
     matrices= {
         'likelihood': saved.likelihood,

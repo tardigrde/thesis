@@ -151,11 +151,7 @@ def _remove_redundant_points(msrmnt_dict):
             't': m['t'], 'v': m['v'],
             'lng': lng, 'lat': lat,
         }
-        # print('THIS LOK AT THIS', measurment_attributes)
-        """
-        TODO:
-        - refactor list_of_dicts_of_gps_data
-        """
+
         if not list_of_dicts_of_gps_data:
             list_of_dicts_of_gps_data.append(measurment_attributes)
             gps_data_dict[m['time']] = measurment_attributes
@@ -183,16 +179,17 @@ def get_gps_dataframe(gps_data_dict):
 
 
 def pass_gps_dict_of_lists(gps):
-    time, ln, la, v, t, hdop = [], [], [], [], [], []
+    time, ln, la, v, b, hdop = [], [], [], [], [], []
     timestamps = sorted(list(gps.keys()))
     for t in timestamps:
         values = gps[t]
         v.append(values['v'])
+        b.append(values['t'])
         hdop.append(values['hdop'])
         time.append(values['time'])
         ln.append(values['lng'])
         la.append(values['lat'])
-    return {'ln': ln, 'la': la, 'hdop': hdop, 'time': time, 'v':v }
+    return {'ln': ln, 'la': la, 'hdop': hdop, 'time': time, 'v':v , 't':b}
 
 
 # Call this and on the result of this you can call get_gps_dataframe.

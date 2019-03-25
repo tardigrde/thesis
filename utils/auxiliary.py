@@ -1,17 +1,96 @@
 import numpy as np
 from shapely.geometry import Point
 from pathlib import Path
+from point import Point
 
 
-def prepare_data_for_batch_kf(acc, gps):
-    # for a in acc['time']:
-    #     for t, ln, la, hdop in gps
-    return acc, gps
+def get_dicts_of_measurements(acc, gps):
+    points = get_points(gps)
+    points_with_acc = add_acc_to_points(points, acc)
+
+
+def get_points(gps):
+    points = []
+    for time, lng, lat, vel, tt, hdop in zip(gps['time'], gps['la'], gps['ln'], gps['v'], gps['t'], gps['hdop']):
+        sublist = []
+        for tm, ln, lt, v, t, hdp in zip(time, lng, lat, vel, tt, hdop):
+            p = Point(tm, ln, lt, v, t, hdp)
+            sublist.append(p)
+        points.append(sublist)
+    return points
+
+
+def add_acc_to_points(points, acc):
+    sublist = 0
+    i = 0
+    j = 0
+    print(len(acc['_time'][0]))
+    print(len(acc['_time'][1]))
+    print(len(acc['_time'][2]))
+
+    indices=[]
+    for sublists in points:
+        last = sublists[0].time
+        _indices=[]
+        for  p in sublists:
+            gps_t = p.time
+            if gps_t != last:
+                _indices.append((gps_t+last)/2)
+                last = gps_t
+        indices.append(_indices)
+
+
+    for at, an, ae, ad, ind in zip(acc['_time'], acc['north'], acc['east'], acc['down'], indices):
+        acc = {
+            '_time': [],
+            'north': [],
+            'east': [],
+            'down': [],
+        }
+        # if not len(at)-1 == ind:
+        #     print('ERROR wtfFFFFFFFFFFFFFFFFFFFFFFFFFFF')
+        #     return
+        for t, n, e, d in zip(at, an, ae, ad):
+            acc['_time'].append(t)
+            acc['north'].append(n)
+            acc['east'].append(e)
+            acc['down'].append(d)
+            try:
+                if t<=ind[i]:
+                    continue
+                else:
+                    print('len of acc',len(acc['_time']))
+                    # this  looks OK so far
+                    # what you have to change is the amount of acc when there is
+                    # less than 5k gap but more than 1k
+                    # investigate this: trim_and_sync_acc !!!!!!!!
+                    if len(acc['_time']) > 200:
+                        print('dsads')
+                    points[sublist][i].acc = acc
+                    i += 1
+                    acc = {
+                        '_time': [],
+                        'north': [],
+                        'east': [],
+                        'down': [],
+                    }
+            except IndexError:
+                print('IndexError')
+        print('len of lastacc', len(acc['_time']))
+        points[sublist][i].acc = acc
+        acc = {
+            '_time': [],
+            'north': [],
+            'east': [],
+            'down': [],
+        }
+        sublist+=1
+        i = 0
+
+    return points
 
 
 def trim_and_sync_dataset(acc_msrmnt, gps_msrmnt):
-    # TODO:
-    # - if last gps was 5 secs ago, new sublist --> new kalman
     gps_msrmnt = trim_gps(gps_msrmnt)
     acc, gps = trim_and_sync_acc(acc_msrmnt, gps_msrmnt)
     return acc, gps
@@ -181,99 +260,97 @@ def _pass_std_devs(acc):
 
 
 """
-bullshit
+below functions for when I almost lost my data -.-
 """
-
-import os
-
-
-def fix_shapes(dir):
-    for root, dirs, files in os.walk(dir):
-        dir = str(dir)
-        if files:
-            for file in files:
-                size_of_file = os.stat(Path(root + '\\' + file)).st_size
-                if '.dbf' in file and size_of_file > 0:
-                    if 'new' in file or 'osm' in file:
-                        break
-                    rewrite_shape_file(root, file)
-        elif not files and dirs:
-            for dirr in dirs:
-                path = Path(root + '\\' + dirr)
-                fix_shapes(path)
-
-
-def rewrite_shape_file(dir, file):
-    from dbfread import DBF
-    from pandas import DataFrame
-    import geopandas
-    path_of_file = Path(dir + '\\' + file)
-    dbf = DBF(path_of_file)
-    df = DataFrame(iter(dbf))
-    try:
-        df['Coordinates'] = list(zip(df.lng, df.lat))
-    except Exception as e:
-        print(e)
-        try:
-            df['Coordinates'] = list(zip(df.ln, df.lt))
-        except Exception as e:
-            print('MÁÁÁÁÁÁÁÁÁÁR MEGINT', e)
-
-    df['Coordinates'] = df['Coordinates'].apply(Point)
-    crs = {'init': 'epsg:23700'}
-    gdf = geopandas.GeoDataFrame(df, crs=crs, geometry='Coordinates')
-    pathh = Path(dir + '\\' + r'new' + file)
-    print(pathh)
-    gdf.to_file(driver='ESRI Shapefile', filename=pathh)
-
-
-"""
-
-from dbfread import DBF
-from pandas import DataFrame
-import shapefile
+#
+# import os
+#
+#
+# def fix_shapes(dir):
+#     for root, dirs, files in os.walk(dir):
+#         dir = str(dir)
+#         if files:
+#             for file in files:
+#                 size_of_file = os.stat(Path(root + '\\' + file)).st_size
+#                 if '.dbf' in file and size_of_file > 0:
+#                     if 'new' in file or 'osm' in file:
+#                         break
+#                     rewrite_shape_file(root, file)
+#         elif not files and dirs:
+#             for dirr in dirs:
+#                 path = Path(root + '\\' + dirr)
+#                 fix_shapes(path)
+#
+#
+# def rewrite_shape_file(dir, file):
+#     from dbfread import DBF
+#     from pandas import DataFrame
+#     import geopandas
+#     path_of_file = Path(dir + '\\' + file)
+#     dbf = DBF(path_of_file)
+#     df = DataFrame(iter(dbf))
+#     try:
+#         df['Coordinates'] = list(zip(df.lng, df.lat))
+#     except Exception as e:
+#         print(e)
+#         try:
+#             df['Coordinates'] = list(zip(df.ln, df.lt))
+#         except Exception as e:
+#             print('MÁÁÁÁÁÁÁÁÁÁR MEGINT', e)
+#
+#     df['Coordinates'] = df['Coordinates'].apply(Point)
+#     crs = {'init': 'epsg:23700'}
+#     gdf = geopandas.GeoDataFrame(df, crs=crs, geometry='Coordinates')
+#     pathh = Path(dir + '\\' + r'new' + file)
+#     print(pathh)
+#     gdf.to_file(driver='ESRI Shapefile', filename=pathh)
 
 
-dbf = DBF(r'D:\thesis\data\szeged_osm_data\gis_osm_roads_free_1.shp',encoding='utf-8')
-frame = DataFrame(iter(dbf))
+# from dbfread import DBF
+# from pandas import DataFrame
+# import shapefile
+#
+#
+# dbf = DBF(r'D:\thesis\data\szeged_osm_data\gis_osm_roads_free_1.shp',encoding='utf-8')
+# frame = DataFrame(iter(dbf))
+#
+# print(frame)
+# import os
 
-print(frame)
-import os"""
+# NOT NEEDED probably
+# this is if you want to create points fom a line, and wan to measure points from those points...
+#
+# This is the half-way point along a great circle path between the two points.1
+# Formula: 	Bx = cos φ2 ⋅ cos Δλ
+# 	By = cos φ2 ⋅ sin Δλ
+# 	φm = atan2( sin φ1 + sin φ2, √(cos φ1 + Bx)² + By² )
+# 	λm = λ1 + atan2(By, cos(φ1)+Bx)
+# JavaScript:
+# (all angles
+# in radians)
+#
+#
+# var Bx = Math.cos(φ2) * Math.cos(λ2-λ1);
+# var By = Math.cos(φ2) * Math.sin(λ2-λ1);
+# var φ3 = Math.atan2(Math.sin(φ1) + Math.sin(φ2),
+#                     Math.sqrt( (Math.cos(φ1)+Bx)*(Math.cos(φ1)+Bx) + By*By ) );
+# var λ3 = λ1 + Math.atan2(By, Math.cos(φ1) + Bx);
+#
+# 	The longitude can be normalised to −180…+180 using (lon+540)%360-180
+#
+# Just as the initial bearing may vary from the final bearing, the midpoint may not be located half-way between latitudes/longitudes; the midpoint between 35°N,45°E and 35°N,135°E is around 45°N,90°E.
+# Intermediate point
+#
+# An intermediate point at any fraction along the great circle path between two points can also be calculated.1
+# Formula: 	a = sin((1−f)⋅δ) / sin δ
+# 	b = sin(f⋅δ) / sin δ
+# 	x = a ⋅ cos φ1 ⋅ cos λ1 + b ⋅ cos φ2 ⋅ cos λ2
+# 	y = a ⋅ cos φ1 ⋅ sin λ1 + b ⋅ cos φ2 ⋅ sin λ2
+# 	z = a ⋅ sin φ1 + b ⋅ sin φ2
+# 	φi = atan2(z, √x² + y²)
+# 	λi = atan2(y, x)
+# where 	f is fraction along great circle route (f=0 is point 1, f=1 is point 2), δ is the angular distance d/R between the two points.
 
-"""
-Midpoint
-
-This is the half-way point along a great circle path between the two points.1
-Formula: 	Bx = cos φ2 ⋅ cos Δλ
-	By = cos φ2 ⋅ sin Δλ
-	φm = atan2( sin φ1 + sin φ2, √(cos φ1 + Bx)² + By² )
-	λm = λ1 + atan2(By, cos(φ1)+Bx)
-JavaScript:
-(all angles
-in radians)
-	
-
-var Bx = Math.cos(φ2) * Math.cos(λ2-λ1);
-var By = Math.cos(φ2) * Math.sin(λ2-λ1);
-var φ3 = Math.atan2(Math.sin(φ1) + Math.sin(φ2),
-                    Math.sqrt( (Math.cos(φ1)+Bx)*(Math.cos(φ1)+Bx) + By*By ) );
-var λ3 = λ1 + Math.atan2(By, Math.cos(φ1) + Bx);
-
-	The longitude can be normalised to −180…+180 using (lon+540)%360-180
-
-Just as the initial bearing may vary from the final bearing, the midpoint may not be located half-way between latitudes/longitudes; the midpoint between 35°N,45°E and 35°N,135°E is around 45°N,90°E.
-Intermediate point
-
-An intermediate point at any fraction along the great circle path between two points can also be calculated.1
-Formula: 	a = sin((1−f)⋅δ) / sin δ
-	b = sin(f⋅δ) / sin δ
-	x = a ⋅ cos φ1 ⋅ cos λ1 + b ⋅ cos φ2 ⋅ cos λ2
-	y = a ⋅ cos φ1 ⋅ sin λ1 + b ⋅ cos φ2 ⋅ sin λ2
-	z = a ⋅ sin φ1 + b ⋅ sin φ2
-	φi = atan2(z, √x² + y²)
-	λi = atan2(y, x)
-where 	f is fraction along great circle route (f=0 is point 1, f=1 is point 2), δ is the angular distance d/R between the two points.
-"""
 
 #  * Returns the point at given fraction between ‘this’ point and given point.
 #  *

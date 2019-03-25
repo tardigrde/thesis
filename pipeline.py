@@ -12,7 +12,6 @@ from measurement import Measurement
 from dsp_library import dsp
 import time
 
-from utils.auxiliary import fix_shapes
 
 start_time = time.time()
 
@@ -48,16 +47,9 @@ stats = {}
 
 measurement = Measurement(path_imu, path_gps, dir_path)
 
-fix_shapes(DATA_BASE_DIR)
 
+measurement.preprocess()
 
-
-
-
-# measurement.preprocess()
-#
-# measurement.get_list_prepeared_for_batch_filtering()
-#
 # measurement.do_kalman_filtering()
 #potholes = dsp.classify_windows(acc, gps, dir_path)
 # measurement.segment_data()
@@ -75,3 +67,6 @@ path_stats = Path(str(dir_path) + r'\results\metadata.txt')
 #     out.write(json.dumps(stats, indent=4))
 
 print("--- %s seconds ---" % (time.time() - start_time))
+
+# from utils.auxiliary import fix_shapes
+# fix_shapes(DATA_BASE_DIR)

@@ -36,6 +36,8 @@ def do_ukf(dir_path, acc, gps):
 
     create_outputs(dir_path, saver, epsilons)
 
+    return saver, epsilons
+
 
 def f_cv(x, dt):
     """ state transition function for a
