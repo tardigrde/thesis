@@ -3,7 +3,7 @@ CC-BY-SA2.0 Lizenz
 """
 from kalman_filter.archive.nointerpolation.one_axis import kalman
 from kalman_filter.archive.nointerpolation.one_axis import initital_parameters
-from utils import auxiliary
+from utils import fuser
 import numpy as np
 
 
@@ -192,8 +192,8 @@ def get_kalmaned_datatable(acc, gps):
     #     "unused_count": unused_count,
     # }
 
-    auxiliary.create_outputs(dir_path, og_coordinates, result, end_count, P_minus, measurements_count,
-                             d['east'], d['north'], d['down'], d['lat'], d['lng'])
+    fuser.create_outputs(dir_path, og_coordinates, result, end_count, P_minus, measurements_count,
+                         d['east'], d['north'], d['down'], d['lat'], d['lng'])
 
     # plt.plot(gps_lists['ln'], gps_lists['la'], 'bs', x_to_plot, y_to_plot, 'r--')
     # plt.show()

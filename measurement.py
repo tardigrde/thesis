@@ -1,9 +1,9 @@
 from kalman_filter.ukf.cv import interfacecv
 from kalman_filter.ukf.ca import interfaceca
 from dsp_library import dsp
-from utils import imu_data_parser, nmea_parser, auxiliary
+from utils import imu_data_parser, nmea_parser, fuser
 
-from point import Point
+from Point import Point
 
 
 
@@ -17,16 +17,14 @@ class Measurement:
     def preprocess(self):
         acc = imu_data_parser.get_imu_dictionary(self.path_imu, data='lists')
         gps = nmea_parser.get_gps_dictionary(self.path_gps, data='lists')
-        self.acc, self.gps = auxiliary.trim_and_sync_dataset(acc, gps)
-        measurements = auxiliary.get_dicts_of_measurements(self.acc, self.gps)
-        return measurements
+        self.acc, self.gps = fuser.trim_and_sync_dataset(acc, gps)
+        return self.acc, self.gps
 
-    def get_poi(self):
+    def get_points(self):
         """
         Must be called after preprocess.
         """
-
-        self.acc, self.gps = auxiliary.get_dicts_of_measurements(acc, gps)
+        self.points = fuser.get_points_with_acc(self.acc, self.gps)
 
     def do_kalman_filtering(self):
         self.kfcv, self.acc_signal = interfacecv.do_ukf(self.dir_path, self.acc, self.gps)

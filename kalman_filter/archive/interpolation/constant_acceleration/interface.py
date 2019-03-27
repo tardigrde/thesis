@@ -4,7 +4,7 @@ CC-BY-SA2.0 Lizenz
 from kalman_filter.archive.interpolation.constant_acceleration import kalman, initital_parameters
 import numpy as np
 
-from utils import auxiliary
+from utils import fuser
 from utils import plotter
 
 
@@ -50,7 +50,7 @@ def get_kalmaned_datatable(acc, gps, dir_path):
 
     # Multiplying Q with std_devs
 
-    dataset = auxiliary.interpolate_and_trim_data(acc, gps)
+    dataset = fuser.interpolate_and_trim_data(acc, gps)
     d = dataset
 
     og_coordinates = {
@@ -131,8 +131,8 @@ def get_kalmaned_datatable(acc, gps, dir_path):
         "unused_count": unused_count,
     }
 
-    auxiliary.create_outputs(dir_path, og_coordinates, result, end_count, P_minus, measurements_count,
-                   d['east'], d['north'], d['down'], d['lat'], d['lng'])
+    fuser.create_outputs(dir_path, og_coordinates, result, end_count, P_minus, measurements_count,
+                         d['east'], d['north'], d['down'], d['lat'], d['lng'])
 
     # plt.plot(og_lng, og_lat, 'bs', lng_to_plot, lat_to_plot, 'ro')
     # plt.show()

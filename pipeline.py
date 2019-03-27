@@ -49,6 +49,7 @@ measurement = Measurement(path_imu, path_gps, dir_path)
 
 
 measurement.preprocess()
+measurement.get_points()
 
 # measurement.do_kalman_filtering()
 #potholes = dsp.classify_windows(acc, gps, dir_path)

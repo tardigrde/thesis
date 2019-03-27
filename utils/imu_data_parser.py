@@ -1,6 +1,6 @@
 from lib.madgwick.madgwickahrs import MadgwickAHRS
 from pyquaternion import Quaternion
-from utils import auxiliary
+from utils import fuser
 import pandas as pd
 import numpy as np
 import math

@@ -189,7 +189,7 @@ def pass_gps_dict_of_lists(gps):
         time.append(values['time'])
         ln.append(values['lng'])
         la.append(values['lat'])
-    return {'ln': ln, 'la': la, 'hdop': hdop, 'time': time, 'v':v , 't':b}
+    return {'ln': ln, 'la': la, 'hdop': hdop, 'time': time, 'v': v, 't': b}
 
 
 # Call this and on the result of this you can call get_gps_dataframe.
@@ -219,7 +219,7 @@ def get_gps_dictionary(path, data='lists'):
 
     msrmnt_dict = _transform_data_to_dictionary(extracted_data)
     gps_data_dict = _remove_redundant_points(msrmnt_dict)
-    
+
     if data == 'lists':
         return pass_gps_dict_of_lists(gps_data_dict)
     elif data == 'df':

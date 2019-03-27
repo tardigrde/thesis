@@ -1,7 +1,7 @@
 from __future__ import division
 from scipy.signal import find_peaks, butter
 import matplotlib.pyplot as plt
-from utils import auxiliary
+from utils import fuser
 from utils import plotter
 import pandas as pd
 import numpy as np
@@ -135,7 +135,7 @@ def segment_data(acc, gps):
     import time
     start_time = time.time()
 
-    dataset = auxiliary.interpolate_and_trim_data(acc, gps)
+    dataset = fuser.interpolate_and_trim_data(acc, gps)
     windows = {
         "east": do_splitting(dataset['east']),
         "north": do_splitting(dataset['north']),
@@ -197,7 +197,7 @@ def choose_potholes(stats):
     print('len of potholes: {}'.format(counter))
     print(bad_segments)
     df = pd.DataFrame(bad_segments)
-    auxiliary.convert_result_to_shp(df, r'D:\PyCharmProjects\thesis\data\20190115\harmadik\results\potholes\result')
+    fuser.convert_result_to_shp(df, r'D:\PyCharmProjects\thesis\data\20190115\harmadik\results\potholes\result')
     print('done')
 
 
