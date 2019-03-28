@@ -1,5 +1,4 @@
-from kalman_filter.ukf.cv import interfacecv
-from kalman_filter.ukf.ca import interfaceca
+from kalman_filter.KalmanFilter import KalmanFilter
 from dsp_library import dsp
 from utils import imu_data_parser, nmea_parser, fuser
 
@@ -27,7 +26,8 @@ class Measurement:
         self.points = fuser.get_points_with_acc(self.acc, self.gps)
 
     def do_kalman_filtering(self):
-        self.kfcv, self.acc_signal = interfacecv.do_ukf(self.dir_path, self.acc, self.gps)
+        kf = KalmanFilter('adaptive', self.points, self.dir_path)
+        self.kalmaned = kf.do_kalman_filter()
         # kfca = interfaceca.do_ukf_with_acc(self.dir_path, self.acc, self.gps)
 
         return self.kfcv

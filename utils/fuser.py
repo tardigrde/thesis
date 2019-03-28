@@ -5,7 +5,7 @@ from Point import Point
 
 
 def get_points_with_acc(acc, gps):
-    points = get_points(acc, gps)
+    return get_points(acc, gps)
 
 
 def get_points(acc, gps):
@@ -73,7 +73,7 @@ def trim_and_sync_acc(acc, gps):
     gps = split_measurement_lists_at_void(gps)
     check_gps(gps)
 
-    list_of_lists_of_intervals = get_valid_time_intervals(gps)
+    list_of_lists_of_intervals = get_valid_set_invalid_time_intervals(gps)
     check_intervals_length(gps, list_of_lists_of_intervals)
 
     formatted_acc_indices = get_formatted_acc_indices(list_of_lists_of_intervals, acc['_time'])
@@ -123,9 +123,9 @@ def split_measurement_lists_at_void(gps):
     return gps
 
 
-def get_valid_time_intervals(gps):
+def get_valid_set_invalid_time_intervals(gps):
     intervals = []
-    for time in gps['time']:
+    for i, time in enumerate(gps['time']):
         intrvl = []
         for i, t in enumerate(time):
             tup = (t - 500, t + 500)

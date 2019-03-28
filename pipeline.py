@@ -11,7 +11,9 @@ from pathlib import Path
 from measurement import Measurement
 from dsp_library import dsp
 import time
-
+import sys
+rec= sys.getrecursionlimit
+print (rec)
 
 start_time = time.time()
 
@@ -51,7 +53,7 @@ measurement = Measurement(path_imu, path_gps, dir_path)
 measurement.preprocess()
 measurement.get_points()
 
-# measurement.do_kalman_filtering()
+measurement.do_kalman_filtering()
 #potholes = dsp.classify_windows(acc, gps, dir_path)
 # measurement.segment_data()
 # stats = measurement.get_stats()
