@@ -9,7 +9,7 @@ def plot_adapted_result(fig_dir, type, result):
     plt.scatter(result['cv']['lng'], result['cv']['lat'], color='red', label='cv')
     plt.scatter(result['ca']['lng'], result['ca']['lat'], color='orange', label='ca')
     # m = MarkerStyle('octagon')
-    plt.scatter(result['adapted']['lng'], result['adapted']['lat'], color='black', label='ca')
+    plt.scatter(result['adapted']['lng'], result['adapted']['lat'], color='blue', label='adapted')
     plt.xlabel(r'LNG $g$')
     plt.ylabel(r'LAT $g$')
     plt.legend(loc='best', prop={'size': 22})

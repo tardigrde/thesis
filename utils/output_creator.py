@@ -25,12 +25,12 @@ def export_outputs_to_plots(fig_dir, result_lists, matrices, file_count):
 
     if not file_count: return
 
-    for i in ['cv', 'ca']:
-        fig_dir_path = Path(str(fig_dir) + '\\' + file_count)
-        if not fig_dir_path.is_dir(): makedirs(fig_dir_path)
-        create_plots(result_lists, matrices, fig_dir_path, file_count,i)
+    # for i in ['cv', 'ca']:
+    #     fig_dir_path = Path(str(fig_dir) + '\\' + file_count)
+    #     if not fig_dir_path.is_dir(): makedirs(fig_dir_path)
+    #     create_plots(result_lists, matrices, fig_dir_path, file_count,i)
 
-    plotter.plot_adapted_result(fig_dir_path, 'adapted', result_lists)
+    plotter.plot_adapted_result(fig_dir, 'adapted', result_lists)
 
     print("Plotting took %s seconds " % (time.time() - start_time))
 
