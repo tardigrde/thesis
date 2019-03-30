@@ -13,29 +13,29 @@ class Point:
 
     @property
     def time(self):
-        return self.time
+        return self._time
 
     @property
     def lng(self):
-        return self.lng
+        return self._lng
 
     @property
     def lat(self):
-        return self.lat
+        return self._lat
 
     @property
     def vel(self):
-        return self.vel
+        return self._vel
 
     @property
     def bear(self):
-        return self.bear
+        return self._bear
 
     @property
     def hdop(self):
-        return self.hdop
+        return self._hdop
 
     @property
     def acc(self):
-        return self.acc
+        return self._acc
 

@@ -1,9 +1,7 @@
-from kalman_filter.KalmanFilter import KalmanFilter
-from dsp_library import dsp
+from kalman_filter.filterbank.ukf.UnscentedKalmanFilterInterface import UnscentedKalmanFilterInterface
 from utils import imu_data_parser, nmea_parser, fuser
-
-from Point import Point
-
+from utils import output_creator
+from dsp_library import dsp
 
 
 class Measurement:
@@ -26,11 +24,16 @@ class Measurement:
         self.points = fuser.get_points_with_acc(self.acc, self.gps)
 
     def do_kalman_filtering(self):
-        kf = KalmanFilter('adaptive', self.points, self.dir_path)
+        kf = UnscentedKalmanFilterInterface('adaptive', self.points, self.dir_path)
         self.kalmaned = kf.do_kalman_filter()
         # kfca = interfaceca.do_ukf_with_acc(self.dir_path, self.acc, self.gps)
 
-        return self.kfcv
+        return self.kalmaned
+
+    def create_KF_outputs(self):
+
+        output_creator.create_outputs(self.dir_path, self.kalmaned)
+        pass
 
     def get_potholes(self):
         n = dsp.get_potholes(self.acc_signal, self.kfcv)

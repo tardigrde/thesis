@@ -2,78 +2,100 @@ from filterpy.kalman import KalmanFilter
 from filterpy.kalman import UnscentedKalmanFilter as UKF
 from filterpy.kalman import MerweScaledSigmaPoints
 from filterpy.common import Q_discrete_white_noise, Saver
-from utils import output_creator
-from kalman_filter.filterbank.Adapter import Adapter
+
 import numpy as np
 
 
-
 def do_unscented_kalman_filtering(type, points, dir_path):
-    manage_filtering(type, points)
-    # output_creator.create_outputs(dir_path, saver, epsilons)
+    return manage_adaptive_filtering(type, points)
 
 
-def manage_filtering(type, points):
+
+def create_filterbank():
     sigmas_cv = MerweScaledSigmaPoints(4, alpha=.1, beta=2., kappa=1.)
     ukf_cv = UKF(dim_x=4, dim_z=2, fx=f_cv, hx=h_cv, dt=1, points=sigmas_cv)
     saver_cv = Saver(ukf_cv)
 
     sigmas_ca = MerweScaledSigmaPoints(4, alpha=.5, beta=2., kappa=1.)
-    ukf_ca = UKF(dim_x=4, dim_z=2, fx=f_ca, hx=h_ca, dt=0.01, points=sigmas_cv)
+    ukf_ca = UKF(dim_x=4, dim_z=2, fx=f_ca, hx=h_ca, dt=0.01, points=sigmas_ca)
     saver_ca = Saver(ukf_ca)
+    return ukf_cv, saver_cv, ukf_ca, saver_ca
 
-    kalam_filter_results = []
 
+def manage_adaptive_filtering(type, points, ):
+    kalam_filter_results = {}
+    adapted_states = []
+
+    # set_of_points_to_filter = points[0]
+    ukf_cv, saver_cv, ukf_ca, saver_ca = create_filterbank()
     for i, set_of_points_to_filter in enumerate(points):
+
         ukf_cv.x = np.array([points[i][0].lng, 0., points[i][0].lat, 0.])
         ukf_ca.x = np.array([points[i][0].lng, 0., points[i][0].lat, 0.])
-        ukf_cv, saver_cv = make_cv_filter(ukf_cv, saver_cv)
-        ukf_ca, saver_cv = make_ca_filter(ukf_ca, saver_ca)
+
+        ukf_cv = set_cv_filter(ukf_cv)
+        ukf_ca = set_ca_filter(ukf_ca)
+
         for j, p in enumerate(set_of_points_to_filter):
             if type == 'adaptive':
-                do_adaptive_kf(p, ukf_cv, saver_cv, ukf_ca, saver_ca)
-        results = {
-            'cv_res': ukf_cv,
-            'saver_cv': saver_cv,
-            'ca_res': ukf_ca,
-            'saver_ca': saver_ca,
-        }
-        kalam_filter_results.append(results)
+                ukf_cv, saver_cv, ukf_ca, saver_ca, adapted_state = \
+                    do_adaptive_kf(p, ukf_cv, saver_cv, ukf_ca, saver_ca)
+
+                adapted_states.append(adapted_state)
+
+    saver_cv.to_array()
+    saver_ca.to_array()
+    kalam_filter_results = {
+        'cv_res': ukf_cv, 'saver_cv': saver_cv,
+        'ca_res': ukf_ca, 'saver_ca': saver_ca, 'adapted_states': adapted_states
+    }
+
+    # kalam_filter_results.append(results)
 
     return kalam_filter_results
 
 
-def make_cv_filter(ukf_cv, saver_cv):
+def set_cv_filter(ukf_cv, ):
     ukf_cv.Q[0:2, 0:2] = Q_discrete_white_noise(2, dt=1, var=0.02)
     ukf_cv.Q[2:4, 2:4] = Q_discrete_white_noise(2, dt=1, var=0.02)
 
-    return saver_cv
+    return ukf_cv
 
 
-def make_ca_filter(ukf_ca, saver_ca):
+def set_ca_filter(ukf_ca, ):
     dt = 0.01
 
     ukf_ca.Q[0:2, 0:2] = Q_discrete_white_noise(2, dt=dt, var=1)
     ukf_ca.Q[2:4, 2:4] = Q_discrete_white_noise(2, dt=dt, var=1)
-    epsilons = []
-    return 1, 2
+    return ukf_ca
 
 
 def do_adaptive_kf(point, ukf_cv, saver_cv, ukf_ca, saver_ca):
     std = point.hdop ** 2
-    ukf_cv.R = np.diag([std, std])
+    ukf_cv.R = np.diag([std ** 2, std ** 2])
     ukf_ca.R = np.diag([std ** 2, std ** 2])
 
-    ukf_cv = do_cv_uk_filtering(point, ukf_cv, saver_cv)
-    cv_epsilons = ukf_cv.epsilons
+    ukf_cv, saver_cv = do_cv_uk_filtering(point, ukf_cv, saver_cv)
+    cv_epsilons = ukf_cv.epsilon
 
-    # do_ca_uk_filtering(point, ukf_ca,saver_ca)
-    # ca_epsilons = ukf_ca.epsilons
+    ukf_ca, saver_ca = do_ca_uk_filtering(point, ukf_ca, saver_ca)
+    ca_epsilons = ukf_ca.epsilon
 
-    return ukf_cv, ukf_ca
-    # ca_ukf_res = do_ca_ukf(point)
-    # filter_adapter = Adapter()
-    # state, filter_type = filter_adapter.adapt_filters(cv_ukf_res,ca_ukf_res)
+    adapted_state = save_adapted_state(ukf_cv, cv_epsilons, ukf_ca, ca_epsilons)
+
+    return ukf_cv, saver_cv, ukf_ca, saver_ca, adapted_state
+
+
+def save_adapted_state(ukf_cv, cv_epsilons, ukf_ca, ca_epsilons):
+    state_cv = ukf_cv.x_post
+    state_ca = ukf_ca.x_post
+
+    if cv_epsilons < ca_epsilons:
+        return [state_cv[0], state_cv[2]]
+    elif cv_epsilons > ca_epsilons:
+        return [state_ca[0], state_ca[2]]
+    else:
+        return [state_cv[0], state_cv[2]]
 
 
 def do_cv_uk_filtering(point, ukf_cv, saver_cv):
@@ -82,11 +104,11 @@ def do_cv_uk_filtering(point, ukf_cv, saver_cv):
     ukf_cv.predict()
     ukf_cv.update(z)
     saver_cv.save()
+    return ukf_cv, saver_cv
 
 
 def do_ca_uk_filtering(point, ukf_ca, saver_ca):
     z = [point.lng, point.lat]
-    u = []
     for i, t in enumerate(point.acc['_time']):
         kwargs = {
             'north': point.acc['north'][i],
@@ -95,6 +117,8 @@ def do_ca_uk_filtering(point, ukf_ca, saver_ca):
         ukf_ca.predict(fx=f_ca, **kwargs)
     ukf_ca.update(z)
     saver_ca.save()
+
+    return ukf_ca, saver_ca
 
 
 ######################################################################################
@@ -136,7 +160,7 @@ def h_ca(x):
 def f_cv(x, dt):
     """ state transition function for a
     constant velocity aircraft"""
-    print('______________', x, dt)
+    # print('______________', x, dt)
 
     F = np.array([[1, dt, 0, 0],
                   [0, 1, 0, 0],

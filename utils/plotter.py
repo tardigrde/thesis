@@ -1,20 +1,51 @@
 import matplotlib.pyplot as plt
+from matplotlib.markers import MarkerStyle
 from pathlib import Path
 import numpy as np
 
-
-
-def plot_result(fig_dir, result):
+def plot_adapted_result(fig_dir, type, result):
     fig_gps = plt.figure(figsize=(16, 16))
-    plt.scatter(result['oglng'], result['oglat'],color='blue',label='og')
-    plt.scatter(result['priolng'], result['priolat'],color='orange',label='prio')
-    plt.scatter(result['lng'], result['lat'],color='red',label='kf')
+    plt.scatter(result['oglng'], result['oglat'], color='black', label='og')
+    plt.scatter(result['cv']['lng'], result['cv']['lat'], color='red', label='cv')
+    plt.scatter(result['ca']['lng'], result['ca']['lat'], color='orange', label='ca')
+    # m = MarkerStyle('octagon')
+    plt.scatter(result['adapted']['lng'], result['adapted']['lat'], color='black', label='ca')
     plt.xlabel(r'LNG $g$')
     plt.ylabel(r'LAT $g$')
     plt.legend(loc='best', prop={'size': 22})
     plt.grid()
     plt.show()
-    plt.savefig(str(fig_dir) + r'\KF_OG_PRIO_RES.png', dpi=72, transparent=True, bbox_inches='tight')
+    plt.savefig(str(fig_dir) + r'\\' + str(type) + 'KF_OG_PRIO_RES.png', dpi=72, transparent=True, bbox_inches='tight')
+
+
+def plot_result(fig_dir, type,result):
+    fig_gps = plt.figure(figsize=(16, 16))
+    plt.scatter(result['oglng'], result['oglat'],color='blue',label='og')
+    plt.scatter(result[type]['priolng'], result[type]['priolat'],color='orange',label='prio')
+    plt.scatter(result[type]['lng'], result[type]['lat'],color='red',label='kf')
+    plt.xlabel(r'LNG $g$')
+    plt.ylabel(r'LAT $g$')
+    plt.legend(loc='best', prop={'size': 22})
+    plt.grid()
+    plt.show()
+    plt.savefig(str(fig_dir) + r'\\'+str(type)+'KF_OG_PRIO_RES.png', dpi=72, transparent=True, bbox_inches='tight')
+
+def plot_llh(fig_dir,type, result):
+    end_count = len(result[type]['lng'])
+    fig = plt.figure(figsize=(16, 9))
+    plt.plot(range(end_count), result[type]['likelihood'], label='likelihood')
+    plt.title('Likelihood')
+    # plt.show()
+    plt.savefig(str(fig_dir) + r'\\'+str(type)+'Kalman-Filter-likelihood.png', dpi=72, transparent=True, bbox_inches='tight')
+
+def plot_epsilons(fig_dir,type, result):
+    end_count = len(result[type]['epsilons'])
+    fig = plt.figure(figsize=(16, 9))
+    plt.plot(range(end_count),result[type]['epsilons'], label='likelihood')
+    plt.title('Epsilons')
+    # plt.show()
+    plt.savefig(str(fig_dir) + r'\\'+str(type)+'Kalman-Filter-epsilons.png', dpi=72, transparent=True, bbox_inches='tight')
+
 
 def plot_P(fig_dir, matrices):
     fig = plt.figure(figsize=(16, 9))
@@ -53,20 +84,6 @@ def plot_K(fig_dir, matrices):
     plt.savefig(str(fig_dir) + r'\Kalman-Filter-CA-KG.png', dpi=72, transparent=True, bbox_inches='tight')
 
 
-def plot_llh(fig_dir, result):
-    end_count = len(result['lng'])
-    fig = plt.figure(figsize=(16, 9))
-    plt.plot(range(end_count), result['likelihood'], label='likelihood')
-    plt.title('Likelihood')
-    plt.savefig(str(fig_dir) + r'\Kalman-Filter-likelihood.png', dpi=72, transparent=True, bbox_inches='tight')
-
-def plot_epsilons(fig_dir, result):
-    end_count = len(result['epsilons'])
-    fig = plt.figure(figsize=(16, 9))
-    plt.plot(range(end_count),result['epsilons'], label='likelihood')
-    plt.title('Epsilons')
-    plt.show()
-    plt.savefig(str(fig_dir) + r'\Kalman-Filter-epsilons.png', dpi=72, transparent=True, bbox_inches='tight')
 
 
 def plot_m(fig_dir, measurements_count, ma_e, ma_n, acc_down, mp_lng, mp_lat):

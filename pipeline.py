@@ -54,6 +54,7 @@ measurement.preprocess()
 measurement.get_points()
 
 measurement.do_kalman_filtering()
+measurement.create_KF_outputs()
 #potholes = dsp.classify_windows(acc, gps, dir_path)
 # measurement.segment_data()
 # stats = measurement.get_stats()
