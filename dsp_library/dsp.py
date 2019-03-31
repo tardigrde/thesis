@@ -11,6 +11,79 @@ import numpy as np
 from scipy import pi
 import matplotlib.pyplot as plt
 from scipy.fftpack import fft
+import time
+
+
+def get_road_anomalies(points, adaptive_kf_result, dir_path):
+    classified = classify_windows(points, adaptive_kf_result, dir_path)
+    return classified
+
+
+def classify_windows(points, adaptive_kf_result, dir_path):
+    windows = get_windows(points, adaptive_kf_result)
+    ffted_windows = [do_fft(down_subset) for down_subset in windows['down']]
+
+    # down_subsets_filtered = [do_HPF(down_subset) for down_subset in windows['down']]
+    # st = calculate_stats(windows)
+    # plotter.plot_ned_acc(fig_dir, t, down_acc)
+
+
+def get_windows(points, adaptive_kf_result):
+    # https://docs.scipy.org/doc/numpy-1.14.5/reference/generated/numpy.fft.fft.html#numpy.fft.fft
+
+    start_time = time.time()
+
+    acc_time, acc_down, kf_res = prepare_data_for_windowing(points, adaptive_kf_result)
+    windows = {
+        "time": do_windowing_and_fft(acc_time),
+        "down": do_windowing_and_fft(acc_down),
+    }
+
+    print("--- Segmentation took %s seconds ---" % (time.time() - start_time))
+    return windows
+
+
+def prepare_data_for_windowing(points, kf_res):
+    acc_time_per_point = [p.acc['_time'] for list in points for p in list]
+    acc_down_per_point = [p.acc['down'] for list in points for p in list]
+
+    check_length_of_lists(acc_time_per_point, acc_down_per_point, kf_res)
+
+    acc_time = [elem for list in acc_time_per_point for elem in list]
+    acc_down = [elem for list in acc_down_per_point for elem in list]
+
+    check_length_of_lsit(acc_time, acc_down)
+
+    return acc_time, acc_down, kf_res
+
+
+def check_length_of_lsit(acc_time, acc_down):
+    assert len(acc_time) == len(acc_down)
+
+
+def check_length_of_lists(acc_time, acc_down, kf_res):
+    try:
+        assert len(acc_time) == len(acc_down) == len(kf_res)
+    except Exception as e:
+        print('Error! list lengths are not equal.\n', e)
+
+
+def do_windowing_and_fft(axis, window_size=100):
+    n = window_size
+    m = round(n / 4)  # overlap_size
+    # if hamming == False:
+    #     windows = [axis[i:i + n] for i in range(0, len(axis), n - m)]
+    # else:
+    # windows = [do_HPF(axis[i:i + n], n) for i in range(0, len(axis), n - m)]
+    windows = [do_hamming(axis[i:i + n], n) for i in range(0, len(axis), n - m)]
+    return windows
+
+
+def do_hamming(dataset, n):
+    window = np.hamming(n)
+    if len(dataset) != n: window = np.hamming(len(dataset))
+    windowed_data_og = np.multiply(dataset, window)
+    return windowed_data_og
 
 
 def do_fft(window):
@@ -35,13 +108,12 @@ def do_fft(window):
 
     # Vibration data generation
     time = np.linspace(start_time, end_time, N)
-    vib_data = window
-
+    vib_data = list(window)
 
     plt.plot(time[0:100], vib_data[0:100])
     plt.xlabel('Time')
     plt.ylabel('Vibration (g)')
-    plt.title('Time Domain (Healthy Machinery)')
+    plt.title('input windows')
     plt.show()
 
     # Nyquist Sampling Criteria
@@ -52,13 +124,13 @@ def do_fft(window):
     yr = fft(vib_data)  # "raw" FFT with both + and - frequencies
     y = 2 / N * np.abs(yr[0:np.int(N / 2)])  # positive freqs only
 
+    # # Plotting the results
+    # plt.plot(x, y)
+    # plt.xlabel('Frequency (Hz)')
+    # plt.ylabel('Count ? (g)')
+    # plt.title('Frequency Domain (Healthy Machinery)')
+    # plt.show()
 
-    # Plotting the results
-    plt.plot(x, y)
-    plt.xlabel('Frequency (Hz)')
-    plt.ylabel('Vibration (g)')
-    plt.title('Frequency Domain (Healthy Machinery)')
-    plt.show()
 
 def do_HPF(acc_down_subset):
     """
@@ -92,7 +164,7 @@ def do_HPF(acc_down_subset):
     # - make HPF work
     if not len(filtered) == len(acc_down_subset) and len(filtered) > len(acc_down_subset):
         print('OOOOOOOOOOOPS', len(filtered), len(acc_down_subset))
-        diff = len(filtered)-len(acc_down_subset)
+        diff = len(filtered) - len(acc_down_subset)
         print(diff)
         filtered_windows_cut = np.delete(filtered, [i for i in range(diff)])
 
@@ -106,68 +178,9 @@ def do_HPF(acc_down_subset):
     return filtered_windows_cut
 
 
-
 def find_max_peaks(z_axis, height):
     peaks, _ = find_peaks(z_axis, height)
     return peaks, _
-
-
-def do_hamming(dataset, n):
-    window = np.hamming(n)
-    if len(dataset) != n: window = np.hamming(len(dataset))
-    windowed_data_og = np.multiply(dataset, window)
-    return windowed_data_og
-
-
-def do_splitting(axis, hamming=True, window_size=100):
-    n = window_size
-    m = round(n / 4) # overlap_size
-    if hamming == False:
-        windows = [axis[i:i + n] for i in range(0, len(axis), n - m)]
-    else:
-        windows = [do_HPF(axis[i:i + n], n) for i in range(0, len(axis), n - m)]
-        #windows = [do_hamming(axis[i:i + n], n) for i in range(0, len(axis), n - m)]
-    return windows
-
-
-def segment_data(acc, gps):
-    # https://docs.scipy.org/doc/numpy-1.14.5/reference/generated/numpy.fft.fft.html#numpy.fft.fft
-    import time
-    start_time = time.time()
-
-    dataset = fuser.interpolate_and_trim_data(acc, gps)
-    windows = {
-        "east": do_splitting(dataset['east']),
-        "north": do_splitting(dataset['north']),
-        "down": do_splitting(dataset['down']),
-        "time": do_splitting(dataset['time']),
-        "lng": do_splitting(dataset['lng'], False),
-        "lat": do_splitting(dataset['lat'], False),
-    }
-    if not len(windows['time']) == len(windows['east']) == len(windows['north']) == len(windows['down']) ==len(windows['lng']) == len(windows['lat']):
-        print('ERROR: the length of the windows is not the same!')
-        return
-    print("--- Segmentation took %s seconds ---" % (time.time() - start_time))
-    return windows
-
-
-def classify_windows(acc, gps, dir_path):
-    windows = segment_data(acc, gps)
-
-    down_subsets_filtered = [do_HPF(down_subset) for down_subset in windows['down']]
-    # st = calculate_stats(windows)
-    # plotter.plot_ned_acc(fig_dir, t, down_acc)
-    #fftd_windows = [do_fft(down_subset) for down_subset in windows['down']]
-
-
-
-
-
-
-
-
-
-
 
 
 def choose_potholes(stats):

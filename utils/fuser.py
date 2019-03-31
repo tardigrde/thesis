@@ -19,7 +19,7 @@ def get_points(acc, gps):
 
     """
     points = []
-    for time, lng, lat, vel, tt, hdop, a in zip(gps['time'], gps['la'], gps['ln'], gps['v'], gps['t'], gps['hdop'],
+    for time, lng, lat, vel, tt, hdop, a in zip(gps['time'], gps['ln'], gps['la'], gps['v'], gps['t'], gps['hdop'],
                                                 acc):
         sublist = []
 
@@ -179,7 +179,12 @@ def get_lists_in_interval(intervals, acc_time):
 
 def check_acc_indices(indices):
     min_max_length_of_acc_lists = set(range(90, 110))
-    assert len(indices) in min_max_length_of_acc_lists
+    length_of_indices = len(indices)
+    try:
+        assert length_of_indices in min_max_length_of_acc_lists
+    except AssertionError as e:
+        print(length_of_indices)
+        print(e)
 
 
 def create_acc_object(indices, acc):

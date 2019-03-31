@@ -14,7 +14,7 @@ def plot_adapted_result(fig_dir, type, result):
     plt.ylabel(r'LAT $g$')
     plt.legend(loc='best', prop={'size': 22})
     plt.grid()
-    plt.show()
+    # plt.show()
     plt.savefig(str(fig_dir) + r'\\' + str(type) + 'KF_OG_PRIO_RES.png', dpi=72, transparent=True, bbox_inches='tight')
 
 

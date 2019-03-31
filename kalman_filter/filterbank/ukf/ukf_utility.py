@@ -2,13 +2,12 @@ from filterpy.kalman import KalmanFilter
 from filterpy.kalman import UnscentedKalmanFilter as UKF
 from filterpy.kalman import MerweScaledSigmaPoints
 from filterpy.common import Q_discrete_white_noise, Saver
-
 import numpy as np
+import time
 
 
 def do_unscented_kalman_filtering(type, points, dir_path):
     return manage_adaptive_filtering(type, points)
-
 
 
 def create_filterbank():
@@ -22,14 +21,19 @@ def create_filterbank():
     return ukf_cv, saver_cv, ukf_ca, saver_ca
 
 
-def manage_adaptive_filtering(type, points, ):
+def manage_adaptive_filtering(type, points):
+    start_time = time.time()
+
     kalam_filter_results = {}
     adapted_states = []
 
     # set_of_points_to_filter = points[0]
     ukf_cv, saver_cv, ukf_ca, saver_ca = create_filterbank()
-    for i, set_of_points_to_filter in enumerate(points):
 
+    for i, set_of_points_to_filter in enumerate(points):
+        print('Kalman Filter count: {}'.format(i))
+
+        # Setting the first state.
         ukf_cv.x = np.array([points[i][0].lng, 0., points[i][0].lat, 0.])
         ukf_ca.x = np.array([points[i][0].lng, 0., points[i][0].lat, 0.])
 
@@ -41,16 +45,16 @@ def manage_adaptive_filtering(type, points, ):
                 ukf_cv, saver_cv, ukf_ca, saver_ca, adapted_state = \
                     do_adaptive_kf(p, ukf_cv, saver_cv, ukf_ca, saver_ca)
 
-                adapted_states.append(adapted_state)
+                adapted_states.append((p.time,adapted_state))
 
     saver_cv.to_array()
     saver_ca.to_array()
+
     kalam_filter_results = {
         'cv_res': ukf_cv, 'saver_cv': saver_cv,
         'ca_res': ukf_ca, 'saver_ca': saver_ca, 'adapted_states': adapted_states
     }
-
-    # kalam_filter_results.append(results)
+    print("KF took %s seconds " % (time.time() - start_time))
 
     return kalam_filter_results
 

@@ -26,18 +26,14 @@ class Measurement:
     def do_kalman_filtering(self):
         kf = UnscentedKalmanFilterInterface('adaptive', self.points, self.dir_path)
         self.kalmaned = kf.do_kalman_filter()
-        # kfca = interfaceca.do_ukf_with_acc(self.dir_path, self.acc, self.gps)
-
         return self.kalmaned
 
-    def create_KF_outputs(self):
-
-        output_creator.create_outputs(self.dir_path, self.kalmaned)
-        pass
-
     def get_potholes(self):
-        n = dsp.get_potholes(self.acc_signal, self.kfcv)
+        n = dsp.get_road_anomalies(self.points,self.kalmaned['adapted_states'], self.dir_path)
         return n
+
+    def create_KF_outputs(self):
+        output_creator.create_outputs(self.dir_path, self.kalmaned)
 
     def get_acc_gps(self):
         return self.acc, self.gps

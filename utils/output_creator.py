@@ -59,7 +59,7 @@ def export_results_to_shp(result, shp_dir, file_count):
     if not og_coords_path.is_file():
         df = pd.DataFrame([[i, j] for i, j in zip(result['oglng'], result['oglat'])])
         df.columns = ['lng', 'lat']
-        write_to_shp(df, og_coords_path, og=True)
+        write_to_shp(df, og_coords_path)
 
     for i in ['cv', 'ca', 'adapted']:
         df = get_dataframes(result[i])
@@ -105,8 +105,8 @@ def extract_attributes_from_saver_objects(kalmaned):
         'oglng': [st[0] for st in saver_cv['z']],
         'oglat': [st[1] for st in saver_cv['z']],
         'adapted': {
-            'lng': [i[0] for i in kalmaned['adapted_states']],
-            'lat': [i[1] for i in kalmaned['adapted_states']],
+            'lng': [i[1][0] for i in kalmaned['adapted_states']],
+            'lat': [i[1][1] for i in kalmaned['adapted_states']],
         }
     }
     matrices = {

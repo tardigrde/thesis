@@ -19,7 +19,7 @@ start_time = time.time()
 
 
 # DATA_BASE_DIR = r'D:\code\PyCharmProjects\thesis\data'
-# CURRENT_TEST_RUN = r'\trolli_playground'
+# CURRENT_TEST_RUN = r'\20190115\harmadik'
 # CURRENT_TEST_SET = r'\ukf'
 DATA_BASE_DIR = r'D:\code\PyCharmProjects\thesis\data'
 CURRENT_TEST_RUN = r'\trolli_playground'
@@ -55,8 +55,8 @@ measurement.get_points()
 
 measurement.do_kalman_filtering()
 measurement.create_KF_outputs()
+# measurement.get_potholes()
 #potholes = dsp.classify_windows(acc, gps, dir_path)
-# measurement.segment_data()
 # stats = measurement.get_stats()
 # except Exception as e:
 #     print('An error occured:', e)
