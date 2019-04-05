@@ -55,7 +55,7 @@ measurement.get_points()
 
 measurement.do_kalman_filtering()
 measurement.create_KF_outputs()
-# measurement.get_potholes()
+measurement.get_potholes()
 #potholes = dsp.classify_windows(acc, gps, dir_path)
 # stats = measurement.get_stats()
 # except Exception as e:

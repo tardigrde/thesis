@@ -29,7 +29,7 @@ class Measurement:
         return self.kalmaned
 
     def get_potholes(self):
-        n = dsp.get_road_anomalies(self.points,self.kalmaned['adapted_states'], self.dir_path)
+        n = dsp.get_road_anomalies(self.points, self.kalmaned['adapted_states'], self.dir_path)
         return n
 
     def create_KF_outputs(self):

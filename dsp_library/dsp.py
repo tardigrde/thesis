@@ -1,16 +1,13 @@
 from __future__ import division
 from scipy.signal import find_peaks, butter
-import matplotlib.pyplot as plt
 from utils import fuser
 from utils import plotter
 import pandas as pd
-import numpy as np
 import peakutils
 import copy
 import numpy as np
-from scipy import pi
 import matplotlib.pyplot as plt
-from scipy.fftpack import fft
+from scipy.fftpack import fft, ifft
 import time
 
 
@@ -21,7 +18,9 @@ def get_road_anomalies(points, adaptive_kf_result, dir_path):
 
 def classify_windows(points, adaptive_kf_result, dir_path):
     windows = get_windows(points, adaptive_kf_result)
-    ffted_windows = [do_fft(down_subset) for down_subset in windows['down']]
+    # ffted_windows = [do_fft(down_subset) for down_subset in windows['down']]
+    # windowed_time = windows['_time']
+    # print(len(windowed_time), len(windowed_time[0]))
 
     # down_subsets_filtered = [do_HPF(down_subset) for down_subset in windows['down']]
     # st = calculate_stats(windows)
@@ -34,48 +33,39 @@ def get_windows(points, adaptive_kf_result):
     start_time = time.time()
 
     acc_time, acc_down, kf_res = prepare_data_for_windowing(points, adaptive_kf_result)
-    windows = {
-        "time": do_windowing_and_fft(acc_time),
-        "down": do_windowing_and_fft(acc_down),
-    }
+    filtered = do_low_pass_filter(acc_down)
+
+    # windows = {
+    #     "_time": do_windowing(acc_time, hamming=True),
+    #     "down": do_windowing(acc_down),
+    # }
 
     print("--- Segmentation took %s seconds ---" % (time.time() - start_time))
-    return windows
+    return filtered
 
 
 def prepare_data_for_windowing(points, kf_res):
     acc_time_per_point = [p.acc['_time'] for list in points for p in list]
     acc_down_per_point = [p.acc['down'] for list in points for p in list]
 
-    check_length_of_lists(acc_time_per_point, acc_down_per_point, kf_res)
+    check_length_of_acc_lists_and_kf_res(acc_time_per_point, acc_down_per_point, kf_res)
 
     acc_time = [elem for list in acc_time_per_point for elem in list]
     acc_down = [elem for list in acc_down_per_point for elem in list]
 
-    check_length_of_lsit(acc_time, acc_down)
+    check_length_of_lists(acc_time, acc_down)
 
     return acc_time, acc_down, kf_res
 
 
-def check_length_of_lsit(acc_time, acc_down):
-    assert len(acc_time) == len(acc_down)
-
-
-def check_length_of_lists(acc_time, acc_down, kf_res):
-    try:
-        assert len(acc_time) == len(acc_down) == len(kf_res)
-    except Exception as e:
-        print('Error! list lengths are not equal.\n', e)
-
-
-def do_windowing_and_fft(axis, window_size=100):
+def do_windowing(axis, hamming=False, window_size=100):
     n = window_size
     m = round(n / 4)  # overlap_size
-    # if hamming == False:
-    #     windows = [axis[i:i + n] for i in range(0, len(axis), n - m)]
-    # else:
-    # windows = [do_HPF(axis[i:i + n], n) for i in range(0, len(axis), n - m)]
-    windows = [do_hamming(axis[i:i + n], n) for i in range(0, len(axis), n - m)]
+    if hamming == False:
+        windows = [axis[i:i + n] for i in range(0, len(axis), n - m)]
+    else:
+        windows = [do_hamming(axis[i:i + n], n) for i in range(0, len(axis), n - m)]
+        # windows = [do_low_pass_filter(axis[i:i + n], n) for i in range(0, len(axis), n - m)]
     return windows
 
 
@@ -84,6 +74,77 @@ def do_hamming(dataset, n):
     if len(dataset) != n: window = np.hamming(len(dataset))
     windowed_data_og = np.multiply(dataset, window)
     return windowed_data_og
+
+
+def do_low_pass_filter(acc_down):
+    """
+    https://plot.ly/python/fft-filters/
+    Args:
+        acc_down:
+
+    Returns:
+
+    """
+
+    fc = .1  # Cutoff frequency as a fraction of the sampling rate (in (0, 0.5)).
+    b = .08  # Transition band, as a fraction of the sampling rate (in (0, 0.5)).
+    N = int(np.ceil((4 / b)))
+    if not N % 2: N += 1  # Make sure that N is odd.
+    n = np.arange(N)
+
+    # Compute a low-pass filter.
+    sinc_func = np.sinc(2 * fc * (n - (N - 1) / 2.))
+    window = np.blackman(N)  # 0.42 - 0.5 * np.cos(2 * np.pi * n / (N - 1)) + 0.08 * np.cos(4 * np.pi * n / (N - 1))
+    sinc_func = sinc_func * window
+    sinc_func = sinc_func / np.sum(sinc_func)
+
+    filtered = np.convolve(acc_down, sinc_func)
+    # TODO:
+    # - interpolate
+    # - make HPF work
+    # if not len(filtered) == len(acc_down) and len(filtered) > len(acc_down):
+    #     print('OOOOOOOOOOOPS', len(filtered), len(acc_down))
+    #     diff = len(filtered) - len(acc_down)
+    #     print(diff)
+    #     # filtered_windows_cut =np.delete(filtered, [i for i in range(diff)])
+    #     del (list(filtered)[-diff:])
+    #     print('len of og: ', len(acc_down), 'len of filtered after deletion: ',len(filtered))
+    acc_down, trimmed_filtered=sync_og_and_filtered(acc_down, filtered)
+
+    plt.plot(acc_down, color='red')
+    plt.plot(trimmed_filtered, color='green')
+    plt.title("Hamming windows filtered")
+    plt.ylabel("Amplitude")
+    plt.xlabel("Sample")
+    plt.show()
+
+    return trimmed_filtered
+
+
+def sync_og_and_filtered(acc_down, filtered):
+    diff = int((len(filtered) - len(acc_down)) / 2)
+    trimmed = list(filtered)
+    del (trimmed[:diff], trimmed[-diff:])
+    synced = check_length_of_filtered(acc_down, trimmed)
+
+    if not synced:
+        diff = abs(len(trimmed) - len(acc_down))
+        if len(trimmed) > len(acc_down):
+            del (trimmed[:diff], trimmed[-diff:])
+        else:
+            del (acc_down[:diff], acc_down[-diff:])
+    check_length_of_filtered(acc_down, trimmed)
+    return acc_down, trimmed
+
+
+def check_length_of_filtered(acc_down, trimmed_list):
+    difference_between_length = abs(len(acc_down) - len(trimmed_list))
+    try:
+        assert difference_between_length == 0
+        return True
+    except:
+        print('Length mismatch after low pass filter')
+        return False
 
 
 def do_fft(window):
@@ -99,83 +160,46 @@ def do_fft(window):
     if not len(window) == 100:
         print('_________NOOOOOOOOOOOOOOOOOOOOOOOOOOOPE_____')
         return
+    length_of_window = len(window)
 
     # Sampling rate and time vector
     start_time = 0  # seconds
-    end_time = 1  # seconds
+    end_time = length_of_window / 100  # seconds
     sampling_rate = 100  # Hz
     N = (end_time - start_time) * sampling_rate  # array size
 
     # Vibration data generation
-    time = np.linspace(start_time, end_time, N)
-    vib_data = list(window)
+    time = np.linspace(start_time, end_time, round(N))
 
-    plt.plot(time[0:100], vib_data[0:100])
+    plt.figure(1)
     plt.xlabel('Time')
     plt.ylabel('Vibration (g)')
-    plt.title('input windows')
-    plt.show()
+    plt.title('Time Domain')
+    plt.plot(time, window, 'green')
 
     # Nyquist Sampling Criteria
     T = 1 / sampling_rate  # inverse of the sampling rate
     x = np.linspace(0.0, 1.0 / (2.0 * T), int(N / 2))
 
     # FFT algorithm
-    yr = fft(vib_data)  # "raw" FFT with both + and - frequencies
+    yr = fft(list(window))  # "raw" FFT with both + and - frequencies
     y = 2 / N * np.abs(yr[0:np.int(N / 2)])  # positive freqs only
 
-    # # Plotting the results
-    # plt.plot(x, y)
-    # plt.xlabel('Frequency (Hz)')
-    # plt.ylabel('Count ? (g)')
-    # plt.title('Frequency Domain (Healthy Machinery)')
-    # plt.show()
+    # Plotting the results
+    plt.figure(2)
+    plt.title('Frequency Domain')
+    plt.xlabel('Frequency (Hz)')
+    plt.ylabel('????')
+    plt.plot(x, y, 'yellow')
 
-
-def do_HPF(acc_down_subset):
-    """
-    https://plot.ly/python/fft-filters/
-    Args:
-        acc_down_subset:
-
-    Returns:
-
-    """
-
-    fc = 20  # Cutoff frequency as a fraction of the sampling rate (in (0, 0.5)).
-    b = 5  # Transition band, as a fraction of the sampling rate (in (0, 0.5)).
-    N = int(np.ceil((4 / b)))
-    if not N % 2: N += 1  # Make sure that N is odd.
-    n = np.arange(N)
-
-    # Compute a low-pass filter.
-    h = np.sinc(2 * fc * (n - (N - 1) / 2))
-    w = np.blackman(N)
-    h = h * w
-    h = h / np.sum(h)
-
-    # Create a high-pass filter from the low-pass filter through spectral inversion.
-    h = -h
-    h[(N - 1) // 2] += 1
-
-    filtered = np.convolve(acc_down_subset, h)
-    # TODO:
-    # - interpolate
-    # - make HPF work
-    if not len(filtered) == len(acc_down_subset) and len(filtered) > len(acc_down_subset):
-        print('OOOOOOOOOOOPS', len(filtered), len(acc_down_subset))
-        diff = len(filtered) - len(acc_down_subset)
-        print(diff)
-        filtered_windows_cut = np.delete(filtered, [i for i in range(diff)])
-
-    plt.plot(acc_down_subset, color='red')
-    plt.plot(filtered_windows_cut, color='green')
-    plt.title("Hamming windows filtered")
-    plt.ylabel("Amplitude")
-    plt.xlabel("Sample")
+    iffted_res = ifft(yr)
+    # We here want to have the original acc data seen corresponding to ifft res
+    plt.figure(3)
+    plt.plot(time, iffted_res, 'r')
+    plt.plot(time, window, 'b')
     plt.show()
 
-    return filtered_windows_cut
+    return iffted_res
 
 
 def find_max_peaks(z_axis, height):
@@ -268,3 +292,14 @@ def calculate_stats(windows):
     return stats_array
 
     # for e, n, d, ln, lt in zip(window_t[0], window_t[1], window_t[2], window_t[3], window_t[4]):
+
+
+def check_length_of_lists(acc_time, acc_down):
+    assert len(acc_time) == len(acc_down)
+
+
+def check_length_of_acc_lists_and_kf_res(acc_time, acc_down, kf_res):
+    try:
+        assert len(acc_time) == len(acc_down) == len(kf_res)
+    except Exception as e:
+        print('Error! list lengths are not equal.\n', e)

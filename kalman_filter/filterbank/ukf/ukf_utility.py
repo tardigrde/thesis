@@ -4,6 +4,7 @@ from filterpy.kalman import MerweScaledSigmaPoints
 from filterpy.common import Q_discrete_white_noise, Saver
 import numpy as np
 import time
+import sys
 
 
 def do_unscented_kalman_filtering(type, points, dir_path):
@@ -55,6 +56,7 @@ def manage_adaptive_filtering(type, points):
         'ca_res': ukf_ca, 'saver_ca': saver_ca, 'adapted_states': adapted_states
     }
     print("KF took %s seconds " % (time.time() - start_time))
+    print('Size of kf result object: ',sys.getsizeof(kalam_filter_results)/1000,' MB')
 
     return kalam_filter_results
 
