@@ -19,7 +19,7 @@ start_time = time.time()
 
 
 # DATA_BASE_DIR = r'D:\code\PyCharmProjects\thesis\data'
-# CURRENT_TEST_RUN = r'\20190115\harmadik'
+# CURRENT_TEST_RUN = r'\20190115\masodik'
 # CURRENT_TEST_SET = r'\ukf'
 DATA_BASE_DIR = r'D:\code\PyCharmProjects\thesis\data'
 CURRENT_TEST_RUN = r'\trolli_playground'
@@ -51,22 +51,24 @@ measurement = Measurement(path_imu, path_gps, dir_path)
 
 
 measurement.preprocess()
-measurement.get_points()
+# measurement.get_points()
+#
+# measurement.do_kalman_filtering()
+# measurement.create_KF_outputs()
+# measurement.get_potholes()
+# measurement.create_PH_outputs()
 
-measurement.do_kalman_filtering()
-measurement.create_KF_outputs()
-measurement.get_potholes()
 #potholes = dsp.classify_windows(acc, gps, dir_path)
 # stats = measurement.get_stats()
 # except Exception as e:
 #     print('An error occured:', e)
 
-stats["created"] = date_of_measurement
-stats["vehicle"] = "Ford Fiesta"
-stats["intent"] = "development"
-
-
-path_stats = Path(str(dir_path) + r'\results\metadata.txt')
+# stats["created"] = date_of_measurement
+# stats["vehicle"] = "Ford Fiesta"
+# stats["intent"] = "development"
+#
+#
+# path_stats = Path(str(dir_path) + r'\results\metadata.txt')
 # with open(path_stats, 'w') as out:
 #     out.write(json.dumps(stats, indent=4))
 

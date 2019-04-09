@@ -11,17 +11,6 @@ def do_unscented_kalman_filtering(type, points, dir_path):
     return manage_adaptive_filtering(type, points)
 
 
-def create_filterbank():
-    sigmas_cv = MerweScaledSigmaPoints(4, alpha=.1, beta=2., kappa=1.)
-    ukf_cv = UKF(dim_x=4, dim_z=2, fx=f_cv, hx=h_cv, dt=1, points=sigmas_cv)
-    saver_cv = Saver(ukf_cv)
-
-    sigmas_ca = MerweScaledSigmaPoints(4, alpha=.5, beta=2., kappa=1.)
-    ukf_ca = UKF(dim_x=4, dim_z=2, fx=f_ca, hx=h_ca, dt=0.01, points=sigmas_ca)
-    saver_ca = Saver(ukf_ca)
-    return ukf_cv, saver_cv, ukf_ca, saver_ca
-
-
 def manage_adaptive_filtering(type, points):
     start_time = time.time()
 
@@ -46,7 +35,7 @@ def manage_adaptive_filtering(type, points):
                 ukf_cv, saver_cv, ukf_ca, saver_ca, adapted_state = \
                     do_adaptive_kf(p, ukf_cv, saver_cv, ukf_ca, saver_ca)
 
-                adapted_states.append((p.time,adapted_state))
+                adapted_states.append((p.time, adapted_state))
 
     saver_cv.to_array()
     saver_ca.to_array()
@@ -56,9 +45,20 @@ def manage_adaptive_filtering(type, points):
         'ca_res': ukf_ca, 'saver_ca': saver_ca, 'adapted_states': adapted_states
     }
     print("KF took %s seconds " % (time.time() - start_time))
-    print('Size of kf result object: ',sys.getsizeof(kalam_filter_results)/1000,' MB')
+    print('Size of kf result object: ', sys.getsizeof(kalam_filter_results) / 1000, ' MB')
 
     return kalam_filter_results
+
+
+def create_filterbank():
+    sigmas_cv = MerweScaledSigmaPoints(4, alpha=.1, beta=2., kappa=1.)
+    ukf_cv = UKF(dim_x=4, dim_z=2, fx=f_cv, hx=h_cv, dt=1, points=sigmas_cv)
+    saver_cv = Saver(ukf_cv)
+
+    sigmas_ca = MerweScaledSigmaPoints(4, alpha=.5, beta=2., kappa=1.)
+    ukf_ca = UKF(dim_x=4, dim_z=2, fx=f_ca, hx=h_ca, dt=0.01, points=sigmas_ca)
+    saver_ca = Saver(ukf_ca)
+    return ukf_cv, saver_cv, ukf_ca, saver_ca
 
 
 def set_cv_filter(ukf_cv, ):

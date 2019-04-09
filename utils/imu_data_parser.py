@@ -30,6 +30,8 @@ def _wrangle_data_with_pandas(path):
 
 def _milisecondify(t):
     """
+    We just turn the timestamps from human-readable format to timestamps, representing
+
 
     Args:
         t:
@@ -92,9 +94,16 @@ def _iterate_through_table_and_do_calculations(df):
     mag_y = [gY for gY in df.iloc[:, 8]]
     mag_z = [gZ for gZ in df.iloc[:, 9]]
     no_of_measurements = len(time)
-
+    import matplotlib.pyplot as plt
+    # plt.plot(mag_x)
+    # plt.show()
     list_of_dicts_of_imu_data = []
+    def avg(axis):
+        return np.average(axis)
+    print(avg(acc_x), avg(acc_y), avg(acc_z), avg(gyro_x), avg(gyro_y), avg(gyro_z), avg(mag_x), avg(mag_y), avg(mag_z))
     imu_data_dict = {}
+
+    rolls, pitches, yaws = [], [], []
     # Iterating through rows.
     for i in range(no_of_measurements):
         acc = [acc_x[i], acc_y[i], acc_z[i]]
@@ -104,7 +113,12 @@ def _iterate_through_table_and_do_calculations(df):
         # Transform acceleration, gyroscope and magnetometer readings to a quaternion.
         MadgwickAHRS.update(MadgwickAHRS, gyro, acc, mag)
         Q = MadgwickAHRS.quaternion
+        roll, pitch, yaw = Q.to_euler_angles()
+        rolls.append(roll)
+        pitches.append(pitch)
+        yaws.append(yaw)
         quaternion = Quaternion([float(Q[0]), float(Q[1]), float(Q[2]), float(Q[3])])
+        # quaternion = [float(Q[0]), float(Q[1]), float(Q[2]), float(Q[3])]
 
         # Transform quaternion to rotation matrix.
         rotation_matrix = quaternion.rotation_matrix.tolist()
@@ -127,7 +141,9 @@ def _iterate_through_table_and_do_calculations(df):
             {'time': int(time[i]), 'acc_east': tru_acc['east'], 'acc_north': tru_acc['north'],
              'acc_down': tru_acc['down']}
         )
-    # plotter.plot_xyz_acc(acc)
+
+    plt.plot(rolls)
+    plt.show()
     return imu_data_dict
 
 

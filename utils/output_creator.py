@@ -122,10 +122,12 @@ def extract_attributes_from_saver_objects(kalmaned):
 def check_folders(dir_path):
     output_dir_path = Path(str(dir_path) + r'\results')
     shapes_dir = Path(str(output_dir_path) + r'\shapes')
+    potholes_dir = Path(str(shapes_dir) + r'\potholes')
     figures_dir = Path(str(output_dir_path) + r'\figures')
 
     if not output_dir_path.is_dir(): makedirs(output_dir_path)
     if not shapes_dir.is_dir(): makedirs(shapes_dir)
+    if not potholes_dir.is_dir(): makedirs(potholes_dir)
     if not figures_dir.is_dir(): makedirs(figures_dir)
 
     file_count = get_file_count(shapes_dir)
@@ -137,7 +139,7 @@ def get_file_count(dir_path):
     onlyfiles = [f for f in listdir(str(dir_path)) if isfile(join(str(dir_path), f))]
     result_count = []
     for file in onlyfiles:
-        if 'result' in file and '.shp' in file and 'result.shp' not in file:
+        if not 'og_coordinates' and '.shp' in file:
             # we want to use the *number* after the result filename substring
             number = re.findall(r'\d+', file)
             result_count.append(int(number[0]))
@@ -159,6 +161,15 @@ def write_to_shp(df, out_path):
     gdf.to_file(driver='ESRI Shapefile', filename=out_path)
     print("Writing shapes took %s seconds " % (time.time() - start_time))
 
-# def write_result_to_json(json_dir, data):
-#     with open(json_dir, 'w') as outfile:
-#         json.dump(data, outfile)
+
+def write_potholes_to_shp(dir_path, potholes):
+    out_path = Path(str(dir_path) + r'\results\shapes\potholes')
+    count = get_file_count(out_path)
+    out_path = Path(str(out_path) + r'\pothole' + count + r'.shp')
+    df = pd.DataFrame(potholes)
+    df['Coordinates'] = list(zip(df.lng, df.lat))
+    df['Coordinates'] = df['Coordinates'].apply(Point)
+    crs = {'init': 'epsg:23700'}
+    gdf = geopandas.GeoDataFrame(df, crs=crs, geometry='Coordinates')
+    print(out_path)
+    gdf.to_file(driver='ESRI Shapefile', filename=out_path)

@@ -2,6 +2,47 @@ import numpy as np
 from shapely.geometry import Point
 from pathlib import Path
 from Point import Point
+import matplotlib.pyplot as plt
+
+
+def map_potholes_back_to_real_world(ts, kf_coords, gps_time_intervals):
+    intervals = [tup for list in gps_time_intervals for tup in list]
+    formatted_times = get_formatted_times_of_potholes(ts, intervals)
+    return get_coordinates(formatted_times, kf_coords)
+
+
+def get_formatted_times_of_potholes(ts, intervals):
+    # BAD PERFORMANCE!
+    intervals_filled = []
+    for low_limit,high_limit in intervals:
+        l = []
+        for element in ts:
+            if low_limit <= element < high_limit:
+                l.append(element)
+
+        intervals_filled.append(l)
+
+    return intervals_filled
+
+def get_coordinates(formatted_times, kf_coords):
+    lngs,lats=[],[]
+    ph_lngs, ph_lats=[],[]
+    for times, coords in zip(formatted_times, kf_coords):
+        lng = coords[1][0]
+        lat = coords[1][1]
+        lngs.append(lng)
+        lats.append(lat)
+        if len(times) > 10:
+            ph_lngs.append(lng)
+            ph_lats.append(lat)
+    # plt.scatter(lngs, lats)
+    # plt.scatter(ph_lngs, ph_lats, color="red")
+    # plt.show()
+    return {
+        'lng': ph_lngs,
+        'lat': ph_lats
+    }
+
 
 
 def get_points_with_acc(acc, gps):
@@ -9,15 +50,6 @@ def get_points_with_acc(acc, gps):
 
 
 def get_points(acc, gps):
-    """
-    Here we are fusing acc and gps.
-    Args:
-        acc:
-        gps:
-
-    Returns:
-
-    """
     points = []
     for time, lng, lat, vel, tt, hdop, a in zip(gps['time'], gps['ln'], gps['la'], gps['v'], gps['t'], gps['hdop'],
                                                 acc):
@@ -31,28 +63,19 @@ def get_points(acc, gps):
 
 
 def trim_and_sync_dataset(acc, gps):
-    """
-    We have to remove
-    Args:
-        acc:
-        gps:
-
-    Returns:
-
-    """
     gps_time = gps['time']
     acc_time = acc['_time']
     if not (gps_time[0] > acc_time[0]) and (gps_time[len(gps_time) - 1] < acc_time[len(acc_time) - 1]):
         print('ERROR: gps started first or gps stopped last')
         return
 
-    gps_msrmnt = trim_gps(gps)
-    acc, gps = trim_and_sync_acc(acc, gps_msrmnt)
+    gps, gps_time_intervals = trim_and_split_gps_measurements(gps)
+    acc = trim_and_sync_acc(acc, gps, gps_time_intervals)
     # check_if_trim_sync_went_ok(acc, gps)
-    return acc, gps
+    return acc, gps, gps_time_intervals
 
 
-def trim_gps(gps):
+def trim_and_split_gps_measurements(gps):
     columns = list(gps.keys())
     count = len(gps['time'])
     five_percent = int(round(count / 10, 0))
@@ -62,30 +85,32 @@ def trim_gps(gps):
             del (gps[c][:five_percent], gps[c][-five_percent:])
         else:
             print('ERROR: trimming gps fails!')
-    return gps
-
-
-def trim_and_sync_acc(acc, gps):
-    gps_time = gps['time']
-    acc_time = acc['_time']
-    acc['_time'] = round_acc_timestamps(acc_time, gps_time)
 
     gps = split_measurement_lists_at_void(gps)
     check_gps(gps)
 
-    list_of_lists_of_intervals = get_valid_set_invalid_time_intervals(gps)
-    check_intervals_length(gps, list_of_lists_of_intervals)
+    list_of_lists_of_gps_intervals = get_valid_set_invalid_time_intervals(gps)
+    check_intervals_length(gps, list_of_lists_of_gps_intervals)
 
-    formatted_acc_indices = get_formatted_acc_indices(list_of_lists_of_intervals, acc['_time'])
+    return gps, list_of_lists_of_gps_intervals
+
+
+def trim_and_sync_acc(acc, gps, gps_time_intervals):
+    gps_time = gps['time']
+    acc_time = acc['_time']
+    acc['_time'] = round_acc_timestamps(acc_time, gps_time)
+
+    formatted_acc_indices = get_formatted_acc_indices(gps_time_intervals, acc['_time'])
     check_intervals_length(gps, formatted_acc_indices)
 
     formatted_acc_lists_of_objects = get_formatted_lists_of_lists_of_acc_objcts(formatted_acc_indices, acc)
     check_intervals_length(gps, formatted_acc_lists_of_objects)
 
-    return formatted_acc_lists_of_objects, gps
+    return formatted_acc_lists_of_objects
 
 
 def round_acc_timestamps(acc_time, gps_time):
+    gps_time = [g for lists in gps_time for g in lists]
     for gt in gps_time:
         for i in range(len(acc_time)):
             try:

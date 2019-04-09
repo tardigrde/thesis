@@ -50,5 +50,5 @@ SPECIAL TOPICS KF
 
 
 
-
-# ANN which has on input from kalman fitlered data,  /// MI???
+MANUAL STUFF:
+check if low pass fitlered data corresponds to original acc data !!!!!!!!!!!

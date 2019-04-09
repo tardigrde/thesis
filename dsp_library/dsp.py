@@ -1,5 +1,5 @@
 from __future__ import division
-from scipy.signal import find_peaks, butter
+from scipy.signal import find_peaks, butter, spectrogram
 from utils import fuser
 from utils import plotter
 import pandas as pd
@@ -11,13 +11,33 @@ from scipy.fftpack import fft, ifft
 import time
 
 
-def get_road_anomalies(points, adaptive_kf_result, dir_path):
-    classified = classify_windows(points, adaptive_kf_result, dir_path)
-    return classified
+def get_road_anomaly_timestamps(points, adaptive_kf_result, time_intervals, dir_path):
+    pothole_timestamps= classify_windows(points, adaptive_kf_result, time_intervals, dir_path)
+    # write_kalmaned_data_to_file(adaptive_kf_result)
+    # write_interval_data_to_file(time_intervals)
+    return pothole_timestamps
 
 
-def classify_windows(points, adaptive_kf_result, dir_path):
-    windows = get_windows(points, adaptive_kf_result)
+def classify_windows(points, adaptive_kf_result, time_intervals, dir_path):
+    start_time = time.time()
+    acc_time, acc_down, kf_res = prepare_data_for_filtering(points, adaptive_kf_result)
+    filtered = do_low_pass_filter(acc_down)
+    acc_time_windows = do_windowing(acc_time)
+    filtered_acc_down_windows = do_windowing(filtered, hamming=True)
+    potholes = do_classification(acc_time_windows, filtered_acc_down_windows)
+
+    # Concept:
+    #   we gonna get the time windows, add them al ltogether, transform it to a set
+    #
+    pothole_timestamps = map_potholes_to_timestamp(acc_time_windows, potholes)
+
+    # get_frequencies(filtered)
+    #
+    # windows = {
+    #     "_time": do_windowing(acc_time, hamming=True),
+    #     "down": do_windowing(acc_down),
+    # }
+
     # ffted_windows = [do_fft(down_subset) for down_subset in windows['down']]
     # windowed_time = windows['_time']
     # print(len(windowed_time), len(windowed_time[0]))
@@ -25,26 +45,118 @@ def classify_windows(points, adaptive_kf_result, dir_path):
     # down_subsets_filtered = [do_HPF(down_subset) for down_subset in windows['down']]
     # st = calculate_stats(windows)
     # plotter.plot_ned_acc(fig_dir, t, down_acc)
-
-
-def get_windows(points, adaptive_kf_result):
-    # https://docs.scipy.org/doc/numpy-1.14.5/reference/generated/numpy.fft.fft.html#numpy.fft.fft
-
-    start_time = time.time()
-
-    acc_time, acc_down, kf_res = prepare_data_for_windowing(points, adaptive_kf_result)
-    filtered = do_low_pass_filter(acc_down)
-
-    # windows = {
-    #     "_time": do_windowing(acc_time, hamming=True),
-    #     "down": do_windowing(acc_down),
-    # }
-
     print("--- Segmentation took %s seconds ---" % (time.time() - start_time))
-    return filtered
+    return pothole_timestamps
 
 
-def prepare_data_for_windowing(points, kf_res):
+def do_classification(acc_time_windows, acc_down_windows):
+    if not len(acc_down_windows) == len(acc_time_windows):
+        print('down and time are not the same lenght')
+        return
+    potholes = {
+        'thresh': [],
+        'diff': [],
+        'std': [],
+        'combined': []
+    }
+    for i, down_window in enumerate(acc_down_windows):
+        # plt.plot(down_window)
+        # plt.show()
+
+        thresh = classify_based_on_threshold(i, down_window)
+        if thresh:
+            potholes['thresh'].append(thresh)
+
+        diff = classify_based_on_absolut_difference(i, down_window)
+        if diff:
+            potholes['diff'].append(diff)
+
+        std = classify_based_on_std_dev(i, down_window)
+        if std:
+            potholes['std'].append(std)
+    potholes['combined'] = find_identical_indices(potholes)
+
+    return potholes
+
+
+def find_identical_indices(potholes):
+    list_of_lists = []
+    list_of_lists.append(potholes['thresh'])
+    list_of_lists.append(potholes['diff'])
+    list_of_lists.append(potholes['std'])
+    intsect = set.intersection(*[set(list) for list in list_of_lists])
+    # seen = set()
+    # repeated = set()
+    #
+    # for list in list_of_lists:
+    #     for i in set(list):
+    #         if i in seen:
+    #             repeated.add(i)
+    #         else:
+    #             seen.add(i)
+    return intsect
+
+
+def classify_based_on_threshold(i, down_window):
+    min_threshold, max_threshold = (-0.08, 0.08)
+    indices_in_window = []
+    for j, down in enumerate(down_window):
+        if min_threshold < down < max_threshold:
+            pass
+        else:
+            indices_in_window.append(j)
+    # Change this if in doubt
+    if len(indices_in_window) >= 5:
+        return i
+    else:
+        return None
+
+
+def classify_based_on_absolut_difference(i, down_window):
+    max_val = max(down_window)
+    min_val = min(down_window)
+    diff = max_val - min_val
+    if diff > 0.16:
+        return i
+    else:
+        return None
+
+
+def classify_based_on_std_dev(i, down_window):
+    std = np.std(down_window)
+    if std > 0.04:
+        return i
+    else:
+        return None
+
+
+def map_potholes_to_timestamp(acc_time, potholes):
+    indices = sorted(list(potholes['combined']))
+    timestamp_lists = [acc_time[index] for index in indices]
+    flat_timestamps = [t for list in timestamp_lists for t in list]
+    set_of_timestamps = set(flat_timestamps)
+    return list(set_of_timestamps)
+
+
+# def get_low_pass_filtered_data(acc_time, acc_down, kf_res):
+#
+#     filtered = do_low_pass_filter(acc_down)
+#     check_length_of_lists(acc_time, filtered)
+#
+#     # write_acc_data_to_file(acc_time, filtered)
+#
+#
+#     return filtered
+
+
+def get_frequencies(filtered):
+    f, t, Sxx = spectrogram(np.array(filtered), fs=100, window='hann', nperseg=100, noverlap=25)
+    # plt.pcolormesh(t, f, Sxx)
+    # plt.show()
+    # return spectroed
+
+
+def prepare_data_for_filtering(points, kf_res):
     acc_time_per_point = [p.acc['_time'] for list in points for p in list]
     acc_down_per_point = [p.acc['down'] for list in points for p in list]
 
@@ -109,7 +221,14 @@ def do_low_pass_filter(acc_down):
     #     # filtered_windows_cut =np.delete(filtered, [i for i in range(diff)])
     #     del (list(filtered)[-diff:])
     #     print('len of og: ', len(acc_down), 'len of filtered after deletion: ',len(filtered))
-    acc_down, trimmed_filtered=sync_og_and_filtered(acc_down, filtered)
+    acc_down, trimmed_filtered = sync_og_and_filtered(acc_down, filtered)
+
+    # plt.subplot(211)
+    # plt.plot(acc_down)
+    # plt.subplot(212)
+    # plt.plot(trimmed_filtered)
+
+    # plt.show()
 
     plt.plot(acc_down, color='red')
     plt.plot(trimmed_filtered, color='green')
@@ -134,6 +253,7 @@ def sync_og_and_filtered(acc_down, filtered):
         else:
             del (acc_down[:diff], acc_down[-diff:])
     check_length_of_filtered(acc_down, trimmed)
+    # check_length_of_lists(acc_time, filtered)
     return acc_down, trimmed
 
 
@@ -292,6 +412,31 @@ def calculate_stats(windows):
     return stats_array
 
     # for e, n, d, ln, lt in zip(window_t[0], window_t[1], window_t[2], window_t[3], window_t[4]):
+
+
+def write_interval_data_to_file(time_intervals):
+    time_intervals = [i for lists in time_intervals for i in lists]
+    with open(r'D:\code\PyCharmProjects\thesis\data\trolli_playground\kalmaned_data\interval_data.csv', 'w') as outfile:
+        for i in time_intervals:
+            line_to_write = str(i[0]) + ',' + str(i[1]) + '\n'
+            outfile.write(line_to_write)
+
+
+def write_kalmaned_data_to_file(adaptive_kf_result):
+    with open(r'D:\code\PyCharmProjects\thesis\data\trolli_playground\kalmaned_data\kalmaned_data.csv', 'w') as outfile:
+        for t, p in adaptive_kf_result:
+            line_to_write = str(t) + ',' + str(p[0]) + ',' + str(p[1]) + '\n'
+            outfile.write(line_to_write)
+
+
+def write_acc_data_to_file(acc_time, filtered):
+    accs = []
+    with open(r'D:\code\PyCharmProjects\thesis\data\trolli_playground\acc_data\acc_data.csv', 'w') as outfile:
+        for t, d in zip(acc_time, filtered):
+            line_to_write = str(t) + ',' + str(d) + '\n'
+            outfile.write(line_to_write)
+    for t, d in zip(acc_time, filtered):
+        accs.append({t: d})
 
 
 def check_length_of_lists(acc_time, acc_down):
