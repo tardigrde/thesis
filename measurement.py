@@ -2,6 +2,7 @@ from kalman_filter.filterbank.ukf.UnscentedKalmanFilterInterface import Unscente
 from utils import imu_data_parser, nmea_parser, fuser
 from utils import output_creator
 from dsp_library import dsp
+from IMU import IMU
 
 
 class Measurement:
@@ -12,7 +13,9 @@ class Measurement:
         self.stats = {}
 
     def preprocess(self):
-        acc = imu_data_parser.get_imu_dictionary(self.path_imu, data='lists')
+        imu = IMU(self.path_imu)
+        acc = imu.preprocessed
+        # acc = imu_data_parser.get_imu_dictionary(self.path_imu, data='lists')
         gps = nmea_parser.get_gps_dictionary(self.path_gps, data='lists')
         self.acc, self.gps, self.gps_time_intervals = fuser.trim_and_sync_dataset(acc, gps)
         return self.acc, self.gps

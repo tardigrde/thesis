@@ -35,9 +35,9 @@ def get_coordinates(formatted_times, kf_coords):
         if len(times) > 10:
             ph_lngs.append(lng)
             ph_lats.append(lat)
-    # plt.scatter(lngs, lats)
-    # plt.scatter(ph_lngs, ph_lats, color="red")
-    # plt.show()
+    plt.scatter(lngs, lats)
+    plt.scatter(ph_lngs, ph_lats, color="red")
+    plt.show()
     return {
         'lng': ph_lngs,
         'lat': ph_lats
@@ -65,11 +65,11 @@ def get_points(acc, gps):
 def trim_and_sync_dataset(acc, gps):
     gps_time = gps['time']
     acc_time = acc['_time']
+    gps, gps_time_intervals = trim_and_split_gps_measurements(gps)
+
     if not (gps_time[0] > acc_time[0]) and (gps_time[len(gps_time) - 1] < acc_time[len(acc_time) - 1]):
         print('ERROR: gps started first or gps stopped last')
         return
-
-    gps, gps_time_intervals = trim_and_split_gps_measurements(gps)
     acc = trim_and_sync_acc(acc, gps, gps_time_intervals)
     # check_if_trim_sync_went_ok(acc, gps)
     return acc, gps, gps_time_intervals
@@ -78,7 +78,7 @@ def trim_and_sync_dataset(acc, gps):
 def trim_and_split_gps_measurements(gps):
     columns = list(gps.keys())
     count = len(gps['time'])
-    five_percent = int(round(count / 10, 0))
+    five_percent = int(round(count / 20, 0))
 
     for c in columns:
         if c in gps and len(gps[c]) == count:

@@ -188,7 +188,7 @@ def do_hamming(dataset, n):
     return windowed_data_og
 
 
-def do_low_pass_filter(acc_down):
+def do_low_pass_filter(axis):
     """
     https://plot.ly/python/fft-filters/
     Args:
@@ -210,60 +210,41 @@ def do_low_pass_filter(acc_down):
     sinc_func = sinc_func * window
     sinc_func = sinc_func / np.sum(sinc_func)
 
-    filtered = np.convolve(acc_down, sinc_func)
-    # TODO:
-    # - interpolate
-    # - make HPF work
-    # if not len(filtered) == len(acc_down) and len(filtered) > len(acc_down):
-    #     print('OOOOOOOOOOOPS', len(filtered), len(acc_down))
-    #     diff = len(filtered) - len(acc_down)
-    #     print(diff)
-    #     # filtered_windows_cut =np.delete(filtered, [i for i in range(diff)])
-    #     del (list(filtered)[-diff:])
-    #     print('len of og: ', len(acc_down), 'len of filtered after deletion: ',len(filtered))
-    acc_down, trimmed_filtered = sync_og_and_filtered(acc_down, filtered)
+    filtered = np.convolve(axis, sinc_func)
+    trimmed_filtered_axis = sync_og_and_filtered(axis, filtered)
 
-    # plt.subplot(211)
-    # plt.plot(acc_down)
-    # plt.subplot(212)
-    # plt.plot(trimmed_filtered)
+    # plotter.plot_acc_axis(axis, trimmed_filtered_axis)
 
-    # plt.show()
-
-    plt.plot(acc_down, color='red')
-    plt.plot(trimmed_filtered, color='green')
-    plt.title("Hamming windows filtered")
-    plt.ylabel("Amplitude")
-    plt.xlabel("Sample")
-    plt.show()
-
-    return trimmed_filtered
+    return trimmed_filtered_axis
 
 
-def sync_og_and_filtered(acc_down, filtered):
-    diff = int((len(filtered) - len(acc_down)) / 2)
-    trimmed = list(filtered)
-    del (trimmed[:diff], trimmed[-diff:])
-    synced = check_length_of_filtered(acc_down, trimmed)
+def sync_og_and_filtered(axis, filtered):
+    diff = int((len(filtered) - len(axis)) / 2)
+    filtered = list(filtered)
+    del (filtered[:diff], filtered[-diff:])
+    synced = check_length_of_filtered(axis, filtered)
 
     if not synced:
-        diff = abs(len(trimmed) - len(acc_down))
-        if len(trimmed) > len(acc_down):
-            del (trimmed[:diff], trimmed[-diff:])
+        # del (list(filtered)[-1:])
+
+        diff = abs(len(filtered) - len(axis))
+        if len(filtered) > len(axis):
+            del (filtered[:diff], filtered[-diff:])
         else:
-            del (acc_down[:diff], acc_down[-diff:])
-    check_length_of_filtered(acc_down, trimmed)
-    # check_length_of_lists(acc_time, filtered)
-    return acc_down, trimmed
+            del (axis[:diff], axis[-diff:])
+    # TODO
+    # - redundant
+    check_length_of_filtered(axis, filtered)
+    # check_length_of_lists(axis, filtered)
+    return filtered
 
 
-def check_length_of_filtered(acc_down, trimmed_list):
-    difference_between_length = abs(len(acc_down) - len(trimmed_list))
+def check_length_of_filtered(axis, filtered):
     try:
-        assert difference_between_length == 0
+        assert len(axis) == len(filtered)
         return True
     except:
-        print('Length mismatch after low pass filter')
+        print('WARNING: Length mismatch after low pass filter')
         return False
 
 

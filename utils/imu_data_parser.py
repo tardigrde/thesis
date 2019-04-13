@@ -1,9 +1,29 @@
 from lib.madgwick.madgwickahrs import MadgwickAHRS
 from pyquaternion import Quaternion
+from dsp_library import dsp
 from utils import fuser
 import pandas as pd
 import numpy as np
 import math
+
+
+def apply_low_pass(df):
+    dataset = {}
+    for col in list(df):
+        if col != 'time' and not 'mag' in col:
+            import matplotlib.pyplot as plt
+            # plt.plot(df[col].tolist())
+            low_passed = dsp.do_low_pass_filter(df[col].tolist())
+            dataset[col] = df[col].tolist()#low_passed
+            # plt.plot(low_passed, color='red')
+            # plt.show()
+            # dataset[col] = (df[col].tolist())
+        else:
+            print(col)
+            assert col in ['time', 'mag_x', 'mag_y', 'mag_z']
+            dataset[col] = df[col].tolist()
+
+    return dataset
 
 
 def _wrangle_data_with_pandas(path):
@@ -17,12 +37,15 @@ def _wrangle_data_with_pandas(path):
     """
     # Transform the huge csv to dataframe.
     df = pd.DataFrame(pd.read_csv(path, sep=','))
-    trimmed_df = df[['Timestamp',
-                     'accelX', 'accelY', 'accelZ',
-                     'gyroX(rad/s)', 'gyroY(rad/s)', 'gyroZ(rad/s)',
-                     'calMagX', 'calMagY', 'calMagZ']]
+    columns_to_keep = ['Timestamp',
+          'accelX', 'accelY', 'accelZ',
+          'gyroX(rad/s)', 'gyroY(rad/s)', 'gyroZ(rad/s)',
+          'calMagX', 'calMagY', 'calMagZ']
+    trimmed_df = df[columns_to_keep]
+    new_colum_names = ['time', 'acc_x', 'acc_y', 'acc_z', 'gyro_x', 'gyro_y', 'gyro_z', 'mag_x', 'mag_y', 'mag_z']
     pd.options.mode.chained_assignment = None
-    trimmed_df.update(trimmed_df['Timestamp'].apply(_milisecondify))
+    trimmed_df.rename(columns=dict(zip(columns_to_keep, new_colum_names)), inplace=True)
+    trimmed_df.update(trimmed_df['time'].apply(_milisecondify))
     dataframe = trimmed_df.where(trimmed_df != 0, 0.001)
 
     return dataframe
@@ -73,7 +96,7 @@ def _calculate_true_acceleration(acceleration):
     return {'east': acc_e, 'north': acc_n, 'down': acc_down}
 
 
-def _iterate_through_table_and_do_calculations(df):
+def _iterate_through_table_and_do_calculations(data):
     """
 
     Args:
@@ -82,33 +105,23 @@ def _iterate_through_table_and_do_calculations(df):
     Returns:
 
     """
-    # Extracting columns.
-    time = [str(t) for t in df.iloc[:, 0]]
-    acc_x = [aX for aX in df.iloc[:, 1]]
-    acc_y = [aY for aY in df.iloc[:, 2]]
-    acc_z = [aZ for aZ in df.iloc[:, 3]]
-    gyro_x = [gX for gX in df.iloc[:, 4]]
-    gyro_y = [gY for gY in df.iloc[:, 5]]
-    gyro_z = [gZ for gZ in df.iloc[:, 6]]
-    mag_x = [gX for gX in df.iloc[:, 7]]
-    mag_y = [gY for gY in df.iloc[:, 8]]
-    mag_z = [gZ for gZ in df.iloc[:, 9]]
-    no_of_measurements = len(time)
-    import matplotlib.pyplot as plt
-    # plt.plot(mag_x)
+    # import matplotlib.pyplot as plt
+    # plt.plot(data['acc_z'])
     # plt.show()
+
+    time = data['time']
+    no_of_measurements = len(time)
+
     list_of_dicts_of_imu_data = []
-    def avg(axis):
-        return np.average(axis)
-    print(avg(acc_x), avg(acc_y), avg(acc_z), avg(gyro_x), avg(gyro_y), avg(gyro_z), avg(mag_x), avg(mag_y), avg(mag_z))
     imu_data_dict = {}
 
     rolls, pitches, yaws = [], [], []
+
     # Iterating through rows.
-    for i in range(no_of_measurements):
-        acc = [acc_x[i], acc_y[i], acc_z[i]]
-        gyro = [gyro_x[i], gyro_y[i], gyro_z[i]]
-        mag = [mag_x[i], mag_y[i], mag_z[i]]
+    for i in iter(range(no_of_measurements)):
+        acc = [data['acc_x'][i], data['acc_y'][i], data['acc_z'][i]]
+        gyro = [data['gyro_x'][i], data['gyro_y'][i], data['gyro_z'][i]]
+        mag = [data['mag_x'][i], data['mag_y'][i], data['mag_z'][i]]
 
         # Transform acceleration, gyroscope and magnetometer readings to a quaternion.
         MadgwickAHRS.update(MadgwickAHRS, gyro, acc, mag)
@@ -117,15 +130,38 @@ def _iterate_through_table_and_do_calculations(df):
         rolls.append(roll)
         pitches.append(pitch)
         yaws.append(yaw)
+
         quaternion = Quaternion([float(Q[0]), float(Q[1]), float(Q[2]), float(Q[3])])
         # quaternion = [float(Q[0]), float(Q[1]), float(Q[2]), float(Q[3])]
 
         # Transform quaternion to rotation matrix.
         rotation_matrix = quaternion.rotation_matrix.tolist()
+        _yaw, _pitch, _roll = quaternion.yaw_pitch_roll
+        # INCONSISTENCY
+        print(roll, pitch, yaw)
+        print(_roll, _pitch, _yaw)
+
+        def check_rotmat_validity(rotmat, acc):
+            rotmat_grav = np.dot(rotmat, [0,0,1])
+            print(list(rotmat_grav),acc)
+            try:
+                assert list(rotmat_grav)==acc
+            except:
+                pass
+
+        check_rotmat_validity(rotation_matrix, acc)
+
+
 
         # Calculate absolute acceleration in terms of East-North-Down.
-        ned_acc = np.dot(np.linalg.inv(rotation_matrix),
-                         np.transpose([float(acc_x[i]), float(acc_y[i]), float(acc_z[i])])).tolist()
+        ned_acc = np.dot(
+            np.linalg.inv(rotation_matrix),
+            np.transpose(
+                [float(data['acc_x'][i]), float(data['acc_y'][i]), float(data['acc_z'][i])]
+            )).tolist()
+
+
+        # check_correctness_of_transformation
 
         # print('Ned_acc {}'.format(ned_acc))
 
@@ -141,9 +177,6 @@ def _iterate_through_table_and_do_calculations(df):
             {'time': int(time[i]), 'acc_east': tru_acc['east'], 'acc_north': tru_acc['north'],
              'acc_down': tru_acc['down']}
         )
-
-    plt.plot(rolls)
-    plt.show()
     return imu_data_dict
 
 
@@ -159,6 +192,7 @@ def get_imu_dataframe(imu_data_dict):
     imu_dataframe = pd.DataFrame(imu_data_dict)
     return imu_dataframe
 
+
 def pass_acc_dict_of_lists(acc):
     timestamps = sorted(list(acc.keys()))
     acc_time, acc_east, acc_north, acc_down = [], [], [], []
@@ -169,6 +203,7 @@ def pass_acc_dict_of_lists(acc):
         acc_down.append(values['acc_down'])
         acc_time.append(int(values['time']))
     return {'east': acc_east, 'north': acc_north, 'down': acc_down, '_time': acc_time}
+
 
 # Call this and on the result of this you can call get_gps_dataframe.
 def get_imu_dictionary(path, data='lists'):
@@ -189,3 +224,7 @@ def get_imu_dictionary(path, data='lists'):
         return get_imu_dataframe(imu_data_dict)
     elif data == 'dicts':
         return imu_data_dict
+
+    # def avg(axis):
+    #     return np.average(axis)
+    # print(avg(acc_x), avg(data['acc_y']), avg(data['acc_z']), avg(gyro_x), avg(gyro_y), avg(gyro_z), avg(mag_x), avg(mag_y), avg(mag_z))

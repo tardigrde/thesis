@@ -3,6 +3,14 @@ from matplotlib.markers import MarkerStyle
 from pathlib import Path
 import numpy as np
 
+def plot_acc_axis(axis, low_pass_fitlered):
+    plt.plot(axis, color='red')
+    plt.plot(low_pass_fitlered, color='green')
+    plt.title("Hamming windows filtered")
+    plt.ylabel("Amplitude")
+    plt.xlabel("Sample")
+    plt.show()
+
 def plot_adapted_result(fig_dir, type, result):
     fig_gps = plt.figure(figsize=(16, 16))
     plt.scatter(result['oglng'], result['oglat'], color='black', label='og')

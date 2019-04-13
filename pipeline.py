@@ -17,14 +17,19 @@ print (rec)
 
 start_time = time.time()
 
+# DATA_BASE_DIR = r'D:\code\PyCharmProjects\thesis\data'
+# CURRENT_TEST_RUN = r'\trolli_playground'
+# CURRENT_TEST_SET = r'\ukf'
+# dir_path = DATA_BASE_DIR + CURRENT_TEST_RUN + CURRENT_TEST_SET
 
 # DATA_BASE_DIR = r'D:\code\PyCharmProjects\thesis\data'
 # CURRENT_TEST_RUN = r'\20190115\masodik'
 # CURRENT_TEST_SET = r'\ukf'
+# dir_path = DATA_BASE_DIR + CURRENT_TEST_RUN + CURRENT_TEST_SET
+
 DATA_BASE_DIR = r'D:\code\PyCharmProjects\thesis\data'
-CURRENT_TEST_RUN = r'\trolli_playground'
-CURRENT_TEST_SET = r'\ukf'
-dir_path = DATA_BASE_DIR + CURRENT_TEST_RUN + CURRENT_TEST_SET
+CURRENT_TEST_RUN = r'\20190409\harmadik'
+dir_path = DATA_BASE_DIR + CURRENT_TEST_RUN
 
 input_dir_path = Path(dir_path + '\measurement')
 
