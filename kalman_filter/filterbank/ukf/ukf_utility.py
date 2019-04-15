@@ -148,6 +148,7 @@ def f_ca(x, dt, **kwargs):
     B[1, 0], B[3, 1] = dt, dt
 
     u = np.transpose([north, east])
+    print([north, east])
 
     F = np.array([[1, dt, 0, 0],
                   [0, 1, 0, 0],
