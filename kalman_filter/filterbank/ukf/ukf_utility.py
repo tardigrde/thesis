@@ -148,13 +148,8 @@ def f_ca(x, dt, **kwargs):
     B[0, 0], B[2, 0] = (dt ** 2) / 2, (dt ** 2) / 2
     B[1, 0], B[3, 1] = dt, dt
 
-<<<<<<< HEAD
     u = np.transpose([north, east])
     print([north, east])
-=======
-    # LNG-->EAST; LAT--> NORTH
-    u = np.transpose([east, north])
->>>>>>> constacc_feature
 
     F = np.array([[1, dt, 0, 0],
                   [0, 1, 0, 0],
