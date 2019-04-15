@@ -6,6 +6,7 @@ from IMU import IMU
 from Evaluator import Evaluator
 
 
+
 class Measurement:
     def __init__(self, path_imu, path_gps, dir_path, reference_path):
         self.path_imu = path_imu
@@ -15,8 +16,10 @@ class Measurement:
         self.stats = {}
 
     def preprocess(self):
+
         imu = IMU(self.path_imu)
         acc = imu.preprocessed
+
         # acc = imu_data_parser.get_imu_dictionary(self.path_imu, data='lists')
         gps = nmea_parser.get_gps_dictionary(self.path_gps, data='lists')
         self.acc, self.gps, self.gps_time_intervals = fuser.trim_and_sync_dataset(acc, gps)

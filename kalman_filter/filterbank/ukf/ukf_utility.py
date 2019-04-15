@@ -1,4 +1,4 @@
-from filterpy.kalman import KalmanFilter
+from filterpy.kalman import KalmanFilter as KF
 from filterpy.kalman import UnscentedKalmanFilter as UKF
 from filterpy.kalman import MerweScaledSigmaPoints
 from filterpy.common import Q_discrete_white_noise, Saver
@@ -58,12 +58,13 @@ def create_filterbank():
     sigmas_ca = MerweScaledSigmaPoints(4, alpha=.5, beta=2., kappa=1.)
     ukf_ca = UKF(dim_x=4, dim_z=2, fx=f_ca, hx=h_ca, dt=0.01, points=sigmas_ca)
     saver_ca = Saver(ukf_ca)
+
     return ukf_cv, saver_cv, ukf_ca, saver_ca
 
 
 def set_cv_filter(ukf_cv, ):
-    ukf_cv.Q[0:2, 0:2] = Q_discrete_white_noise(2, dt=1, var=2)
-    ukf_cv.Q[2:4, 2:4] = Q_discrete_white_noise(2, dt=1, var=2)
+    ukf_cv.Q[0:2, 0:2] = Q_discrete_white_noise(2, dt=1, var=0.02)
+    ukf_cv.Q[2:4, 2:4] = Q_discrete_white_noise(2, dt=1, var=0.02)
 
     return ukf_cv
 
@@ -71,8 +72,8 @@ def set_cv_filter(ukf_cv, ):
 def set_ca_filter(ukf_ca, ):
     dt = 0.01
 
-    ukf_ca.Q[0:2, 0:2] = Q_discrete_white_noise(2, dt=dt, var=2)
-    ukf_ca.Q[2:4, 2:4] = Q_discrete_white_noise(2, dt=dt, var=2)
+    ukf_ca.Q[0:2, 0:2] = Q_discrete_white_noise(2, dt=dt, var=0.02)
+    ukf_ca.Q[2:4, 2:4] = Q_discrete_white_noise(2, dt=dt, var=0.02)
     return ukf_ca
 
 
@@ -97,9 +98,9 @@ def save_adapted_state(ukf_cv, cv_epsilons, ukf_ca, ca_epsilons):
     state_ca = ukf_ca.x_post
 
     if cv_epsilons <= ca_epsilons:
-        return [state_cv[0], state_cv[2], cv_epsilons,0]
+        return [state_cv[0], state_cv[2], cv_epsilons, 0]
     elif cv_epsilons > ca_epsilons:
-        return [state_ca[0], state_ca[2], ca_epsilons,1]
+        return [state_ca[0], state_ca[2], ca_epsilons, 1]
 
 
 def do_cv_uk_filtering(point, ukf_cv, saver_cv):
@@ -147,7 +148,8 @@ def f_ca(x, dt, **kwargs):
     B[0, 0], B[2, 0] = (dt ** 2) / 2, (dt ** 2) / 2
     B[1, 0], B[3, 1] = dt, dt
 
-    u = np.transpose([north, east])
+    # LNG-->EAST; LAT--> NORTH
+    u = np.transpose([east, north])
 
     F = np.array([[1, dt, 0, 0],
                   [0, 1, 0, 0],

@@ -4,30 +4,6 @@ from pathlib import Path
 import numpy as np
 
 
-def plot_track_and_residuals(dt, xs, z_xs, res):
-    """ plots track and measurement on the left, and the residual
-    of the filter on the right. Helps to visualize the performance of
-    an adaptive filter.
-    """
-
-    assert np.isscalar(dt)
-    t = np.arange(0, len(xs) * dt, dt)
-    plt.subplot(121)
-    if z_xs is not None:
-        plot_measurements(t, z_xs, label='z')
-    plot_filter(t, xs)
-    plt.legend(loc=2)
-    plt.xlabel('time (sec)')
-    plt.ylabel('X')
-    plt.title('estimates vs measurements')
-    plt.subplot(122)
-    # plot twice so it has the same color as the plot to the left!
-    plt.plot(t, res)
-    plt.plot(t, res)
-    plt.xlabel('time (sec)')
-    plt.ylabel('residual')
-    plt.title('residuals')
-    plt.show()
 
 
 
@@ -42,10 +18,10 @@ def plot_acc_axis(axis, low_pass_fitlered):
 def plot_adapted_result(fig_dir, type, result):
     fig_gps = plt.figure(figsize=(16, 16))
     plt.scatter(result['oglng'], result['oglat'], color='black', label='og')
-    # plt.scatter(result['cv']['lng'], result['cv']['lat'], color='red', label='cv')
-    # plt.scatter(result['ca']['lng'], result['ca']['lat'], color='orange', label='ca')
+    plt.scatter(result['cv']['priolng'], result['cv']['priolat'], color='blue', label='cv')
+    plt.scatter(result['ca']['priolng'], result['ca']['priolat'], color='red', label='ca')
     # m = MarkerStyle('octagon')
-    plt.scatter(result['adapted']['lng'], result['adapted']['lat'], color='blue', label='adapted')
+    # plt.scatter(result['adapted']['lng'], result['adapted']['lat'], color='blue', label='adapted')
     plt.xlabel(r'LNG $g$')
     plt.ylabel(r'LAT $g$')
     plt.legend(loc='best', prop={'size': 22})
@@ -74,12 +50,12 @@ def plot_llh(fig_dir,type, result):
     # plt.show()
     plt.savefig(str(fig_dir) + r'\\'+str(type)+'Kalman-Filter-likelihood.png', dpi=72, transparent=True, bbox_inches='tight')
 
-def plot_epsilons(fig_dir,type, result):
-    end_count = len(result[type]['epsilons'])
+def plot_epsilons(fig_dir,type, epsilons):
     fig = plt.figure(figsize=(16, 9))
-    plt.plot(range(end_count),result[type]['epsilons'], label='likelihood')
+    end_count = len(epsilons)
+    plt.plot(range(end_count),epsilons, label='likelihood')
     plt.title('Epsilons')
-    # plt.show()
+    plt.show()
     plt.savefig(str(fig_dir) + r'\\'+str(type)+'Kalman-Filter-epsilons.png', dpi=72, transparent=True, bbox_inches='tight')
 
 
@@ -349,3 +325,27 @@ def plot_measurements(xs, ys=None, dt=None, color='k', lw=1, label='Measurements
         else:
             return plt.scatter(range(len(xs)), xs, edgecolor=color, facecolor='none',
                                lw=2, label=label, **kwargs),
+def plot_track_and_epsilons(dt, xs, z_xs, eps):
+    """ plots track and measurement on the left, and the residual
+    of the filter on the right. Helps to visualize the performance of
+    an adaptive filter.
+    """
+
+    assert np.isscalar(dt)
+    t = np.arange(0, len(xs) * dt, dt)
+    plt.subplot(121)
+    if z_xs is not None:
+        plot_measurements(t, z_xs, label='z')
+    plot_filter(t, xs)
+    plt.legend(loc=2)
+    plt.xlabel('time (sec)')
+    plt.ylabel('X')
+    plt.title('estimates vs measurements')
+    plt.subplot(122)
+    # plot twice so it has the same color as the plot to the left!
+    plt.plot(t, eps)
+    plt.plot(t, eps)
+    plt.xlabel('time (sec)')
+    plt.ylabel('residual')
+    plt.title('residuals')
+    plt.show()

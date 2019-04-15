@@ -12,9 +12,9 @@ from measurement import Measurement
 from dsp_library import dsp
 import time
 import sys
+import logging
+log = logging.getLogger("logger")
 
-rec = sys.getrecursionlimit
-print(rec)
 
 start_time = time.time()
 
@@ -25,6 +25,8 @@ start_time = time.time()
 # DATA_BASE_DIR = r'D:\code\PyCharmProjects\thesis\data'
 # CURRENT_TEST_RUN = r'\20190115\masodik'
 # dir_path = DATA_BASE_DIR + CURRENT_TEST_RUN
+
+log.info('Setting paths and finding files...')
 
 DATA_BASE_DIR = r'D:\code\PyCharmProjects\thesis\data'
 CURRENT_TEST_RUN = r'\20190409\elso'
@@ -52,17 +54,27 @@ if input_dir_path.is_dir():
 
 assert not None in (path_imu, path_gps)
 
+log.info('Setting paths and finding files...DONE!')
+
+log.info("Initializing Measurement object...")
+
 measurement = Measurement(path_imu, path_gps, dir_path, path_to_reference_potholes)
-
+log.info("Initializing Measurement object...DONE!")
+log.info("Preprocessing...")
 measurement.preprocess()
+log.info("Preprocessing...DONE!")
+log.info("Initializing Point objects...")
 measurement.get_points()
-
+log.info("Initializing Point objects...DONE!")
+log.info("Kalman filtering...")
 measurement.do_kalman_filtering()
+
 measurement.create_outputs('kalmaned')
+log.info("Kalman filtering...DONE!")
 
 
-measurement.evaluate_potholes()
-measurement.create_outputs('potholes')
+# measurement.evaluate_potholes()
+# measurement.create_outputs('potholes')
 
 
 # potholes = dsp.classify_windows(acc, gps, dir_path)
