@@ -9,44 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.fftpack import fft, ifft
 import time
-
-
-def get_road_anomaly_timestamps(points, adaptive_kf_result, time_intervals, dir_path):
-    pothole_timestamps= classify_windows(points, adaptive_kf_result, time_intervals, dir_path)
-    # write_kalmaned_data_to_file(adaptive_kf_result)
-    # write_interval_data_to_file(time_intervals)
-    return pothole_timestamps
-
-
-def classify_windows(points, adaptive_kf_result, time_intervals, dir_path):
-    start_time = time.time()
-    acc_time, acc_down, kf_res = prepare_data_for_filtering(points, adaptive_kf_result)
-    filtered = do_low_pass_filter(acc_down)
-    acc_time_windows = do_windowing(acc_time)
-    filtered_acc_down_windows = do_windowing(filtered, hamming=True)
-    potholes = do_classification(acc_time_windows, filtered_acc_down_windows)
-
-    # Concept:
-    #   we gonna get the time windows, add them al ltogether, transform it to a set
-    #
-    pothole_timestamps = map_potholes_to_timestamp(acc_time_windows, potholes)
-
-    # get_frequencies(filtered)
-    #
-    # windows = {
-    #     "_time": do_windowing(acc_time, hamming=True),
-    #     "down": do_windowing(acc_down),
-    # }
-
-    # ffted_windows = [do_fft(down_subset) for down_subset in windows['down']]
-    # windowed_time = windows['_time']
-    # print(len(windowed_time), len(windowed_time[0]))
-
-    # down_subsets_filtered = [do_HPF(down_subset) for down_subset in windows['down']]
-    # st = calculate_stats(windows)
-    # plotter.plot_ned_acc(fig_dir, t, down_acc)
-    print("--- Segmentation took %s seconds ---" % (time.time() - start_time))
-    return pothole_timestamps
+from Evaluator import Evaluator
 
 
 def do_classification(acc_time_windows, acc_down_windows):
@@ -130,44 +93,12 @@ def classify_based_on_std_dev(i, down_window):
         return None
 
 
-def map_potholes_to_timestamp(acc_time, potholes):
-    indices = sorted(list(potholes['combined']))
-    timestamp_lists = [acc_time[index] for index in indices]
-    flat_timestamps = [t for list in timestamp_lists for t in list]
-    set_of_timestamps = set(flat_timestamps)
-    return list(set_of_timestamps)
 
 
-# def get_low_pass_filtered_data(acc_time, acc_down, kf_res):
-#
-#     filtered = do_low_pass_filter(acc_down)
-#     check_length_of_lists(acc_time, filtered)
-#
-#     # write_acc_data_to_file(acc_time, filtered)
-#
-#
-#     return filtered
 
 
-def get_frequencies(filtered):
-    f, t, Sxx = spectrogram(np.array(filtered), fs=100, window='hann', nperseg=100, noverlap=25)
-    # plt.pcolormesh(t, f, Sxx)
-    # plt.show()
-    # return spectroed
 
 
-def prepare_data_for_filtering(points, kf_res):
-    acc_time_per_point = [p.acc['_time'] for list in points for p in list]
-    acc_down_per_point = [p.acc['down'] for list in points for p in list]
-
-    check_length_of_acc_lists_and_kf_res(acc_time_per_point, acc_down_per_point, kf_res)
-
-    acc_time = [elem for list in acc_time_per_point for elem in list]
-    acc_down = [elem for list in acc_down_per_point for elem in list]
-
-    check_length_of_lists(acc_time, acc_down)
-
-    return acc_time, acc_down, kf_res
 
 
 def do_windowing(axis, hamming=False, window_size=100):
@@ -338,6 +269,23 @@ def choose_potholes(stats):
     fuser.convert_result_to_shp(df, r'D:\PyCharmProjects\thesis\data\20190115\harmadik\results\potholes\result')
     print('done')
 
+# def get_low_pass_filtered_data(acc_time, acc_down, kf_res):
+#
+#     filtered = do_low_pass_filter(acc_down)
+#     check_length_of_lists(acc_time, filtered)
+#
+#     # write_acc_data_to_file(acc_time, filtered)
+#
+#
+#     return filtered
+
+
+def get_frequencies(filtered):
+    f, t, Sxx = spectrogram(np.array(filtered), fs=100, window='hann', nperseg=100, noverlap=25)
+    # plt.pcolormesh(t, f, Sxx)
+    # plt.show()
+    # return spectroed
+
 
 def calculate_stats(windows):
     stats_array = []
@@ -420,12 +368,19 @@ def write_acc_data_to_file(acc_time, filtered):
         accs.append({t: d})
 
 
-def check_length_of_lists(acc_time, acc_down):
-    assert len(acc_time) == len(acc_down)
 
 
-def check_length_of_acc_lists_and_kf_res(acc_time, acc_down, kf_res):
-    try:
-        assert len(acc_time) == len(acc_down) == len(kf_res)
-    except Exception as e:
-        print('Error! list lengths are not equal.\n', e)
+
+# get_frequencies(filtered)
+#
+# windows = {
+#     "_time": do_windowing(acc_time, hamming=True),
+#     "down": do_windowing(acc_down),
+# }
+
+# ffted_windows = [do_fft(down_subset) for down_subset in windows['down']]
+# windowed_time = windows['_time']
+# print(len(windowed_time), len(windowed_time[0]))
+
+# down_subsets_filtered = [do_HPF(down_subset) for down_subset in windows['down']]
+# st = calculate_stats(windows)

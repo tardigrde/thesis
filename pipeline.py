@@ -12,29 +12,31 @@ from measurement import Measurement
 from dsp_library import dsp
 import time
 import sys
-rec= sys.getrecursionlimit
-print (rec)
+
+rec = sys.getrecursionlimit
+print(rec)
 
 start_time = time.time()
 
 # DATA_BASE_DIR = r'D:\code\PyCharmProjects\thesis\data'
 # CURRENT_TEST_RUN = r'\trolli_playground'
-# CURRENT_TEST_SET = r'\ukf'
-# dir_path = DATA_BASE_DIR + CURRENT_TEST_RUN + CURRENT_TEST_SET
+# dir_path = DATA_BASE_DIR + CURRENT_TEST_RUN
 
 # DATA_BASE_DIR = r'D:\code\PyCharmProjects\thesis\data'
 # CURRENT_TEST_RUN = r'\20190115\masodik'
-# CURRENT_TEST_SET = r'\ukf'
-# dir_path = DATA_BASE_DIR + CURRENT_TEST_RUN + CURRENT_TEST_SET
+# dir_path = DATA_BASE_DIR + CURRENT_TEST_RUN
 
 DATA_BASE_DIR = r'D:\code\PyCharmProjects\thesis\data'
-CURRENT_TEST_RUN = r'\20190409\harmadik'
+CURRENT_TEST_RUN = r'\20190409\elso'
 dir_path = DATA_BASE_DIR + CURRENT_TEST_RUN
+
+path_to_reference_potholes = r'D:\code\PyCharmProjects\thesis\data\real_potholes\potholes_3m_buffer.shp'
 
 input_dir_path = Path(dir_path + '\measurement')
 
 path_imu = ''
 path_gps = ''
+stats = {}
 
 date_of_measurement = ''
 if input_dir_path.is_dir():
@@ -48,22 +50,22 @@ if input_dir_path.is_dir():
             path_gps = Path(str(input_dir_path) + '\\' + file)
             print('Path of the GPS file: ', path_gps)
 
+assert not None in (path_imu, path_gps)
 
-
-stats = {}
-
-measurement = Measurement(path_imu, path_gps, dir_path)
-
+measurement = Measurement(path_imu, path_gps, dir_path, path_to_reference_potholes)
 
 measurement.preprocess()
-# measurement.get_points()
-#
-# measurement.do_kalman_filtering()
-# measurement.create_KF_outputs()
-# measurement.get_potholes()
-# measurement.create_PH_outputs()
+measurement.get_points()
 
-#potholes = dsp.classify_windows(acc, gps, dir_path)
+measurement.do_kalman_filtering()
+measurement.create_outputs('kalmaned')
+
+
+measurement.evaluate_potholes()
+measurement.create_outputs('potholes')
+
+
+# potholes = dsp.classify_windows(acc, gps, dir_path)
 # stats = measurement.get_stats()
 # except Exception as e:
 #     print('An error occured:', e)

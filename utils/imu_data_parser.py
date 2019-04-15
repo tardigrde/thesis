@@ -1,4 +1,5 @@
 from lib.madgwick.madgwickahrs import MadgwickAHRS
+import matplotlib.pyplot as plt
 from pyquaternion import Quaternion
 from dsp_library import dsp
 from utils import fuser
@@ -11,10 +12,11 @@ def apply_low_pass(df):
     dataset = {}
     for col in list(df):
         if col != 'time' and not 'mag' in col:
-            import matplotlib.pyplot as plt
-            # plt.plot(df[col].tolist())
             low_passed = dsp.do_low_pass_filter(df[col].tolist())
-            dataset[col] = df[col].tolist()#low_passed
+            dataset[col] =  low_passed #df[col].tolist()
+            # We already checked visually if the new measurements are better with LPF
+            # import matplotlib.pyplot as plt
+            # plt.plot(df[col].tolist())
             # plt.plot(low_passed, color='red')
             # plt.show()
             # dataset[col] = (df[col].tolist())
@@ -38,9 +40,9 @@ def _wrangle_data_with_pandas(path):
     # Transform the huge csv to dataframe.
     df = pd.DataFrame(pd.read_csv(path, sep=','))
     columns_to_keep = ['Timestamp',
-          'accelX', 'accelY', 'accelZ',
-          'gyroX(rad/s)', 'gyroY(rad/s)', 'gyroZ(rad/s)',
-          'calMagX', 'calMagY', 'calMagZ']
+                       'accelX', 'accelY', 'accelZ',
+                       'gyroX(rad/s)', 'gyroY(rad/s)', 'gyroZ(rad/s)',
+                       'calMagX', 'calMagY', 'calMagZ']
     trimmed_df = df[columns_to_keep]
     new_colum_names = ['time', 'acc_x', 'acc_y', 'acc_z', 'gyro_x', 'gyro_y', 'gyro_z', 'mag_x', 'mag_y', 'mag_z']
     pd.options.mode.chained_assignment = None
@@ -79,7 +81,7 @@ def _calculate_true_acceleration(acceleration):
     acc_east = acceleration[0]
     acc_north = acceleration[1]
     acc_down = acceleration[2] - 1
-    magnetic_declination_offset = 4.96666667  # CSONGRÁD MEGYE
+    magnetic_declination_offset = 5.05000000  # CSONGRÁD MEGYE
 
     sin_magnetic_declination = math.sin(math.radians(magnetic_declination_offset))
     cos_magnetic_declination = math.cos(math.radians(magnetic_declination_offset))
@@ -105,9 +107,14 @@ def _iterate_through_table_and_do_calculations(data):
     Returns:
 
     """
-    # import matplotlib.pyplot as plt
+
     # plt.plot(data['acc_z'])
     # plt.show()
+
+    # This will be used! In the next years ;)
+    from ImuMeasurement import ImuMeasurement
+    im = ImuMeasurement(data)
+
 
     time = data['time']
     no_of_measurements = len(time)
@@ -115,7 +122,11 @@ def _iterate_through_table_and_do_calculations(data):
     list_of_dicts_of_imu_data = []
     imu_data_dict = {}
 
-    rolls, pitches, yaws = [], [], []
+    # rolls, pitches, yaws = [], [], []
+    # plt.plot(data['acc_x'], color="red")
+    # plt.plot(data['acc_y'], color="blue")
+    # plt.plot(data['acc_z'], color="green")
+    # plt.show()
 
     # Iterating through rows.
     for i in iter(range(no_of_measurements)):
@@ -126,52 +137,55 @@ def _iterate_through_table_and_do_calculations(data):
         # Transform acceleration, gyroscope and magnetometer readings to a quaternion.
         MadgwickAHRS.update(MadgwickAHRS, gyro, acc, mag)
         Q = MadgwickAHRS.quaternion
-        roll, pitch, yaw = Q.to_euler_angles()
-        rolls.append(roll)
-        pitches.append(pitch)
-        yaws.append(yaw)
 
         quaternion = Quaternion([float(Q[0]), float(Q[1]), float(Q[2]), float(Q[3])])
         # quaternion = [float(Q[0]), float(Q[1]), float(Q[2]), float(Q[3])]
 
         # Transform quaternion to rotation matrix.
         rotation_matrix = quaternion.rotation_matrix.tolist()
-        _yaw, _pitch, _roll = quaternion.yaw_pitch_roll
-        # INCONSISTENCY
-        print(roll, pitch, yaw)
-        print(_roll, _pitch, _yaw)
 
-        def check_rotmat_validity(rotmat, acc):
-            rotmat_grav = np.dot(rotmat, [0,0,1])
-            print(list(rotmat_grav),acc)
-            try:
-                assert list(rotmat_grav)==acc
-            except:
-                pass
+        # Experimenting with two different types of roll pitch and yaw
+        # They are not consistent
+        # roll, pitch, yaw = Q.to_euler_angles()
+        # rolls.append(roll)
+        # pitches.append(pitch)
+        # yaws.append(yaw)
+        # _yaw, _pitch, _roll = quaternion.yaw_pitch_roll
+        # # INCONSISTENCY
+        # print(roll, pitch, yaw)
+        # print(_roll, _pitch, _yaw)
 
-        check_rotmat_validity(rotation_matrix, acc)
+        # we have a problem here because the link below states:
+        # "So multiplication R*[0 0 1].T() should give us vector A."
+        # link: https://blog.maddevs.io/reduce-gps-data-error-on-android-with-kalman-filter-and-accelerometer-43594faed19c
+        # def check_rotmat_validity(rotmat, acc):
+        #     rotmat_grav = np.dot(rotmat, [0,0,1])
+        #     print(list(rotmat_grav),acc)
+        #     try:
+        #         assert list(rotmat_grav)==acc
+        #     except:
+        #         pass
 
-
+        # check_rotmat_validity(rotation_matrix, acc)
 
         # Calculate absolute acceleration in terms of East-North-Down.
-        ned_acc = np.dot(
+        east_north_down_acceleration = np.dot(
             np.linalg.inv(rotation_matrix),
-            np.transpose(
-                [float(data['acc_x'][i]), float(data['acc_y'][i]), float(data['acc_z'][i])]
-            )).tolist()
-
+            [float(data['acc_x'][i]), float(data['acc_y'][i]), float(data['acc_z'][i])]
+        )
 
         # check_correctness_of_transformation
 
         # print('Ned_acc {}'.format(ned_acc))
 
         # Rotate absolute acceleration in respect to true north.
-        tru_acc = _calculate_true_acceleration(ned_acc)
+        tru_acc = _calculate_true_acceleration(east_north_down_acceleration)
 
         # print('True_acc {}'.format(tru_acc))
 
         imu_data_dict[int(time[i])] = {'time': time[i], 'acc_east': tru_acc['east'], 'acc_north': tru_acc['north'],
                                        'acc_down': tru_acc['down']}
+
 
         list_of_dicts_of_imu_data.append(
             {'time': int(time[i]), 'acc_east': tru_acc['east'], 'acc_north': tru_acc['north'],
@@ -202,6 +216,13 @@ def pass_acc_dict_of_lists(acc):
         acc_north.append(values['acc_north'])
         acc_down.append(values['acc_down'])
         acc_time.append(int(values['time']))
+    # plt.figure(1)
+    # plt.plot(acc_east, color="red", label="east-west")
+    # plt.plot(acc_north, color="blue",label="north-south")
+    # plt.plot(acc_down, color="green",label="down-up")
+    # plt.legend()
+    # plt.show()
+
     return {'east': acc_east, 'north': acc_north, 'down': acc_down, '_time': acc_time}
 
 

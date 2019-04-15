@@ -3,18 +3,39 @@ from shapely.geometry import Point
 from pathlib import Path
 from Point import Point
 import matplotlib.pyplot as plt
+from . import checker
 
 
-def map_potholes_back_to_real_world(ts, kf_coords, gps_time_intervals):
+def map_potholes_back_to_real_world(ts, kf_res, gps_time_intervals):
     intervals = [tup for list in gps_time_intervals for tup in list]
     formatted_times = get_formatted_times_of_potholes(ts, intervals)
-    return get_coordinates(formatted_times, kf_coords)
+    potholes_with_coordinates = get_coordinates(formatted_times, kf_res)
+    return potholes_with_coordinates
+
+
+def get_acc_axis(points, axis, gps_intervals):
+    axis_per_point = [p.acc[axis] for list in points for p in list]
+    # acc_down_per_point = [p.acc['down'] for list in points for p in list]
+    # checker.check_length_of_acc_lists_and_kf_res(acc_time_per_point, acc_down_per_point, gps_intervals)
+    # acc_down = [elem for list in acc_down_per_point for elem in list]
+
+    flat_axis = [elem for list in axis_per_point for elem in list]
+
+    return flat_axis
+
+def map_potholes_to_timestamp(potholes, acc_time):
+
+    indices = sorted(list(potholes['combined']))
+    timestamp_lists = [acc_time[index] for index in indices]
+    flat_timestamps = [t for list in timestamp_lists for t in list]
+    timestamps = list(set(flat_timestamps))
+    return timestamps
 
 
 def get_formatted_times_of_potholes(ts, intervals):
     # BAD PERFORMANCE!
     intervals_filled = []
-    for low_limit,high_limit in intervals:
+    for low_limit, high_limit in intervals:
         l = []
         for element in ts:
             if low_limit <= element < high_limit:
@@ -24,25 +45,33 @@ def get_formatted_times_of_potholes(ts, intervals):
 
     return intervals_filled
 
-def get_coordinates(formatted_times, kf_coords):
-    lngs,lats=[],[]
-    ph_lngs, ph_lats=[],[]
-    for times, coords in zip(formatted_times, kf_coords):
-        lng = coords[1][0]
-        lat = coords[1][1]
+
+def get_coordinates(formatted_times, kf_res):
+    lngs, lats = [], []
+    ph_lngs, ph_lats, ph_times, ph_probability = [], [], [], []
+    for count, kf in zip(formatted_times, kf_res):
+        time = kf[0]
+        lng = kf[1][0]
+        lat = kf[1][1]
+        prob = kf[1][2]
         lngs.append(lng)
         lats.append(lat)
-        if len(times) > 10:
+        # TODO
+        # experiment with this
+        if len(count) > 25:
             ph_lngs.append(lng)
             ph_lats.append(lat)
+            ph_times.append(time)
+            ph_probability.append(prob)
     plt.scatter(lngs, lats)
     plt.scatter(ph_lngs, ph_lats, color="red")
     plt.show()
     return {
         'lng': ph_lngs,
-        'lat': ph_lats
+        'lat': ph_lats,
+        'time': ph_times,
+        'probability': ph_probability,
     }
-
 
 
 def get_points_with_acc(acc, gps):
@@ -69,7 +98,7 @@ def trim_and_sync_dataset(acc, gps):
 
     if not (gps_time[0] > acc_time[0]) and (gps_time[len(gps_time) - 1] < acc_time[len(acc_time) - 1]):
         print('ERROR: gps started first or gps stopped last')
-        return
+
     acc = trim_and_sync_acc(acc, gps, gps_time_intervals)
     # check_if_trim_sync_went_ok(acc, gps)
     return acc, gps, gps_time_intervals
@@ -78,7 +107,7 @@ def trim_and_sync_dataset(acc, gps):
 def trim_and_split_gps_measurements(gps):
     columns = list(gps.keys())
     count = len(gps['time'])
-    five_percent = int(round(count / 20, 0))
+    five_percent = int(round(count / 10, 0))
 
     for c in columns:
         if c in gps and len(gps[c]) == count:
@@ -87,10 +116,10 @@ def trim_and_split_gps_measurements(gps):
             print('ERROR: trimming gps fails!')
 
     gps = split_measurement_lists_at_void(gps)
-    check_gps(gps)
+    checker.check_gps(gps)
 
     list_of_lists_of_gps_intervals = get_valid_set_invalid_time_intervals(gps)
-    check_intervals_length(gps, list_of_lists_of_gps_intervals)
+    checker.check_intervals_length(gps, list_of_lists_of_gps_intervals)
 
     return gps, list_of_lists_of_gps_intervals
 
@@ -100,11 +129,12 @@ def trim_and_sync_acc(acc, gps, gps_time_intervals):
     acc_time = acc['_time']
     acc['_time'] = round_acc_timestamps(acc_time, gps_time)
 
+    # TERRIBLY WRONG APPROACH; REALLY SLOW; BUT ITS OK AND TESTED; KINDA
     formatted_acc_indices = get_formatted_acc_indices(gps_time_intervals, acc['_time'])
-    check_intervals_length(gps, formatted_acc_indices)
+    checker.check_intervals_length(gps, formatted_acc_indices)
 
     formatted_acc_lists_of_objects = get_formatted_lists_of_lists_of_acc_objcts(formatted_acc_indices, acc)
-    check_intervals_length(gps, formatted_acc_lists_of_objects)
+    checker.check_intervals_length(gps, formatted_acc_lists_of_objects)
 
     return formatted_acc_lists_of_objects
 
@@ -127,7 +157,7 @@ def round_acc_timestamps(acc_time, gps_time):
             except IndexError:
                 break
     # only with flatted gps_time it is possible to test
-    check_rounded_acc_time(acc_time, gps_time)
+    checker.check_rounded_acc_time(acc_time, gps_time)
     return acc_time
 
 
@@ -198,18 +228,8 @@ def get_lists_in_interval(intervals, acc_time):
     for i, at in enumerate(acc_time):
         if intervals[0] < at < (intervals[1] + 1):
             indices.append(i)
-    check_acc_indices(indices)
+    checker.check_acc_indices(indices)
     return indices
-
-
-def check_acc_indices(indices):
-    min_max_length_of_acc_lists = set(range(90, 110))
-    length_of_indices = len(indices)
-    try:
-        assert length_of_indices in min_max_length_of_acc_lists
-    except AssertionError as e:
-        print(length_of_indices)
-        print(e)
 
 
 def create_acc_object(indices, acc):
@@ -225,35 +245,8 @@ def create_acc_object(indices, acc):
         acc_object['east'].append(acc['east'][i])
         acc_object['down'].append(acc['down'][i])
     for key in list(acc.keys()):
-        check_acc_indices(acc_object[key])
+        checker.check_acc_indices(acc_object[key])
     return acc_object
-
-
-def check_intervals_length(gps, intervals):
-    assert len(gps['time']) == len(intervals)
-    for t, i in zip(gps['time'], intervals):
-        assert len(t) == len(i)
-        print('Intervals: OK!')
-
-
-def check_rounded_acc_time(acc_time, gps_time):
-    round_accs = []
-    for a in acc_time:
-        if a % 1000 == 0:
-            round_accs.append(a)
-    round_acc_set = set(sorted(round_accs))
-    gps_set = set(sorted(gps_time))
-    assert gps_set.issubset(round_accs)
-
-
-def check_gps(gps):
-    assert len(list(gps.keys())) == 6
-
-
-def check_if_trim_sync_went_ok(acc, gps):
-    for a, g in zip(acc['_time'], gps['time']):
-        assert a[0] < g[0] and a[len(a) - 1] > g[len(g) - 1]
-        print('OK')
 
 # def remove_accleration_where_no_valid_gps(acc, gps):
 #     gps_time = gps['time']

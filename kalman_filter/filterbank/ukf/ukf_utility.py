@@ -62,8 +62,8 @@ def create_filterbank():
 
 
 def set_cv_filter(ukf_cv, ):
-    ukf_cv.Q[0:2, 0:2] = Q_discrete_white_noise(2, dt=1, var=0.02)
-    ukf_cv.Q[2:4, 2:4] = Q_discrete_white_noise(2, dt=1, var=0.02)
+    ukf_cv.Q[0:2, 0:2] = Q_discrete_white_noise(2, dt=1, var=2)
+    ukf_cv.Q[2:4, 2:4] = Q_discrete_white_noise(2, dt=1, var=2)
 
     return ukf_cv
 
@@ -71,8 +71,8 @@ def set_cv_filter(ukf_cv, ):
 def set_ca_filter(ukf_ca, ):
     dt = 0.01
 
-    ukf_ca.Q[0:2, 0:2] = Q_discrete_white_noise(2, dt=dt, var=1)
-    ukf_ca.Q[2:4, 2:4] = Q_discrete_white_noise(2, dt=dt, var=1)
+    ukf_ca.Q[0:2, 0:2] = Q_discrete_white_noise(2, dt=dt, var=2)
+    ukf_ca.Q[2:4, 2:4] = Q_discrete_white_noise(2, dt=dt, var=2)
     return ukf_ca
 
 
@@ -96,12 +96,10 @@ def save_adapted_state(ukf_cv, cv_epsilons, ukf_ca, ca_epsilons):
     state_cv = ukf_cv.x_post
     state_ca = ukf_ca.x_post
 
-    if cv_epsilons < ca_epsilons:
-        return [state_cv[0], state_cv[2]]
+    if cv_epsilons <= ca_epsilons:
+        return [state_cv[0], state_cv[2], cv_epsilons,0]
     elif cv_epsilons > ca_epsilons:
-        return [state_ca[0], state_ca[2]]
-    else:
-        return [state_cv[0], state_cv[2]]
+        return [state_ca[0], state_ca[2], ca_epsilons,1]
 
 
 def do_cv_uk_filtering(point, ukf_cv, saver_cv):

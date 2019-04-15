@@ -94,14 +94,12 @@ def _transform_data_to_dictionary(extracted_data):
     vtg_list = extracted_data[1::3]
     gga_list = extracted_data[2::3]
 
-    no_of_measurements = len(gga_list)
+    assert len(gsa_list) == len(vtg_list) == len(gga_list)
 
-    if len(gsa_list) == len(vtg_list) == len(gga_list):
-        for i in range(no_of_measurements):
-            time_value = gga_list[i]['time']
-            measurement_dictionary[time_value] = {**gsa_list[i], **vtg_list[i], **gga_list[i]}
-    else:
-        print("Something's not right")
+    no_of_measurements = len(gga_list)
+    for i in range(no_of_measurements):
+        time_value = gga_list[i]['time']
+        measurement_dictionary[time_value] = {**gsa_list[i], **vtg_list[i], **gga_list[i]}
 
     return measurement_dictionary
 
@@ -117,11 +115,11 @@ def _get_ghashed_eov_coordinates(lng, lat):
 
     """
     ghashed = Geohash.encode(lng, lat, precision=11)
-    lng_to_tf, lat_to_tf = Geohash.decode(ghashed)
-    return {'lng': lng_to_tf, 'lat': lat_to_tf}
+    lng, lat = Geohash.decode(ghashed)
+    return {'lng': lng, 'lat': lat}
 
 
-def _remove_redundant_points(msrmnt_dict):
+def _remove_redundant_points_with_geohash(msrmnt_dict):
     """
 
     Args:
@@ -142,6 +140,8 @@ def _remove_redundant_points(msrmnt_dict):
     for i in range(no_of_measurements):
         m = msrmnt_dict[time_list[i]]
         ln, lt = m['lng'], m['lat']
+        # TODO
+        # - try out KALMAN FILTER without using geohash
         coords = _get_ghashed_eov_coordinates(ln, lt)
         lng, lat = transform(in_proj, out_proj, coords['lng'], coords['lat'])
 
@@ -156,12 +156,14 @@ def _remove_redundant_points(msrmnt_dict):
             list_of_dicts_of_gps_data.append(measurment_attributes)
             gps_data_dict[m['time']] = measurment_attributes
             counter = counter + 1
-        elif lng == list_of_dicts_of_gps_data[counter]['lng'] and lat == list_of_dicts_of_gps_data[counter]['lat']:
+
+        if lng == list_of_dicts_of_gps_data[counter]['lng'] and lat == list_of_dicts_of_gps_data[counter]['lat']:
             pass
         else:
             list_of_dicts_of_gps_data.append(measurment_attributes)
             gps_data_dict[m['time']] = measurment_attributes
             counter = counter + 1
+
     return gps_data_dict
 
 
@@ -218,7 +220,7 @@ def get_gps_dictionary(path, data='lists'):
             extracted_data.append(dict_of_methods[str(type(parsed_sentence))](parsed_sentence))
 
     msrmnt_dict = _transform_data_to_dictionary(extracted_data)
-    gps_data_dict = _remove_redundant_points(msrmnt_dict)
+    gps_data_dict = _remove_redundant_points_with_geohash(msrmnt_dict)
 
     if data == 'lists':
         return pass_gps_dict_of_lists(gps_data_dict)
