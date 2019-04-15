@@ -64,6 +64,9 @@ def create_kalmaned_plots(fig_dir, result_lists, matrices, file_count):
 
     if not file_count: return
     plotter.plot_adapted_result(fig_dir, 'adapted', result_lists)
+
+    epsilons = result_lists['adapted']['epsilons']
+    plotter.plot_epsilons(fig_dir, 'adapted', epsilons)
     # for i in ['cv', 'ca']:
     #     fig_dir_path = Path(str(fig_dir) + '\\' + file_count)
     #     if not fig_dir_path.is_dir(): makedirs(fig_dir_path)
@@ -156,15 +159,15 @@ def extract_attributes_from_saver_objects(kalmaned):
             'likelihood': saver_cv['likelihood'],
             'epsilons': [e for e in saver_cv['epsilon']],
             'priolng': [ln[0] for ln in kalmaned['saver_cv']['x_prior']],
-            'priolat': [lt[0] for lt in kalmaned['saver_cv']['x_prior']],
+            'priolat': [lt[2] for lt in kalmaned['saver_cv']['x_prior']],
         },
         'ca': {
             'lng': [st[0] for st in saver_ca['x_post']],
             'lat': [st[2] for st in saver_ca['x_post']],
             'likelihood': saver_ca['likelihood'],
             'epsilons': [e for e in saver_ca['epsilon']],
-            'priolng': [ln[0] for ln in kalmaned['saver_cv']['x_prior']],
-            'priolat': [lt[0] for lt in kalmaned['saver_cv']['x_prior']],
+            'priolng': [ln[0] for ln in kalmaned['saver_ca']['x_prior']],
+            'priolat': [lt[2] for lt in kalmaned['saver_ca']['x_prior']],
         },
         'oglng': [st[0] for st in saver_cv['z']],
         'oglat': [st[1] for st in saver_cv['z']],
@@ -172,8 +175,8 @@ def extract_attributes_from_saver_objects(kalmaned):
             'time': time,
             'lng': [i[1][0] for i in kalmaned['adapted_states']],
             'lat': [i[1][1] for i in kalmaned['adapted_states']],
-            'type': [i[1][2] for i in kalmaned['adapted_states']],
-            'epsilons': [i[1][3] for i in kalmaned['adapted_states']],
+            'epsilons': [i[1][2] for i in kalmaned['adapted_states']],
+            'type': [i[1][3] for i in kalmaned['adapted_states']],
         }
     }
     matrices = {
