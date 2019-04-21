@@ -26,6 +26,7 @@ def create_outputs(dir_path, res_obj, type):
         create_kf_shapes(result_lists, kalmaned_dir, testset, file_count)
         create_kalmaned_plots(figures_dir, result_lists, matrices, file_count)
     elif type == 'potholes':
+        file_count = str(int(file_count)-1)
         create_potholes_shapes(res_obj, potholes_dir, testset, file_count)
         export_potholes_plots(res_obj, figures_dir, file_count)
 
