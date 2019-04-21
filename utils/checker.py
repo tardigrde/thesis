@@ -41,7 +41,7 @@ def check_rounded_acc_time(acc_time, gps_time):
 
 
 def check_gps(gps):
-    assert len(list(gps.keys())) == 6
+    assert len(list(gps.keys())) == 7
 
 
 def check_if_trim_sync_went_ok(acc, gps):

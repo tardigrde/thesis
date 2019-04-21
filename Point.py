@@ -1,9 +1,10 @@
 class Point:
-    def __init__(self, time, lng, lat, vel, bear, hdop, acc):
+    def __init__(self, time, lng, lat, vlng,vlat, bear, hdop, acc):
         self._lng = lng
         self._lat = lat
         self._time = time
-        self._vel = vel
+        self._vlng = vlng
+        self._vlat = vlat
         self._bear = bear
         self._hdop = hdop
         self._acc = acc
@@ -24,8 +25,12 @@ class Point:
         return self._lat
 
     @property
-    def vel(self):
-        return self._vel
+    def vlng(self):
+        return self._vlng
+
+    @property
+    def vlat(self):
+        return self._vlat
 
     @property
     def bear(self):

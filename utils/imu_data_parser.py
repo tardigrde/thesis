@@ -21,7 +21,6 @@ def apply_low_pass(df):
             # plt.show()
             # dataset[col] = (df[col].tolist())
         else:
-            print(col)
             assert col in ['time', 'mag_x', 'mag_y', 'mag_z']
             dataset[col] = df[col].tolist()
 

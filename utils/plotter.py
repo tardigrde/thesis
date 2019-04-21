@@ -18,16 +18,44 @@ def plot_acc_axis(axis, low_pass_fitlered):
 def plot_adapted_result(fig_dir, type, result):
     fig_gps = plt.figure(figsize=(16, 16))
     plt.scatter(result['oglng'], result['oglat'], color='black', label='og')
-    plt.scatter(result['cv']['priolng'], result['cv']['priolat'], color='blue', label='cv')
-    plt.scatter(result['ca']['priolng'], result['ca']['priolat'], color='red', label='ca')
+    # plt.scatter(result['ucv']['priolng'], result['ucv']['priolat'], color='blue', label='ucv')
+    # plt.scatter(result['cv']['priolng'], result['cv']['priolat'], color='orange', label='cv')
+    # plt.scatter(result['uca']['priolng'], result['uca']['priolat'], color='red', label='uca')
+    plt.scatter(result['smoothed']['lng'], result['smoothed']['lat'], color='red', label='uca')
+    plt.scatter(result['adapted']['lng'], result['adapted']['lat'], color='blue', label='adapted')
     # m = MarkerStyle('octagon')
-    # plt.scatter(result['adapted']['lng'], result['adapted']['lat'], color='blue', label='adapted')
     plt.xlabel(r'LNG $g$')
     plt.ylabel(r'LAT $g$')
     plt.legend(loc='best', prop={'size': 22})
     plt.grid()
     plt.show()
     plt.savefig(str(fig_dir) + r'\\' + str(type) + 'KF_OG_PRIO_RES.png', dpi=72, transparent=True, bbox_inches='tight')
+
+def plot_rts_output(xs, Ms, t):
+    plt.figure()
+    plt.plot(t, xs[:, 0]/1000., label='KF', lw=2)
+    plt.plot(t, Ms[:, 0]/1000., c='k', label='RTS', lw=2)
+    plt.xlabel('time(sec)')
+    plt.ylabel('lng')
+    plt.legend(loc=4)
+
+    # plt.figure()
+    #
+    # plt.plot(t, xs[:, 1], label='KF')
+    # plt.plot(t, Ms[:, 1], c='k', label='RTS')
+    # plt.xlabel('time(sec)')
+    # plt.ylabel('x velocity')
+    # plt.legend(loc=4)
+
+    plt.figure()
+    plt.plot(t, xs[:, 2], label='KF')
+    plt.plot(t, Ms[:, 2], c='k', label='RTS')
+    plt.xlabel('time(sec)')
+    plt.ylabel('lat')
+    plt.legend(loc=4)
+
+    np.set_printoptions(precision=4)
+    print('Difference in position in meters:\n\t', xs[-6:-1, 0] - Ms[-6:-1, 0])
 
 
 def plot_result(fig_dir, type,result):
@@ -47,7 +75,7 @@ def plot_llh(fig_dir,type, result):
     fig = plt.figure(figsize=(16, 9))
     plt.plot(range(end_count), result[type]['likelihood'], label='likelihood')
     plt.title('Likelihood')
-    # plt.show()
+    plt.show()
     plt.savefig(str(fig_dir) + r'\\'+str(type)+'Kalman-Filter-likelihood.png', dpi=72, transparent=True, bbox_inches='tight')
 
 def plot_epsilons(fig_dir,type, epsilons):
@@ -55,7 +83,7 @@ def plot_epsilons(fig_dir,type, epsilons):
     end_count = len(epsilons)
     plt.plot(range(end_count),epsilons, label='likelihood')
     plt.title('Epsilons')
-    plt.show()
+    # plt.show()
     plt.savefig(str(fig_dir) + r'\\'+str(type)+'Kalman-Filter-epsilons.png', dpi=72, transparent=True, bbox_inches='tight')
 
 

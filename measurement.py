@@ -1,18 +1,19 @@
-from kalman_filter.filterbank.ukf.UnscentedKalmanFilterInterface import UnscentedKalmanFilterInterface
-from utils import imu_data_parser, nmea_parser, fuser
+from kalman_filter.KalmanFilterInterface import KalmanFilterInterface
+from utils import nmea_parser, fuser
 from utils import output_creator
-from dsp_library import dsp
 from IMU import IMU
 from Evaluator import Evaluator
 
 
 
 class Measurement:
-    def __init__(self, path_imu, path_gps, dir_path, reference_path):
+    def __init__(self, path_imu, path_gps, dir_path, reference_path,max_eps,min_no_of_pothole_like_measurements):
         self.path_imu = path_imu
         self.path_gps = path_gps
         self.dir_path = dir_path
         self.path_to_reference_potholes = reference_path
+        self.min_no_of_pothole_like_measurements = min_no_of_pothole_like_measurements
+        self.max_eps= max_eps
         self.stats = {}
 
     def preprocess(self):
@@ -35,14 +36,14 @@ class Measurement:
         return self.gps_time_intervals
 
     def do_kalman_filtering(self):
-        ukf = UnscentedKalmanFilterInterface('adaptive', self.points, self.dir_path)
-        self.kalmaned = ukf.do_kalman_filter()
-        # return self.kalmaned
+        ukf = KalmanFilterInterface('adaptive', self.points, self.dir_path, self.max_eps)
+        ukf.do_kalman_filter()
+        self.kalmaned = ukf.filterbank_results
 
 
     def evaluate_potholes(self):
         eval = Evaluator(self.path_to_reference_potholes)
-        self.raw_potholes = eval.get_potholes(self.points,self.kalmaned['adapted_states'], self.gps_time_intervals)
+        self.raw_potholes = eval.get_potholes(self.points,self.kalmaned, self.gps_time_intervals, self.min_no_of_pothole_like_measurements)
         eval.evaluate_potholes()
 
 
@@ -56,9 +57,9 @@ class Measurement:
 
 
 
-
-    def create_PH_outputs(self):
-        output_creator.write_potholes_to_shp(self.dir_path, self.potholes)
+    #
+    # def create_PH_outputs(self):
+    #     output_creator.write_potholes_to_shp(self.dir_path, self.potholes)
 
     def get_acc_gps(self):
         return self.acc, self.gps

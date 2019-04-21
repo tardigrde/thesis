@@ -22,14 +22,11 @@ def create_outputs(dir_path, res_obj, type):
     shapes_dir, figures_dir, kalmaned_dir, potholes_dir, file_count = check_folders(dir_path)
 
     if type == 'kalmaned':
-        # TODO
-        # - fix kalamned plots
         result_lists, matrices = extract_attributes_from_saver_objects(res_obj)
         create_kf_shapes(result_lists, kalmaned_dir, testset, file_count)
         create_kalmaned_plots(figures_dir, result_lists, matrices, file_count)
     elif type == 'potholes':
-        # TODO
-        # - fix pothole plots
+        file_count = str(int(file_count)-1)
         create_potholes_shapes(res_obj, potholes_dir, testset, file_count)
         export_potholes_plots(res_obj, figures_dir, file_count)
 
@@ -38,7 +35,7 @@ def create_potholes_shapes(res_obj, potholes_dir, testset, file_count):
     type = 'potholes'
     filename = form_filename(type, testset, file_count)
     shape_file_name = Path(str(potholes_dir) + filename)
-    gdf = get_geo_dataframe(res_obj, type)
+    gdf = get_geo_dataframe(res_obj)
     write_to_shp(gdf, shape_file_name)
 
 
@@ -55,7 +52,7 @@ def create_kf_shapes(result_lists, kalmaned_dir, testset, file_count):
     for type in ['adapted']:
         filename = form_filename(type, testset, file_count)
         shape_file_name = Path(str(kalmaned_dir) + filename)
-        gdf = get_geo_dataframe(result_lists[type], type)
+        gdf = get_geo_dataframe(result_lists[type])
         write_to_shp(gdf, shape_file_name)
 
 
@@ -90,13 +87,13 @@ def form_filename(type, testset, file_count):
     return filename
 
 
-def get_geo_dataframe(type_of_result, type):
-    validity = 'epsilons' if type == 'adapted' else 'probability'
-
+def get_geo_dataframe(res_obj):
+    validity = 'llh'
     datatable = [[i, j, k, l] for i, j, k, l in
-                 zip(type_of_result['lng'], type_of_result['lat'], type_of_result['time'], type_of_result[validity])]
+                 zip(res_obj['lng'], res_obj['lat'], res_obj['time'], res_obj[validity])]
     df = pd.DataFrame(datatable)
     df.columns = ['lng', 'lat', 'time', validity]
+
     df['coordinates'] = list(zip(df.lng, df.lat))
     df['coordinates'] = df['coordinates'].apply(Point)
 
@@ -115,7 +112,7 @@ def get_file_count(dir_path):
     onlyfiles = [f for f in listdir(str(dir_path)) if isfile(join(str(dir_path), f))]
     result_count = []
     for file in onlyfiles:
-        if not 'og_coordinates' and '.shp' in file:
+        if not 'og_coordinates' in file:
             # we want to use the *number* after the result filename substring
             number = re.findall(r'\d+', file)
             result_count.append(int(number[0]))
@@ -146,37 +143,53 @@ def check_folders(dir_path):
 
 
 def extract_attributes_from_saver_objects(kalmaned):
-    adapted_states = [i for i in kalmaned['adapted_states']]
-    saver_cv = kalmaned['saver_cv']._DL
-    saver_ca = kalmaned['saver_ca']._DL
-    time = [i[0] for i in kalmaned['adapted_states']]
+    adapted_states = [i for i in kalmaned['adapted']]
+    saver_cv_ukf = kalmaned['ucv']._DL
+    saver_cv_kf = kalmaned['cv']._DL
+    saver_ca_ukf = kalmaned['uca']._DL
+    time = [i['time'] for i in kalmaned['adapted']]
 
     result = {
-
         'cv': {
-            'lng': [st[0] for st in saver_cv['x_post']],
-            'lat': [st[2] for st in saver_cv['x_post']],
-            'likelihood': saver_cv['likelihood'],
-            'epsilons': [e for e in saver_cv['epsilon']],
-            'priolng': [ln[0] for ln in kalmaned['saver_cv']['x_prior']],
-            'priolat': [lt[2] for lt in kalmaned['saver_cv']['x_prior']],
+            'lng': [st[0] for st in saver_cv_kf['x_post']],
+            'lat': [st[2] for st in saver_cv_kf['x_post']],
+            'likelihood': saver_cv_kf['likelihood'],
+            'epsilons': [e for e in saver_cv_kf['epsilon']],
+            'priolng': [ln[0] for ln in kalmaned['cv']['x_prior']],
+            'priolat': [lt[2] for lt in kalmaned['cv']['x_prior']],
         },
-        'ca': {
-            'lng': [st[0] for st in saver_ca['x_post']],
-            'lat': [st[2] for st in saver_ca['x_post']],
-            'likelihood': saver_ca['likelihood'],
-            'epsilons': [e for e in saver_ca['epsilon']],
-            'priolng': [ln[0] for ln in kalmaned['saver_ca']['x_prior']],
-            'priolat': [lt[2] for lt in kalmaned['saver_ca']['x_prior']],
+
+        'ucv': {
+            'lng': [st[0] for st in saver_cv_ukf['x_post']],
+            'lat': [st[2] for st in saver_cv_ukf['x_post']],
+            'likelihood': saver_cv_ukf['likelihood'],
+            'epsilons': [e for e in saver_cv_ukf['epsilon']],
+            'priolng': [ln[0] for ln in kalmaned['ucv']['x_prior']],
+            'priolat': [lt[2] for lt in kalmaned['ucv']['x_prior']],
         },
-        'oglng': [st[0] for st in saver_cv['z']],
-        'oglat': [st[1] for st in saver_cv['z']],
+
+        'uca': {
+            'lng': [st[0] for st in saver_ca_ukf['x_post']],
+            'lat': [st[2] for st in saver_ca_ukf['x_post']],
+            'likelihood': saver_ca_ukf['likelihood'],
+            'epsilons': [e for e in saver_ca_ukf['epsilon']],
+            'priolng': [ln[0] for ln in kalmaned['uca']['x_prior']],
+            'priolat': [lt[2] for lt in kalmaned['uca']['x_prior']],
+        },
+        'oglng': [st[0] for st in saver_cv_ukf['z']],
+        'oglat': [st[1] for st in saver_cv_ukf['z']],
         'adapted': {
             'time': time,
-            'lng': [i[1][0] for i in kalmaned['adapted_states']],
-            'lat': [i[1][1] for i in kalmaned['adapted_states']],
-            'epsilons': [i[1][2] for i in kalmaned['adapted_states']],
-            'type': [i[1][3] for i in kalmaned['adapted_states']],
+            'lng': [i['x'][0] for i in kalmaned['adapted']],
+            'lat': [i['x'][2] for i in kalmaned['adapted']],
+            'P': [i['P']for i in kalmaned['adapted']],
+            'llh': [i['llh'] for i in kalmaned['adapted']],
+            'epsilons': [i['eps'] for i in kalmaned['adapted']],
+            'type': [i['model'] for i in kalmaned['adapted']],
+        },
+        'smoothed':{
+            'lng': kalmaned['smoothed'][:,0],
+            'lat': kalmaned['smoothed'][:, 2]
         }
     }
     matrices = {
@@ -190,7 +203,7 @@ def extract_attributes_from_saver_objects(kalmaned):
 
 
 def create_plots(result, matrices, fig_dir_path, file_count, type):
-    plotter.plot_result(fig_dir_path, type, result)
+    # plotter.plot_result(fig_dir_path, type, result)
     # plotter.plot_llh(fig_dir_path, type, result)
     # plotter.plot_epsilons(fig_dir_path, type, result)
 
@@ -201,6 +214,7 @@ def create_plots(result, matrices, fig_dir_path, file_count, type):
     # # plotter.plot_x(fig_dir_path, end_count)
     # plotter.plot_xy(fig_dir_path)
     # # plotter.plot_ned_acc()
+    pass
 
 # def write_potholes_to_shp(dir_path, potholes):
 #

@@ -1,15 +1,14 @@
 import numpy as np
-from shapely.geometry import Point
 from pathlib import Path
 from Point import Point
 import matplotlib.pyplot as plt
 from . import checker
 
 
-def map_potholes_back_to_real_world(ts, kf_res, gps_time_intervals):
+def map_potholes_back_to_real_world(ts, kf_res, gps_time_intervals, min_no_of_pothole_like_measurements):
     intervals = [tup for list in gps_time_intervals for tup in list]
     formatted_times = get_formatted_times_of_potholes(ts, intervals)
-    potholes_with_coordinates = get_coordinates(formatted_times, kf_res)
+    potholes_with_coordinates = get_coordinates(formatted_times, kf_res, min_no_of_pothole_like_measurements)
     return potholes_with_coordinates
 
 
@@ -23,8 +22,8 @@ def get_acc_axis(points, axis, gps_intervals):
 
     return flat_axis
 
-def map_potholes_to_timestamp(potholes, acc_time):
 
+def map_potholes_to_timestamp(potholes, acc_time):
     indices = sorted(list(potholes['combined']))
     timestamp_lists = [acc_time[index] for index in indices]
     flat_timestamps = [t for list in timestamp_lists for t in list]
@@ -46,31 +45,36 @@ def get_formatted_times_of_potholes(ts, intervals):
     return intervals_filled
 
 
-def get_coordinates(formatted_times, kf_res):
+def get_coordinates(formatted_times, kf_res, min_no_of_pothole_like_measurements):
     lngs, lats = [], []
-    ph_lngs, ph_lats, ph_times, ph_probability = [], [], [], []
-    for count, kf in zip(formatted_times, kf_res):
-        time = kf[0]
-        lng = kf[1][0]
-        lat = kf[1][1]
-        prob = kf[1][2]
+    ph_lngs, ph_lats, ph_times, ph_llh, ph_eps = [], [], [], [], []
+
+    assert len(kf_res['adapted']) == len(kf_res['smoothed'])
+
+    for count, adapted, smoothed in zip(formatted_times, kf_res['adapted'], kf_res['smoothed']):
+        time = adapted['time']
+        lng = smoothed[0]
+        lat = smoothed[2]
+        llh = adapted['llh']
+        eps = adapted['eps']
         lngs.append(lng)
         lats.append(lat)
-        # TODO
-        # experiment with this
-        if len(count) > 25:
+        if len(count) > min_no_of_pothole_like_measurements:
             ph_lngs.append(lng)
             ph_lats.append(lat)
             ph_times.append(time)
-            ph_probability.append(prob)
-    plt.scatter(lngs, lats)
-    plt.scatter(ph_lngs, ph_lats, color="red")
-    plt.show()
+            ph_llh.append(llh)
+            ph_eps.append(eps)
+    # plt.figure()
+    # plt.scatter(lngs, lats)
+    # plt.scatter(ph_lngs, ph_lats, color="red")
+    # plt.show()
     return {
         'lng': ph_lngs,
         'lat': ph_lats,
         'time': ph_times,
-        'probability': ph_probability,
+        'llh': ph_llh,
+        'probability': ph_eps,
     }
 
 
@@ -80,12 +84,13 @@ def get_points_with_acc(acc, gps):
 
 def get_points(acc, gps):
     points = []
-    for time, lng, lat, vel, tt, hdop, a in zip(gps['time'], gps['ln'], gps['la'], gps['v'], gps['t'], gps['hdop'],
-                                                acc):
+    for time, lng, lat, vlng, vlat, tt, hdop, a in zip(gps['time'], gps['ln'], gps['la'], gps['vln'], gps['vlt'],
+                                                       gps['t'], gps['hdop'],
+                                                       acc):
         sublist = []
 
-        for tm, ln, lt, v, t, hdp, acc_obj in zip(time, lng, lat, vel, tt, hdop, a):
-            p = Point(tm, ln, lt, v, t, hdp, acc_obj)
+        for tm, ln, lt, vln, vlt, t, hdp, acc_obj in zip(time, lng, lat, vlng, vlat, tt, hdop, a):
+            p = Point(tm, ln, lt, vln, vlt, t, hdp, acc_obj)
             sublist.append(p)
         points.append(sublist)
     return points
