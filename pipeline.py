@@ -13,24 +13,24 @@ from dsp_library import dsp
 import time
 import sys
 import logging
+
 log = logging.getLogger("logger")
 
-
 start_time = time.time()
-
-# DATA_BASE_DIR = r'D:\code\PyCharmProjects\thesis\data'
-# CURRENT_TEST_RUN = r'\trolli_playground'
-# dir_path = DATA_BASE_DIR + CURRENT_TEST_RUN
-
-# DATA_BASE_DIR = r'D:\code\PyCharmProjects\thesis\data'
-# CURRENT_TEST_RUN = r'\20190115\masodik'
-# dir_path = DATA_BASE_DIR + CURRENT_TEST_RUN
-
 log.info('Setting paths and finding files...')
 
 DATA_BASE_DIR = r'D:\code\PyCharmProjects\thesis\data'
-CURRENT_TEST_RUN = r'\20190409\elso'
+CURRENT_TEST_RUN = r'\trolli_playground'
 dir_path = DATA_BASE_DIR + CURRENT_TEST_RUN
+
+# DATA_BASE_DIR = r'D:\code\PyCharmProjects\thesis\data'
+# CURRENT_TEST_RUN = r'\20190115\elso'
+# dir_path = DATA_BASE_DIR + CURRENT_TEST_RUN
+
+
+# DATA_BASE_DIR = r'D:\code\PyCharmProjects\thesis\data'
+# CURRENT_TEST_RUN = r'\20190409\harmadik'
+# dir_path = DATA_BASE_DIR + CURRENT_TEST_RUN
 
 path_to_reference_potholes = r'D:\code\PyCharmProjects\thesis\data\real_potholes\potholes_3m_buffer.shp'
 
@@ -57,25 +57,31 @@ assert not None in (path_imu, path_gps)
 log.info('Setting paths and finding files...DONE!')
 
 log.info("Initializing Measurement object...")
+max_eps= 10
+min_no_of_pothole_like_measurements = 20
 
-measurement = Measurement(path_imu, path_gps, dir_path, path_to_reference_potholes)
+measurement = Measurement(path_imu, path_gps, dir_path, path_to_reference_potholes,max_eps, min_no_of_pothole_like_measurements)
+
 log.info("Initializing Measurement object...DONE!")
 log.info("Preprocessing...")
+
 measurement.preprocess()
+
 log.info("Preprocessing...DONE!")
 log.info("Initializing Point objects...")
+
 measurement.get_points()
+
 log.info("Initializing Point objects...DONE!")
 log.info("Kalman filtering...")
+
 measurement.do_kalman_filtering()
 
 measurement.create_outputs('kalmaned')
 log.info("Kalman filtering...DONE!")
 
-
-# measurement.evaluate_potholes()
-# measurement.create_outputs('potholes')
-
+measurement.evaluate_potholes()
+measurement.create_outputs('potholes')
 
 # potholes = dsp.classify_windows(acc, gps, dir_path)
 # stats = measurement.get_stats()
