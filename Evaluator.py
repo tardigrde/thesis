@@ -7,16 +7,19 @@ from utils import fuser, checker
 
 
 class Evaluator:
-    def __init__(self, path_to_reference_shape):
+    def __init__(self, path_to_reference_shape, invalid_path):
         self.path_to_reference_shape = path_to_reference_shape
+        self.invalid_path = invalid_path
+        self.valid_pothole = None
 
     # @property
     # def potholes(self):
     #     return self._potholes
 
-    def get_potholes(self, points, kalmaned, gps_time_intervals,min_no_of_pothole_like_measurements):
+    def get_potholes(self, points, kalmaned, gps_time_intervals, min_no_of_pothole_like_measurements):
         pothole_ts = self.get_pothole_timespans(points, gps_time_intervals)
-        self.raw_potholes = fuser.map_potholes_back_to_real_world(pothole_ts, kalmaned, gps_time_intervals, min_no_of_pothole_like_measurements)
+        self.raw_potholes = fuser.map_potholes_back_to_real_world(pothole_ts, kalmaned, gps_time_intervals,
+                                                                  min_no_of_pothole_like_measurements)
         return self.raw_potholes
 
     def get_pothole_timespans(self, points, gps_time_intervals):
@@ -42,37 +45,97 @@ class Evaluator:
 
     def evaluate_potholes(self):
         shapes = self.read_shape_file(self.path_to_reference_shape)
-        ph = self.raw_potholes
+        potholes = self.remove_invalid_potholes(self.raw_potholes)
         true_positives = []
-        false_positives = []
-        false_negatives = []
         shps = iter(shapes)
         while True:
             try:
                 shp = next(shps)
                 shp_geom = shape(shp['geometry'])
                 # print(shp_geom)
-                for ln, lt, time, llh, eps in zip(ph['lng'], ph['lat'], ph['time'], ph['llh'], ph['probability']):
-                    point_geom = Point(ln, lt)
+                # for i, (ln, lt, time, llh, prob) in enumerate(zip(ph['lng'], ph['lat'], ph['time'], ph['llh'], ph['probability'])):
+                for i, ph in enumerate(potholes):
+                    point_geom = ph['point']
                     pthl = {
                         'point': point_geom,
-                        'time': time,
-                        'llh': llh,
-                        'epsilon': eps
+                        'time': ph['time'],
+                        'llh': ph['llh'],
+                        'prob': ph['prob']
                     }
                     if shp_geom.contains(point_geom):
                         true_positives.append(pthl)
-                    else:
-                        false_positives.append(pthl)
             except StopIteration:
                 print('Last item')
                 break
+        potholes_found_len = len(potholes)
+        true_pos_len = len(true_positives)
         print(
-            'Total count of detectedpotholes was:',len(ph['time']),
-            '.\n From that ',len(true_positives),' was true positive, and ',
-            len(false_positives),' was false positives.!'
-        )
+            'Found potholes was:{}.\n  true positive: {},\n false positives: {}'.format(
+                potholes_found_len, true_pos_len, potholes_found_len - true_pos_len))
 
     def read_shape_file(self, shp_path):
         shapes = fiona.open(shp_path)
         return shapes
+
+    def remove_invalid_potholes(self, ph):
+        shapes = self.read_shape_file(self.invalid_path)
+
+        potholes_without_invalid = []
+        while True:
+            break
+        for i, (ln, lt, time, llh, prob) in enumerate(
+                zip(ph['lng'], ph['lat'], ph['time'], ph['llh'], ph['probability'])):
+            point_geom = Point(ln, lt)
+            pthl = {
+                'point': point_geom,
+                'time': time,
+                'llh': llh,
+                'prob': prob
+            }
+            shps = iter(shapes)
+            self.valid_pothole = None
+            self.get_validated_pothole(shps, point_geom, pthl)
+            if self.valid_pothole is not None:
+                potholes_without_invalid.append(self.valid_pothole)
+
+        print('{} potholes are on non-measureable area.'.format(len(ph['time']) - len(potholes_without_invalid)))
+        return potholes_without_invalid
+
+    def get_validated_pothole(self, shps, point_geom, pthl):
+        try:
+            shp = next(shps)
+            shp_geom = shape(shp['geometry'])
+            if not shp_geom.contains(point_geom):
+                self.valid_pothole=pthl
+                self.get_validated_pothole(shps, point_geom,pthl)
+            else:
+                self.valid_pothole = None
+        except StopIteration:
+            validated = self.valid_pothole
+
+# def remove_invalid_potholes(self, ph):
+#     shapes = self.read_shape_file(self.invalid_path)
+#     shps = iter(shapes)
+#     potholes_without_invalid = []
+#     while True:
+#         try:
+#             shp = next(shps)
+#             shp_geom = shape(shp['geometry'])
+#             for i, (ln, lt, time, llh, prob) in enumerate(
+#                     zip(ph['lng'], ph['lat'], ph['time'], ph['llh'], ph['probability'])):
+#                 point_geom = Point(ln, lt)
+#                 pthl = {
+#                     'point': point_geom,
+#                     'time': time,
+#                     'llh': llh,
+#                     'prob': prob
+#                 }
+#
+#                 if not shp_geom.contains(point_geom):
+#                     potholes_without_invalid.append(pthl)
+#
+#         except StopIteration:
+#             break
+#
+#     print('{} potholes are on non-measureable area.'.format(len(ph['time']) - len(potholes_without_invalid)))
+#     return potholes_without_invalid

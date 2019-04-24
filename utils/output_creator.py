@@ -60,10 +60,14 @@ def create_kalmaned_plots(fig_dir, result_lists, matrices, file_count):
     # start_time = time.time()
 
     if not file_count: return
-    plotter.plot_adapted_result(fig_dir, 'adapted', result_lists)
+    # plotter.plot_adapted_result(fig_dir, 'adapted', result_lists)
+    plotter.valid_plot_og_vs_smoothed(fig_dir, 'adapted', result_lists)
+    plotter.valid_plot_og_vs_prios(fig_dir, 'adapted', result_lists)
 
-    epsilons = result_lists['adapted']['epsilons']
-    plotter.plot_epsilons(fig_dir, 'adapted', epsilons)
+    # epsilons = result_lists['adapted']['epsilons']
+    # plotter.plot_epsilons(fig_dir, 'adapted', epsilons)
+
+
     # for i in ['cv', 'ca']:
     #     fig_dir_path = Path(str(fig_dir) + '\\' + file_count)
     #     if not fig_dir_path.is_dir(): makedirs(fig_dir_path)
@@ -104,7 +108,7 @@ def get_geo_dataframe(res_obj):
 
 
 def write_to_shp(gdf, out_path):
-    print(out_path)
+    # print(out_path)
     gdf.to_file(driver='ESRI Shapefile', filename=out_path)
 
 

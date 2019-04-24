@@ -1,40 +1,88 @@
 import matplotlib.pyplot as plt
 from matplotlib.markers import MarkerStyle
+import matplotlib
 from pathlib import Path
 import numpy as np
 
+titlestyle = {'family': 'DejaVu Sans',
+             'weight': 'bold',
+             'size': 22}
 
 
+def valid_plot_og_vs_smoothed(fig_dir, type, result):
+    fig_gps = plt.figure(figsize=(16, 16))
+    # plt.scatter(result['oglng'], result['oglat'], color='black', label='og')
+    plt.title('Eredeti mérés vs. szűrt nyomvonal',{'fontsize': titlestyle['size'], 'fontweight': titlestyle['weight']})
+    plt.plot(result['oglng'], result['oglat'], '--', color='red', label='GPS koordináták')
+    plt.plot(result['smoothed']['lng'], result['smoothed']['lat'], color='green', label='Szűrt koordináták')
+    plt.xlabel(r'Hosszúság (EOV)')
+    plt.ylabel(r'Szélesség (EOV)')
+    plt.legend(loc='best', prop={'size': 22})
+    plt.grid()
+    # plt.show()
+    plt.savefig(str(fig_dir) + r'\\' + str(type) + 'OG_VS_SMOOTHED.png', dpi=72, transparent=True, bbox_inches='tight')
+
+def valid_plot_og_vs_prios(fig_dir, type, result):
+    fig_gps = plt.figure(figsize=(16, 16))
+    plt.title('Eredeti mérés vs. a különböző modellek által prediktált nyomvonal', {'fontsize': titlestyle['size'], 'fontweight': titlestyle['weight']})
+    plt.plot(result['oglng'], result['oglat'], 'o-', color='red', label='GPS koordináták')
+    # plt.plot(result['cv']['priolng'], result['cv']['priolat'],'--', color='orange', label='Kalman F.: állandó sebesség model (constant velocity)')
+    plt.plot(result['uca']['priolng'], result['uca']['priolat'],'--', color='orange', label='U. Kalman F.: állandó gyorsulás model (constant velocity)')
+    plt.plot(result['ucv']['priolng'], result['ucv']['priolat'], '--', color='darkmagenta', label='U. Kalman F.: állandó sebesség model (constant velocity)')
+    plt.xlabel(r'Hosszúság (EOV)')
+    plt.ylabel(r'Szélesség (EOV)')
+    plt.legend(loc='best', prop={'size': 22})
+    plt.grid()
+    # plt.show()
+    plt.savefig(str(fig_dir) + r'\\' + str(type) + 'KF_OG_PRIO_RES.png', dpi=72, transparent=True, bbox_inches='tight')
 
 
-def plot_acc_axis(axis, low_pass_fitlered):
-    plt.plot(axis, color='red')
-    plt.plot(low_pass_fitlered, color='green')
-    plt.title("Hamming windows filtered")
-    plt.ylabel("Amplitude")
-    plt.xlabel("Sample")
-    plt.show()
+def valid_plot_acc_axis(axis, low_pass_fitlered):
+    fig_gps = plt.figure(figsize=(16, 16))
+    plt.title('Eredeti vs. szűrt gyorsulásmérő adatok a vertikális tengelyen', {'fontsize': titlestyle['size'], 'fontweight': titlestyle['weight']})
+    plt.plot(axis, color='red',label='Eredeti gyorsulásmérő adatok')
+    plt.plot(low_pass_fitlered, color='blue',label='Szűrt adatok')
+    plt.xlabel("Mérésszám")
+    plt.ylabel("G-erő")
+    plt.legend(loc='best', prop={'size': 22})
+    plt.grid()
+    # plt.show()
+    # plt.savefig(r'C:\Users\leven\Desktop\plots_for_thesis' + r'\acc_down_VS_HPFed.png', dpi=72, transparent=True, bbox_inches='tight')
+
+# def valid_plot_window(axis,trimmed_filtered_axis):
+#     fig_acc = plt.figure(figsize=(16, 9))
+#     plt.title('100 mérésből álló ún. Hamming-ablak',
+#               {'fontsize': titlestyle['size'], 'fontweight': titlestyle['weight']})
+#     plt.plot(axis, label='Eredeti ablak')
+#     plt.plot(trimmed_filtered_axis, label='Szűrt ablak')
+#     plt.ylabel(r'G erő')
+#     plt.legend(loc='best', prop={'size': 18})
+#     plt.savefig(r'C:\Users\leven\Desktop\plots_for_thesis' + r'\acc_window.png', dpi=72, transparent=True, bbox_inches='tight')
+
+
 
 def plot_adapted_result(fig_dir, type, result):
     fig_gps = plt.figure(figsize=(16, 16))
-    plt.scatter(result['oglng'], result['oglat'], color='black', label='og')
+    # plt.scatter(result['oglng'], result['oglat'], color='black', label='og')
+    plt.plot(result['oglng'], result['oglat'], '-o', color='black', label='og')
     # plt.scatter(result['ucv']['priolng'], result['ucv']['priolat'], color='blue', label='ucv')
     # plt.scatter(result['cv']['priolng'], result['cv']['priolat'], color='orange', label='cv')
     # plt.scatter(result['uca']['priolng'], result['uca']['priolat'], color='red', label='uca')
-    plt.scatter(result['smoothed']['lng'], result['smoothed']['lat'], color='red', label='uca')
+    plt.scatter(result['smoothed']['lng'], result['smoothed']['lat'], color='red', label='smoothed')
     plt.scatter(result['adapted']['lng'], result['adapted']['lat'], color='blue', label='adapted')
     # m = MarkerStyle('octagon')
     plt.xlabel(r'LNG $g$')
     plt.ylabel(r'LAT $g$')
     plt.legend(loc='best', prop={'size': 22})
     plt.grid()
-    plt.show()
+    # plt.show()
     plt.savefig(str(fig_dir) + r'\\' + str(type) + 'KF_OG_PRIO_RES.png', dpi=72, transparent=True, bbox_inches='tight')
+
 
 def plot_rts_output(xs, Ms, t):
     plt.figure()
-    plt.plot(t, xs[:, 0]/1000., label='KF', lw=2)
-    plt.plot(t, Ms[:, 0]/1000., c='k', label='RTS', lw=2)
+    plt.plot(t, xs[:, 0] / 1000., label='KF', lw=2)
+    plt.plot(t, Ms[:, 0] / 1000., c='k', label='RTS', lw=2)
     plt.xlabel('time(sec)')
     plt.ylabel('lng')
     plt.legend(loc=4)
@@ -58,33 +106,37 @@ def plot_rts_output(xs, Ms, t):
     print('Difference in position in meters:\n\t', xs[-6:-1, 0] - Ms[-6:-1, 0])
 
 
-def plot_result(fig_dir, type,result):
+def plot_result(fig_dir, type, result):
     fig_gps = plt.figure(figsize=(16, 16))
-    plt.scatter(result['oglng'], result['oglat'],color='blue',label='og')
-    plt.scatter(result[type]['priolng'], result[type]['priolat'],color='orange',label='prio')
-    plt.scatter(result[type]['lng'], result[type]['lat'],color='red',label='kf')
+    plt.scatter(result['oglng'], result['oglat'], color='blue', label='og')
+    plt.scatter(result[type]['priolng'], result[type]['priolat'], color='orange', label='prio')
+    plt.scatter(result[type]['lng'], result[type]['lat'], color='red', label='kf')
     plt.xlabel(r'LNG $g$')
     plt.ylabel(r'LAT $g$')
     plt.legend(loc='best', prop={'size': 22})
     plt.grid()
     # plt.show()
-    plt.savefig(str(fig_dir) + r'\\'+str(type)+'KF_OG_PRIO_RES.png', dpi=72, transparent=True, bbox_inches='tight')
+    plt.savefig(str(fig_dir) + r'\\' + str(type) + 'KF_OG_PRIO_RES.png', dpi=72, transparent=True, bbox_inches='tight')
 
-def plot_llh(fig_dir,type, result):
+
+def plot_llh(fig_dir, type, result):
     end_count = len(result[type]['lng'])
     fig = plt.figure(figsize=(16, 9))
     plt.plot(range(end_count), result[type]['likelihood'], label='likelihood')
     plt.title('Likelihood')
-    plt.show()
-    plt.savefig(str(fig_dir) + r'\\'+str(type)+'Kalman-Filter-likelihood.png', dpi=72, transparent=True, bbox_inches='tight')
+    # plt.show()
+    plt.savefig(str(fig_dir) + r'\\' + str(type) + 'Kalman-Filter-likelihood.png', dpi=72, transparent=True,
+                bbox_inches='tight')
 
-def plot_epsilons(fig_dir,type, epsilons):
+
+def plot_epsilons(fig_dir, type, epsilons):
     fig = plt.figure(figsize=(16, 9))
     end_count = len(epsilons)
-    plt.plot(range(end_count),epsilons, label='likelihood')
+    plt.plot(range(end_count), epsilons, label='likelihood')
     plt.title('Epsilons')
     # plt.show()
-    plt.savefig(str(fig_dir) + r'\\'+str(type)+'Kalman-Filter-epsilons.png', dpi=72, transparent=True, bbox_inches='tight')
+    plt.savefig(str(fig_dir) + r'\\' + str(type) + 'Kalman-Filter-epsilons.png', dpi=72, transparent=True,
+                bbox_inches='tight')
 
 
 def plot_P(fig_dir, matrices):
@@ -106,12 +158,15 @@ def plot_P(fig_dir, matrices):
     plt.legend(loc='best', prop={'size': 22})
     plt.savefig(str(fig_dir) + r'\Kalman-Filter-CA-XP.png', dpi=72, transparent=True, bbox_inches='tight')
 
+
 def plot_K(fig_dir, matrices):
     end_count = matrices['length']
     fig = plt.figure(figsize=(16, 9))
     K = matrices['K']
+
     def get_K_list(index):
-        return [i[index,0] for i in K]
+        return [i[index, 0] for i in K]
+
     plt.plot(range(end_count), get_K_list(0), label='Kalman Gain for $x$')
     plt.plot(range(end_count), get_K_list(1), label='Kalman Gain for $y$')
     plt.plot(range(end_count), get_K_list(2), label='Kalman Gain for $\dot x$')
@@ -122,8 +177,6 @@ def plot_K(fig_dir, matrices):
     plt.title('Kalman Gain (the lower, the more the measurement fullfill the prediction)')
     plt.legend(loc='best', prop={'size': 18})
     plt.savefig(str(fig_dir) + r'\Kalman-Filter-CA-KG.png', dpi=72, transparent=True, bbox_inches='tight')
-
-
 
 
 def plot_m(fig_dir, measurements_count, ma_e, ma_n, acc_down, mp_lng, mp_lat):
@@ -144,9 +197,6 @@ def plot_m(fig_dir, measurements_count, ma_e, ma_n, acc_down, mp_lng, mp_lat):
     plt.ylabel(r'LAT $g$')
     plt.grid()
     plt.savefig(str(fig_dir) + r'\Kalman-Filter-CA-GPS-Measurements.png', dpi=72, transparent=True, bbox_inches='tight')
-
-
-
 
 
 def plot_P2(fig_dir, P, end_count):
@@ -175,9 +225,6 @@ def plot_P2(fig_dir, P, end_count):
 
     plt.tight_layout()
     plt.savefig(str(fig_dir) + r'\Kalman-Filter-CA-CovarianceMatrix.png', dpi=72, transparent=True, bbox_inches='tight')
-
-
-
 
 
 def plot_x(fig_dir, end_count):
@@ -227,21 +274,7 @@ def plot_xy(fig_dir):
     plt.savefig(str(fig_dir) + '\Kalman-Filter-CA-Position.png', dpi=72, transparent=True, bbox_inches='tight')
 
 
-def plot_xyz_acc(acc):
-    ma_e = acc['acc_east']
-    ma_n = acc['acc_north']
-    ma_d = acc['acc_down']
-    measurements_count = len(ma_e)
-    fig_acc = plt.figure(figsize=(16, 9))
-    plt.step(range(measurements_count), ma_e, label='$a_x$')
-    plt.step(range(measurements_count), ma_n, label='$a_y$')
-    plt.step(range(measurements_count), ma_d, label='$a_z$')
-    plt.ylabel(r'Acceleration $g$')
-    plt.ylim([-2, 2])
-    plt.legend(loc='best', prop={'size': 18})
-    plt.show()
 
-    # plt.savefig(str(fig_dir) + r'\Kalman-Filter-CA-Acceleration-Measurements.png', dpi=72, transparent=True, bbox_inches = 'tight')
 
 def plot_ned_acc(fig_dir, time, axis):
     fig_acc = plt.figure(figsize=(16, 9))
@@ -252,9 +285,11 @@ def plot_ned_acc(fig_dir, time, axis):
     # plt.ylabel('Time')
     # plt.title('ACC NED')
     print('vótmá', (str(fig_dir) + r'\results\figures\Kalman-Filter-CA-Acc_NED.png'))
-    #plt.show()
-    plt.savefig(r'D:\PyCharmProjects\thesis\data\trolli_playground\constacc\results\figures\Kalman-Filter-CA-Acc_NED.png')#Path(str(fig_dir) + r'\results\figures\Acc.png'))
+    # plt.show()
+    plt.savefig(
+        r'D:\PyCharmProjects\thesis\data\trolli_playground\constacc\results\figures\Kalman-Filter-CA-Acc_NED.png')  # Path(str(fig_dir) + r'\results\figures\Acc.png'))
     print('yes')
+
 
 # Preallocation for Plotting
 xt = []
@@ -327,7 +362,6 @@ def plot_filter(xs, ys=None, dt=None, c='C0', label='Filter', var=None, **kwargs
     plt.fill_between(xs, std_btm, std_top,
                      facecolor='yellow', alpha=0.2)
 
-
     return lines
 
 
@@ -338,7 +372,7 @@ def plot_measurements(xs, ys=None, dt=None, color='k', lw=1, label='Measurements
     """
     if ys is None and dt is not None:
         ys = xs
-        xs = np.arange(0, len(ys)*dt, dt)
+        xs = np.arange(0, len(ys) * dt, dt)
 
     plt.autoscale(tight=False)
     if lines:
@@ -349,10 +383,12 @@ def plot_measurements(xs, ys=None, dt=None, color='k', lw=1, label='Measurements
     else:
         if ys is not None:
             return plt.scatter(xs, ys, edgecolor=color, facecolor='none',
-                        lw=2, label=label, **kwargs),
+                               lw=2, label=label, **kwargs),
         else:
             return plt.scatter(range(len(xs)), xs, edgecolor=color, facecolor='none',
                                lw=2, label=label, **kwargs),
+
+
 def plot_track_and_epsilons(dt, xs, z_xs, eps):
     """ plots track and measurement on the left, and the residual
     of the filter on the right. Helps to visualize the performance of
@@ -376,4 +412,4 @@ def plot_track_and_epsilons(dt, xs, z_xs, eps):
     plt.xlabel('time (sec)')
     plt.ylabel('residual')
     plt.title('residuals')
-    plt.show()
+    # plt.show()

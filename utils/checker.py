@@ -23,7 +23,7 @@ def check_intervals_length(gps, intervals):
     assert len(gps['time']) == len(intervals)
     for t, i in zip(gps['time'], intervals):
         assert len(t) == len(i)
-        print('Intervals: OK!')
+        # print('Intervals: OK!')
 
 
 def check_rounded_acc_time(acc_time, gps_time):
@@ -47,4 +47,4 @@ def check_gps(gps):
 def check_if_trim_sync_went_ok(acc, gps):
     for a, g in zip(acc['_time'], gps['time']):
         assert a[0] < g[0] and a[len(a) - 1] > g[len(g) - 1]
-        print('OK')
+        # print('OK')

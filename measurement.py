@@ -7,12 +7,13 @@ from Evaluator import Evaluator
 
 
 class Measurement:
-    def __init__(self, path_imu, path_gps, dir_path, reference_path,max_eps,min_no_of_pothole_like_measurements):
+    def __init__(self, path_imu, path_gps, dir_path, reference_path,invalid_path,max_eps,min_no_of_pothole_like_measurements):
         self.path_imu = path_imu
         self.path_gps = path_gps
         self.dir_path = dir_path
         self.path_to_reference_potholes = reference_path
         self.min_no_of_pothole_like_measurements = min_no_of_pothole_like_measurements
+        self.invalid_path = invalid_path
         self.max_eps= max_eps
         self.stats = {}
 
@@ -42,7 +43,7 @@ class Measurement:
 
 
     def evaluate_potholes(self):
-        eval = Evaluator(self.path_to_reference_potholes)
+        eval = Evaluator(self.path_to_reference_potholes, self.invalid_path)
         self.raw_potholes = eval.get_potholes(self.points,self.kalmaned, self.gps_time_intervals, self.min_no_of_pothole_like_measurements)
         eval.evaluate_potholes()
 

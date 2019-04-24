@@ -47,21 +47,17 @@ def find_identical_indices(potholes):
     list_of_lists.append(potholes['thresh'])
     list_of_lists.append(potholes['diff'])
     list_of_lists.append(potholes['std'])
+    # This is if you want to get potholes just if the window has all three indicators
     intsect = set.intersection(*[set(list) for list in list_of_lists])
-    # seen = set()
-    # repeated = set()
-    #
-    # for list in list_of_lists:
-    #     for i in set(list):
-    #         if i in seen:
-    #             repeated.add(i)
-    #         else:
-    #             seen.add(i)
+
+    # This is if you want to get potholes if the window has any of the three indicators
+    # intsect = set(potholes['thresh']+potholes['diff']+potholes['std'])
+
     return intsect
 
 
 def classify_based_on_threshold(i, down_window):
-    min_threshold, max_threshold = (-0.08, 0.08)
+    min_threshold, max_threshold = (-0.1, 0.1)
     indices_in_window = []
     for j, down in enumerate(down_window):
         if min_threshold < down < max_threshold:
@@ -79,7 +75,7 @@ def classify_based_on_absolut_difference(i, down_window):
     max_val = max(down_window)
     min_val = min(down_window)
     diff = max_val - min_val
-    if diff > 0.16:
+    if diff > 0.20:
         return i
     else:
         return None
@@ -87,15 +83,10 @@ def classify_based_on_absolut_difference(i, down_window):
 
 def classify_based_on_std_dev(i, down_window):
     std = np.std(down_window)
-    if std > 0.04:
+    if std > 0.05:
         return i
     else:
         return None
-
-
-
-
-
 
 
 
@@ -117,6 +108,8 @@ def do_hamming(dataset, n):
     if len(dataset) != n: window = np.hamming(len(dataset))
     windowed_data_og = np.multiply(dataset, window)
     return windowed_data_og
+
+
 
 
 def do_low_pass_filter(axis):
@@ -143,8 +136,6 @@ def do_low_pass_filter(axis):
 
     filtered = np.convolve(axis, sinc_func)
     trimmed_filtered_axis = sync_og_and_filtered(axis, filtered)
-
-    # plotter.plot_acc_axis(axis, trimmed_filtered_axis)
 
     return trimmed_filtered_axis
 
@@ -179,59 +170,59 @@ def check_length_of_filtered(axis, filtered):
         return False
 
 
-def do_fft(window):
-    """
-    https://ericstrong.org/fast-fourier-transforms-in-python/
-    https://www.oreilly.com/library/view/elegant-scipy/9781491922927/ch04.html
-    Args:
-        window:
-
-    Returns:
-
-    """
-    if not len(window) == 100:
-        print('_________NOOOOOOOOOOOOOOOOOOOOOOOOOOOPE_____')
-        return
-    length_of_window = len(window)
-
-    # Sampling rate and time vector
-    start_time = 0  # seconds
-    end_time = length_of_window / 100  # seconds
-    sampling_rate = 100  # Hz
-    N = (end_time - start_time) * sampling_rate  # array size
-
-    # Vibration data generation
-    time = np.linspace(start_time, end_time, round(N))
-
-    plt.figure(1)
-    plt.xlabel('Time')
-    plt.ylabel('Vibration (g)')
-    plt.title('Time Domain')
-    plt.plot(time, window, 'green')
-
-    # Nyquist Sampling Criteria
-    T = 1 / sampling_rate  # inverse of the sampling rate
-    x = np.linspace(0.0, 1.0 / (2.0 * T), int(N / 2))
-
-    # FFT algorithm
-    yr = fft(list(window))  # "raw" FFT with both + and - frequencies
-    y = 2 / N * np.abs(yr[0:np.int(N / 2)])  # positive freqs only
-
-    # Plotting the results
-    plt.figure(2)
-    plt.title('Frequency Domain')
-    plt.xlabel('Frequency (Hz)')
-    plt.ylabel('????')
-    plt.plot(x, y, 'yellow')
-
-    iffted_res = ifft(yr)
-    # We here want to have the original acc data seen corresponding to ifft res
-    plt.figure(3)
-    plt.plot(time, iffted_res, 'r')
-    plt.plot(time, window, 'b')
-    plt.show()
-
-    return iffted_res
+# def do_fft(window):
+#     """
+#     https://ericstrong.org/fast-fourier-transforms-in-python/
+#     https://www.oreilly.com/library/view/elegant-scipy/9781491922927/ch04.html
+#     Args:
+#         window:
+#
+#     Returns:
+#
+#     """
+#     if not len(window) == 100:
+#         print('_________NOOOOOOOOOOOOOOOOOOOOOOOOOOOPE_____')
+#         return
+#     length_of_window = len(window)
+#
+#     # Sampling rate and time vector
+#     start_time = 0  # seconds
+#     end_time = length_of_window / 100  # seconds
+#     sampling_rate = 100  # Hz
+#     N = (end_time - start_time) * sampling_rate  # array size
+#
+#     # Vibration data generation
+#     time = np.linspace(start_time, end_time, round(N))
+#
+#     plt.figure(1)
+#     plt.xlabel('Time')
+#     plt.ylabel('Vibration (g)')
+#     plt.title('Time Domain')
+#     plt.plot(time, window, 'green')
+#
+#     # Nyquist Sampling Criteria
+#     T = 1 / sampling_rate  # inverse of the sampling rate
+#     x = np.linspace(0.0, 1.0 / (2.0 * T), int(N / 2))
+#
+#     # FFT algorithm
+#     yr = fft(list(window))  # "raw" FFT with both + and - frequencies
+#     y = 2 / N * np.abs(yr[0:np.int(N / 2)])  # positive freqs only
+#
+#     # Plotting the results
+#     plt.figure(2)
+#     plt.title('Frequency Domain')
+#     plt.xlabel('Frequency (Hz)')
+#     plt.ylabel('????')
+#     plt.plot(x, y, 'yellow')
+#
+#     iffted_res = ifft(yr)
+#     # We here want to have the original acc data seen corresponding to ifft res
+#     plt.figure(3)
+#     plt.plot(time, iffted_res, 'r')
+#     plt.plot(time, window, 'b')
+#     plt.show()
+#
+#     return iffted_res
 
 
 def find_max_peaks(z_axis, height):

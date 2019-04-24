@@ -132,7 +132,7 @@ def _remove_redundant_points_with_geohash(msrmnt_dict):
     out_proj = Proj(init='epsg:23700')
     time_list = sorted(list(msrmnt_dict.keys()))
     no_of_measurements = len(time_list)
-    print('Original gps measurment count was: {}'.format(len(time_list)))
+    # print('Original gps measurment count was: {}'.format(len(time_list)))
     list_of_dicts_of_gps_data = []
     gps_data_dict = {}
     counter = -1

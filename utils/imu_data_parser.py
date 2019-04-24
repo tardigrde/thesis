@@ -2,7 +2,8 @@ from lib.madgwick.madgwickahrs import MadgwickAHRS
 import matplotlib.pyplot as plt
 from pyquaternion import Quaternion
 from dsp_library import dsp
-from utils import fuser
+from utils import fuser, plotter
+
 import pandas as pd
 import numpy as np
 import math
@@ -15,11 +16,8 @@ def apply_low_pass(df):
             low_passed = dsp.do_low_pass_filter(df[col].tolist())
             dataset[col] =  low_passed #df[col].tolist()
             # We already checked visually if the new measurements are better with LPF
-            # import matplotlib.pyplot as plt
-            # plt.plot(df[col].tolist())
-            # plt.plot(low_passed, color='red')
-            # plt.show()
-            # dataset[col] = (df[col].tolist())
+            # if col == 'acc_z':
+            #     plotter.valid_plot_acc_axis(df[col].tolist(),low_passed)
         else:
             assert col in ['time', 'mag_x', 'mag_y', 'mag_z']
             dataset[col] = df[col].tolist()

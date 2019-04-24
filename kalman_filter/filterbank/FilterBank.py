@@ -62,8 +62,8 @@ class FilterBank:
 
         filters=[self._cv,self._ca , self._ucv, self._uca]
         epsilons=[cv_eps,ca_eps , ucv_eps, uca_eps]
-        Q_scale_factor = 100
-        #util.adjust_process_noise(filters, epsilons, max_eps, Q_scale_factor)
+        Q_scale_factor = 10
+        # util.adjust_process_noise(filters, epsilons, max_eps, Q_scale_factor)
 
         adapted_state = util.save_adapted_state(filters,epsilons)
         adapted_state['time'] = point.time
