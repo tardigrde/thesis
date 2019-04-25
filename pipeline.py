@@ -2,7 +2,7 @@
 
 """
 THIS STARTS THE APPLICATION.
-
+WARNING FITERPY--> KF: I changed epsilon
 """
 
 from os import listdir
@@ -19,19 +19,9 @@ log = logging.getLogger("logger")
 start_time = time.time()
 log.info('Setting paths and finding files...')
 
-# DATA_BASE_DIR = r'D:\code\PyCharmProjects\thesis\data'
-# CURRENT_TEST_RUN = r'\trolli_playground'
-# dir_path = DATA_BASE_DIR + CURRENT_TEST_RUN
-
-# DATA_BASE_DIR = r'D:\code\PyCharmProjects\thesis\data'
-# CURRENT_TEST_RUN = r'\20190115\elso'
-# dir_path = DATA_BASE_DIR + CURRENT_TEST_RUN
-
-
-
 
 # path_to_reference_potholes = r'D:\code\PyCharmProjects\thesis\data\real_potholes\potholes_3m_buffer.shp'
-path_to_reference_potholes = r'D:\code\PyCharmProjects\thesis\data\real_potholes\road_anomalies.shp'
+path_to_reference_potholes = r'D:\code\PyCharmProjects\thesis\data\real_potholes\road_anomalies_3m_buffer.shp'
 path_to_invalid_potholes = r'D:\code\PyCharmProjects\thesis\data\real_potholes\invalid_areas.shp'
 
 

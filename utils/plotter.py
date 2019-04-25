@@ -27,7 +27,7 @@ def valid_plot_og_vs_prios(fig_dir, type, result):
     plt.title('Eredeti mérés vs. a különböző modellek által prediktált nyomvonal', {'fontsize': titlestyle['size'], 'fontweight': titlestyle['weight']})
     plt.plot(result['oglng'], result['oglat'], 'o-', color='red', label='GPS koordináták')
     # plt.plot(result['cv']['priolng'], result['cv']['priolat'],'--', color='orange', label='Kalman F.: állandó sebesség model (constant velocity)')
-    plt.plot(result['uca']['priolng'], result['uca']['priolat'],'--', color='orange', label='U. Kalman F.: állandó gyorsulás model (constant velocity)')
+    plt.plot(result['uca']['priolng'], result['uca']['priolat'],'--', color='orange', label='U. Kalman F.: állandó gyorsulás model (constant acceleration)')
     plt.plot(result['ucv']['priolng'], result['ucv']['priolat'], '--', color='darkmagenta', label='U. Kalman F.: állandó sebesség model (constant velocity)')
     plt.xlabel(r'Hosszúság (EOV)')
     plt.ylabel(r'Szélesség (EOV)')

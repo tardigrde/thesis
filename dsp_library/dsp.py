@@ -16,7 +16,7 @@ def do_classification(acc_time_windows, acc_down_windows):
     if not len(acc_down_windows) == len(acc_time_windows):
         print('down and time are not the same lenght')
         return
-    potholes = {
+    indexes = {
         'thresh': [],
         'diff': [],
         'std': [],
@@ -26,20 +26,20 @@ def do_classification(acc_time_windows, acc_down_windows):
         # plt.plot(down_window)
         # plt.show()
 
-        thresh = classify_based_on_threshold(i, down_window)
+        thresh, index_thresh = classify_based_on_threshold(i, down_window)
         if thresh:
-            potholes['thresh'].append(thresh)
+            indexes['thresh'].append(thresh)
 
-        diff = classify_based_on_absolut_difference(i, down_window)
+        diff,index_diff = classify_based_on_absolut_difference(i, down_window)
         if diff:
-            potholes['diff'].append(diff)
+            indexes['diff'].append(diff)
 
-        std = classify_based_on_std_dev(i, down_window)
+        std ,index_std= classify_based_on_std_dev(i, down_window)
         if std:
-            potholes['std'].append(std)
-    potholes['combined'] = find_identical_indices(potholes)
+            indexes['std'].append(std)
+    indexes['combined'] = find_identical_indices(indexes)
 
-    return potholes
+    return indexes
 
 
 def find_identical_indices(potholes):
@@ -64,9 +64,10 @@ def classify_based_on_threshold(i, down_window):
             pass
         else:
             indices_in_window.append(j)
+    count = len(indices_in_window)
     # Change this if in doubt
-    if len(indices_in_window) >= 5:
-        return i
+    if count >= 4:
+        return count, i
     else:
         return None
 
@@ -76,7 +77,7 @@ def classify_based_on_absolut_difference(i, down_window):
     min_val = min(down_window)
     diff = max_val - min_val
     if diff > 0.20:
-        return i
+        return diff, i
     else:
         return None
 
@@ -84,7 +85,7 @@ def classify_based_on_absolut_difference(i, down_window):
 def classify_based_on_std_dev(i, down_window):
     std = np.std(down_window)
     if std > 0.05:
-        return i
+        return std, i
     else:
         return None
 
