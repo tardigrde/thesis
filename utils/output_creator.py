@@ -23,12 +23,15 @@ def create_outputs(dir_path, res_obj, type):
 
     if type == 'kalmaned':
         result_lists, matrices = extract_attributes_from_saver_objects(res_obj)
+
         create_kf_shapes(result_lists, kalmaned_dir, testset, file_count)
         create_kalmaned_plots(figures_dir, result_lists, matrices, file_count)
+        return result_lists
     elif type == 'potholes':
         file_count = str(int(file_count)-1)
         create_potholes_shapes(res_obj, potholes_dir, testset, file_count)
         export_potholes_plots(res_obj, figures_dir, file_count)
+
 
 
 def create_potholes_shapes(res_obj, potholes_dir, testset, file_count):
@@ -53,6 +56,7 @@ def create_kf_shapes(result_lists, kalmaned_dir, testset, file_count):
         filename = form_filename(type, testset, file_count)
         shape_file_name = Path(str(kalmaned_dir) + filename)
         gdf = get_geo_dataframe(result_lists[type])
+        print(shape_file_name)
         write_to_shp(gdf, shape_file_name)
 
 
@@ -60,18 +64,22 @@ def create_kalmaned_plots(fig_dir, result_lists, matrices, file_count):
     # start_time = time.time()
 
     if not file_count: return
+
     # plotter.plot_adapted_result(fig_dir, 'adapted', result_lists)
-    # plotter.valid_plot_og_vs_smoothed(fig_dir, 'adapted', result_lists)
-    # plotter.valid_plot_og_vs_prios(fig_dir, 'adapted', result_lists)
+    plotter.valid_plot_og_vs_smoothed(fig_dir, 'adapted', result_lists)
+    plotter.valid_plot_og_vs_prios(fig_dir, 'adapted', result_lists)
 
     # epsilons = result_lists['adapted']['epsilons']
     # plotter.plot_epsilons(fig_dir, 'adapted', epsilons)
 
 
-    # for i in ['cv', 'ca']:
-    #     fig_dir_path = Path(str(fig_dir) + '\\' + file_count)
-    #     if not fig_dir_path.is_dir(): makedirs(fig_dir_path)
-    #     create_plots(result_lists, matrices, fig_dir_path, file_count,i)
+    # for i in ['cv', 'ucv','uca']:
+    fig_dir_path = Path(str(fig_dir) + '\\' + file_count)
+    if not fig_dir_path.is_dir(): makedirs(fig_dir_path)
+    # plotter.valid_plot_llh(fig_dir_path,  result_lists)
+
+
+    # create_plots(result_lists, matrices, fig_dir_path, file_count,i)
     # print("Plotting took %s seconds " % (time.time() - start_time))
 
 
@@ -88,6 +96,7 @@ def create_og_outputs(og_coords_path, result):
 #####################################################################
 def form_filename(type, testset, file_count):
     filename = str(r'\\' + str(testset) + '_' + str(type) + str(file_count) + r'.shp')
+
     return filename
 
 

@@ -5,16 +5,17 @@ from IMU import IMU
 from Evaluator import Evaluator
 
 
-
 class Measurement:
-    def __init__(self, path_imu, path_gps, dir_path, reference_path,invalid_path,max_eps,min_no_of_pothole_like_measurements):
+    def __init__(self, path_imu, path_gps, dir_path, reference_path, invalid_path,szentharomsag_path, max_eps,
+                 min_no_of_pothole_like_measurements):
         self.path_imu = path_imu
         self.path_gps = path_gps
         self.dir_path = dir_path
         self.path_to_reference_potholes = reference_path
         self.min_no_of_pothole_like_measurements = min_no_of_pothole_like_measurements
         self.invalid_path = invalid_path
-        self.max_eps= max_eps
+        self.szentharomsag_path=szentharomsag_path
+        self.max_eps = max_eps
         self.stats = {}
 
     def preprocess(self):
@@ -23,8 +24,8 @@ class Measurement:
         acc = imu.preprocessed
 
         # acc = imu_data_parser.get_imu_dictionary(self.path_imu, data='lists')
-        gps = nmea_parser.get_gps_dictionary(self.path_gps, data='lists')
-        self.acc, self.gps, self.gps_time_intervals = fuser.trim_and_sync_dataset(acc, gps)
+        one_level_deep_gps = nmea_parser.get_gps_dictionary(self.path_gps, data='lists')
+        self.acc, self.gps, self.gps_time_intervals = fuser.trim_and_sync_dataset(acc, one_level_deep_gps)
         return self.acc, self.gps
 
     def get_points(self):
@@ -43,22 +44,28 @@ class Measurement:
 
 
     def evaluate_potholes(self):
-        eval = Evaluator(self.path_to_reference_potholes, self.invalid_path)
-        self.raw_potholes = eval.get_potholes(self.points,self.kalmaned, self.gps_time_intervals, self.min_no_of_pothole_like_measurements)
-        eval.evaluate_potholes()
+        eval = Evaluator(self.path_to_reference_potholes, self.invalid_path,self.szentharomsag_path)
+        self.raw_potholes = eval.get_potholes(self.points, self.kalmaned, self.gps_time_intervals,
+                                              self.min_no_of_pothole_like_measurements)
+        precision = eval.evaluate_potholes()
+        on_road_raw_gps=eval.get_kalmaned_on_road(self.result_lists['smoothed'])
+        gps = {
+            'lng': [i for sublist in self.gps['lng'] for i in sublist ],
+            'lat': [i for sublist in self.gps['lat'] for i in sublist ]
+
+        }
+        on_road_surface=eval.get_kalmaned_on_road(gps)
+        return precision
 
 
 
     def create_outputs(self, type=None):
         assert type != None
         if type == 'kalmaned':
-            output_creator.create_outputs(self.dir_path, self.kalmaned, type)
+            self.result_lists= output_creator.create_outputs(self.dir_path, self.kalmaned, type)
         elif type == 'potholes':
             output_creator.create_outputs(self.dir_path, self.raw_potholes, type)
 
-
-
-    #
     # def create_PH_outputs(self):
     #     output_creator.write_potholes_to_shp(self.dir_path, self.potholes)
 

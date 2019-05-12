@@ -15,8 +15,8 @@ def valid_plot_og_vs_smoothed(fig_dir, type, result):
     plt.title('Eredeti mérés vs. szűrt nyomvonal',{'fontsize': titlestyle['size'], 'fontweight': titlestyle['weight']})
     plt.plot(result['oglng'], result['oglat'], '--', color='red', label='GPS koordináták')
     plt.plot(result['smoothed']['lng'], result['smoothed']['lat'], color='green', label='Szűrt koordináták')
-    plt.xlabel(r'Hosszúság (EOV)')
-    plt.ylabel(r'Szélesség (EOV)')
+    plt.xlabel(r'EOV Y')
+    plt.ylabel(r'EOV X')
     plt.legend(loc='best', prop={'size': 22})
     plt.grid()
     # plt.show()
@@ -25,12 +25,12 @@ def valid_plot_og_vs_smoothed(fig_dir, type, result):
 def valid_plot_og_vs_prios(fig_dir, type, result):
     fig_gps = plt.figure(figsize=(16, 16))
     plt.title('Eredeti mérés vs. a különböző modellek által prediktált nyomvonal', {'fontsize': titlestyle['size'], 'fontweight': titlestyle['weight']})
-    plt.plot(result['oglng'], result['oglat'], 'o-', color='red', label='GPS koordináták')
+    plt.plot(result['oglng'], result['oglat'], 'o', color='black', label='GPS mérés')
     # plt.plot(result['cv']['priolng'], result['cv']['priolat'],'--', color='orange', label='Kalman F.: állandó sebesség model (constant velocity)')
-    plt.plot(result['uca']['priolng'], result['uca']['priolat'],'--', color='orange', label='U. Kalman F.: állandó gyorsulás model (constant acceleration)')
-    plt.plot(result['ucv']['priolng'], result['ucv']['priolat'], '--', color='darkmagenta', label='U. Kalman F.: állandó sebesség model (constant velocity)')
-    plt.xlabel(r'Hosszúság (EOV)')
-    plt.ylabel(r'Szélesség (EOV)')
+    plt.plot(result['uca']['priolng'], result['uca']['priolat'],'--', color='red', label='U. Kalman F.: kontroll input nélkül')
+    plt.plot(result['ucv']['priolng'], result['ucv']['priolat'], '--', color='green', label='U. Kalman F.: kontroll inputtal')
+    plt.xlabel(r'EOV Y')
+    plt.ylabel(r'EOV X')
     plt.legend(loc='best', prop={'size': 22})
     plt.grid()
     # plt.show()
@@ -49,6 +49,50 @@ def valid_plot_acc_axis(axis, low_pass_fitlered):
     # plt.show()
     # plt.savefig(r'C:\Users\leven\Desktop\plots_for_thesis' + r'\acc_down_VS_HPFed.png', dpi=72, transparent=True, bbox_inches='tight')
 
+
+def valid_plot_llh(fig_dir, result):
+    end_count = len(result['cv']['likelihood'])
+    fig = plt.figure(figsize=(16, 9))
+    plt.plot(range(end_count), result['cv']['likelihood'], label='Első rendű standard Kálmán szűrő')
+    plt.plot(range(end_count), result['ucv']['likelihood'], label='Zérus-rendű UKF')
+    plt.plot(range(end_count), result['uca']['likelihood'], label='Zérus-rendű UKF  kontroll inputtal')
+    plt.title('A különböző Kálmán-szűrő eredmények pontosságának valószínűsége')
+    plt.legend(loc='best', prop={'size': 22})
+    # plt.show()
+    plt.savefig(str(fig_dir) + r'\\' + 'Kalman-Filter-likelihood.png', dpi=72, transparent=True,
+                bbox_inches='tight')
+
+
+
+def valid_plot_rts_output(xs, Ms, t):
+    fig_lng = plt.figure(figsize=(16, 16))
+    plt.title('Adaptált vs. szűrt/simított koordináták az Y tengelyen',
+              {'fontsize': titlestyle['size'], 'fontweight': titlestyle['weight']})
+    plt.plot(xs[:, 0],t , label='Adaptált Y koordináták', lw=2)
+    plt.plot(Ms[:, 0],t , c='red', label='Simított Y koordináták', lw=2)
+    plt.xlabel('EOV Y')
+    plt.ylabel('Mérésszám')
+    plt.legend(loc='best', prop={'size': 22})
+    plt.grid()
+    np.set_printoptions(precision=4)
+    plt.savefig(r'C:\Users\leven\Desktop\plots_for_thesis' + r'\adapted_vs_smoothed_lng.png', dpi=72, transparent=True,
+                bbox_inches='tight')
+
+    fig_lat = plt.figure(figsize=(16, 16))
+    plt.title('Adaptált vs. szűrt/simított koordináták az X tengelyen',
+              {'fontsize': titlestyle['size'], 'fontweight': titlestyle['weight']})
+    plt.plot(t, xs[:, 2], label='Adaptált X koordináták', lw=2)
+    plt.plot(t, Ms[:, 2], c='red', label='Simított X koordináták', lw=2)
+
+    plt.xlabel('Mérésszám')
+    plt.ylabel('EOV X')
+    plt.legend(loc='best', prop={'size': 22})
+    plt.grid()
+    np.set_printoptions(precision=4)
+
+    print('Difference in position in meters:\n\t', xs[-6:-1, 0] - Ms[-6:-1, 0])
+    plt.savefig(r'C:\Users\leven\Desktop\plots_for_thesis' + r'\adapted_vs_smoothed_lat.png', dpi=72, transparent=True, bbox_inches='tight')
+
 # def valid_plot_window(axis,trimmed_filtered_axis):
 #     fig_acc = plt.figure(figsize=(16, 9))
 #     plt.title('100 mérésből álló ún. Hamming-ablak',
@@ -59,6 +103,14 @@ def valid_plot_acc_axis(axis, low_pass_fitlered):
 #     plt.legend(loc='best', prop={'size': 18})
 #     plt.savefig(r'C:\Users\leven\Desktop\plots_for_thesis' + r'\acc_window.png', dpi=72, transparent=True, bbox_inches='tight')
 
+def plot_epsilons(fig_dir, type, epsilons):
+    fig = plt.figure(figsize=(16, 9))
+    end_count = len(epsilons)
+    plt.plot(range(end_count), epsilons, label='likelihood')
+    plt.title('Epsilons')
+    # plt.show()
+    plt.savefig(str(fig_dir) + r'\\' + str(type) + 'Kalman-Filter-epsilons.png', dpi=72, transparent=True,
+                bbox_inches='tight')
 
 
 def plot_adapted_result(fig_dir, type, result):
@@ -71,39 +123,15 @@ def plot_adapted_result(fig_dir, type, result):
     plt.scatter(result['smoothed']['lng'], result['smoothed']['lat'], color='red', label='smoothed')
     plt.scatter(result['adapted']['lng'], result['adapted']['lat'], color='blue', label='adapted')
     # m = MarkerStyle('octagon')
-    plt.xlabel(r'LNG $g$')
-    plt.ylabel(r'LAT $g$')
+    plt.xlabel(r'X $g$')
+    plt.ylabel(r'Y $g$')
     plt.legend(loc='best', prop={'size': 22})
     plt.grid()
     # plt.show()
     plt.savefig(str(fig_dir) + r'\\' + str(type) + 'KF_OG_PRIO_RES.png', dpi=72, transparent=True, bbox_inches='tight')
 
 
-def plot_rts_output(xs, Ms, t):
-    plt.figure()
-    plt.plot(t, xs[:, 0] / 1000., label='KF', lw=2)
-    plt.plot(t, Ms[:, 0] / 1000., c='k', label='RTS', lw=2)
-    plt.xlabel('time(sec)')
-    plt.ylabel('lng')
-    plt.legend(loc=4)
 
-    # plt.figure()
-    #
-    # plt.plot(t, xs[:, 1], label='KF')
-    # plt.plot(t, Ms[:, 1], c='k', label='RTS')
-    # plt.xlabel('time(sec)')
-    # plt.ylabel('x velocity')
-    # plt.legend(loc=4)
-
-    plt.figure()
-    plt.plot(t, xs[:, 2], label='KF')
-    plt.plot(t, Ms[:, 2], c='k', label='RTS')
-    plt.xlabel('time(sec)')
-    plt.ylabel('lat')
-    plt.legend(loc=4)
-
-    np.set_printoptions(precision=4)
-    print('Difference in position in meters:\n\t', xs[-6:-1, 0] - Ms[-6:-1, 0])
 
 
 def plot_result(fig_dir, type, result):
@@ -119,24 +147,9 @@ def plot_result(fig_dir, type, result):
     plt.savefig(str(fig_dir) + r'\\' + str(type) + 'KF_OG_PRIO_RES.png', dpi=72, transparent=True, bbox_inches='tight')
 
 
-def plot_llh(fig_dir, type, result):
-    end_count = len(result[type]['lng'])
-    fig = plt.figure(figsize=(16, 9))
-    plt.plot(range(end_count), result[type]['likelihood'], label='likelihood')
-    plt.title('Likelihood')
-    # plt.show()
-    plt.savefig(str(fig_dir) + r'\\' + str(type) + 'Kalman-Filter-likelihood.png', dpi=72, transparent=True,
-                bbox_inches='tight')
 
 
-def plot_epsilons(fig_dir, type, epsilons):
-    fig = plt.figure(figsize=(16, 9))
-    end_count = len(epsilons)
-    plt.plot(range(end_count), epsilons, label='likelihood')
-    plt.title('Epsilons')
-    # plt.show()
-    plt.savefig(str(fig_dir) + r'\\' + str(type) + 'Kalman-Filter-epsilons.png', dpi=72, transparent=True,
-                bbox_inches='tight')
+
 
 
 def plot_P(fig_dir, matrices):

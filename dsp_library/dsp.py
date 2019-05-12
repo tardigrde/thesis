@@ -26,17 +26,17 @@ def do_classification(acc_time_windows, acc_down_windows):
         # plt.plot(down_window)
         # plt.show()
 
-        thresh, index_thresh = classify_based_on_threshold(i, down_window)
-        if thresh:
-            indexes['thresh'].append(thresh)
+        index_thresh = classify_based_on_threshold(i, down_window)
+        if index_thresh:
+            indexes['thresh'].append(index_thresh)
 
-        diff,index_diff = classify_based_on_absolut_difference(i, down_window)
-        if diff:
-            indexes['diff'].append(diff)
+        index_diff = classify_based_on_absolut_difference(i, down_window)
+        if index_diff:
+            indexes['diff'].append(index_diff)
 
-        std ,index_std= classify_based_on_std_dev(i, down_window)
-        if std:
-            indexes['std'].append(std)
+        index_std= classify_based_on_std_dev(i, down_window)
+        if index_std:
+            indexes['std'].append(index_std)
     indexes['combined'] = find_identical_indices(indexes)
 
     return indexes
@@ -67,7 +67,7 @@ def classify_based_on_threshold(i, down_window):
     count = len(indices_in_window)
     # Change this if in doubt
     if count >= 4:
-        return count, i
+        return  i
     else:
         return None
 
@@ -77,7 +77,7 @@ def classify_based_on_absolut_difference(i, down_window):
     min_val = min(down_window)
     diff = max_val - min_val
     if diff > 0.20:
-        return diff, i
+        return i
     else:
         return None
 
@@ -85,7 +85,7 @@ def classify_based_on_absolut_difference(i, down_window):
 def classify_based_on_std_dev(i, down_window):
     std = np.std(down_window)
     if std > 0.05:
-        return std, i
+        return i
     else:
         return None
 

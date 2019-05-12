@@ -135,7 +135,7 @@ def set_cv_filter(kf_cv):
     kf_cv.H = get_H(model='cv')
 
     kf_cv.B = get_B(dt)
-    kf_cv.Q = Q_discrete_white_noise(4, dt=dt, var=1)
+    kf_cv.Q = Q_discrete_white_noise(4, dt=dt, var=0.2)
     # kf_cv.Q[0:2, 0:2] = Q_discrete_white_noise(2, dt=dt, var=0.02)
     # kf_cv.Q[2:4, 2:4] = Q_discrete_white_noise(2, dt=dt, var=0.02)
 
@@ -149,7 +149,7 @@ def set_ca_filter(kf_ca):
     kf_ca.F = get_F(dt, dim=6)
     kf_ca.H = get_H(model='ca', process='predict')
 
-    kf_ca.Q = get_Q(kf_ca.Q, dt, var=0.1, dim=6)
+    kf_ca.Q = get_Q(kf_ca.Q, dt, var=0.2, dim=6)
 
     kf_ca.P = get_P(100)
 
@@ -158,7 +158,7 @@ def set_ca_filter(kf_ca):
 
 def set_ukf_cv_filter(ukf_cv):
     dt = 1
-    ukf_cv.Q = get_Q(ukf_cv.Q, dt, var=0.1, dim=4)
+    ukf_cv.Q = get_Q(ukf_cv.Q, dt, var=0.2, dim=4)
 
     return ukf_cv
 

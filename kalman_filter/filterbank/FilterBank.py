@@ -85,7 +85,7 @@ class FilterBank:
 
             assert len(self._adapted_states) == len(Ms)
 
-            # plotter.plot_rts_output(xs, Ms, range(len(xs)))
+            plotter.valid_plot_rts_output(xs, Ms, range(len(xs)))
 
 
             # lng, lat = self.get_smoothed_lng_lat()

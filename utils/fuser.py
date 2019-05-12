@@ -8,7 +8,10 @@ from . import checker
 def map_potholes_back_to_real_world(ts, kf_res, gps_time_intervals, min_no_of_pothole_like_measurements):
     intervals = [tup for list in gps_time_intervals for tup in list]
     formatted_times = get_formatted_times_of_potholes(ts, intervals)
+    print('LENGTH OG:',len(kf_res['smoothed']))
+
     potholes_with_coordinates = get_coordinates(formatted_times, kf_res, min_no_of_pothole_like_measurements)
+    print('LENGTH PH:',len(potholes_with_coordinates['lng']))
     return potholes_with_coordinates
 
 
@@ -84,7 +87,7 @@ def get_points_with_acc(acc, gps):
 
 def get_points(acc, gps):
     points = []
-    for time, lng, lat, vlng, vlat, tt, hdop, a in zip(gps['time'], gps['ln'], gps['la'], gps['vln'], gps['vlt'],
+    for time, lng, lat, vlng, vlat, tt, hdop, a in zip(gps['time'], gps['lng'], gps['lat'], gps['vln'], gps['vlt'],
                                                        gps['t'], gps['hdop'],
                                                        acc):
         sublist = []

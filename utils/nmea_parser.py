@@ -192,7 +192,7 @@ def pass_gps_dict_of_lists(gps):
         time.append(values['time'])
         ln.append(values['lng'])
         la.append(values['lat'])
-    return {'ln': ln, 'la': la, 'hdop': hdop, 'time': time, 'vln': v_ln,'vlt': v_la, 't': b}
+    return {'lng': ln, 'lat': la, 'hdop': hdop, 'time': time, 'vln': v_ln,'vlt': v_la, 't': b}
 
 
 # Call this and on the result of this you can call get_gps_dataframe.
