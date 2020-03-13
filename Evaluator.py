@@ -71,8 +71,8 @@ class Evaluator:
                         true_positives.append(pthl)
                         count += 1
                 precisions.append(count)
-                for marked in already_marked:
-                    del potholes[marked]
+                # for marked in already_marked:
+                #     del potholes[marked]
                 already_marked = []
             except StopIteration:
                 print('Last item')

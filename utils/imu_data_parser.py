@@ -110,8 +110,8 @@ def _iterate_through_table_and_do_calculations(data):
     # plt.show()
 
     # This will be used! In the next years ;)
-    from ImuMeasurement import ImuMeasurement
-    im = ImuMeasurement(data)
+    #from ImuMeasurement import ImuMeasurement
+    #im = ImuMeasurement(data)
 
 
     time = data['time']

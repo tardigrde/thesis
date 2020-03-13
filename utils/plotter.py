@@ -75,8 +75,8 @@ def valid_plot_rts_output(xs, Ms, t):
     plt.legend(loc='best', prop={'size': 22})
     plt.grid()
     np.set_printoptions(precision=4)
-    plt.savefig(r'C:\Users\leven\Desktop\plots_for_thesis' + r'\adapted_vs_smoothed_lng.png', dpi=72, transparent=True,
-                bbox_inches='tight')
+    # plt.savefig(r'C:\Users\leven\Desktop\plots_for_thesis' + r'\adapted_vs_smoothed_lng.png', dpi=72, transparent=True,
+    #             bbox_inches='tight')
 
     fig_lat = plt.figure(figsize=(16, 16))
     plt.title('Adaptált vs. szűrt/simított koordináták az X tengelyen',
@@ -91,7 +91,7 @@ def valid_plot_rts_output(xs, Ms, t):
     np.set_printoptions(precision=4)
 
     print('Difference in position in meters:\n\t', xs[-6:-1, 0] - Ms[-6:-1, 0])
-    plt.savefig(r'C:\Users\leven\Desktop\plots_for_thesis' + r'\adapted_vs_smoothed_lat.png', dpi=72, transparent=True, bbox_inches='tight')
+    # plt.savefig(r'C:\Users\leven\Desktop\plots_for_thesis' + r'\adapted_vs_smoothed_lat.png', dpi=72, transparent=True, bbox_inches='tight')
 
 # def valid_plot_window(axis,trimmed_filtered_axis):
 #     fig_acc = plt.figure(figsize=(16, 9))

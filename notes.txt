@@ -52,3 +52,13 @@ SPECIAL TOPICS KF
 
 MANUAL STUFF:
 check if low pass fitlered data corresponds to original acc data !!!!!!!!!!!
+
+
+
+
+find . -name '*.py' | xargs  wc -l
+LOC:  9629 total
+
+
+find . -name '*.py' | xargs grep 'def ' | wc -l
+def: 570

@@ -22,31 +22,29 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 start_time = time.time()
 log.info('Setting paths and finding files...')
 
-# path_to_reference_potholes = r'D:\code\PyCharmProjects\thesis\data\real_potholes\potholes_3m_buffer.shp'
-path_to_reference_potholes = r'D:\code\PyCharmProjects\thesis\data\real_potholes\road_anomalies_3m_buffer.shp'
-# path_to_reference_potholes = r'D:\code\PyCharmProjects\thesis\data\real_potholes\potholes_3m_buffer.shp'
-path_to_invalid_potholes = r'D:\code\PyCharmProjects\thesis\data\real_potholes\invalid_areas.shp'
-path_to_szentharomsag=r'D:\code\PyCharmProjects\thesis\data\real_potholes\szentharomsag_uttest.shp'
+# path_to_reference_potholes = r'/home/levente/projects/thesis/data/real_potholes/potholes_3m_buffer.shp'
+path_to_reference_potholes = r'/home/levente/projects/thesis/data/real_potholes/road_anomalies_3m_buffer.shp'
+# path_to_reference_potholes = r'/home/levente/projects/thesis/data/real_potholes/potholes_3m_buffer.shp'
+path_to_invalid_potholes = r'/home/levente/projects/thesis/data/real_potholes/invalid_areas.shp'
+path_to_szentharomsag = r'/home/levente/projects/thesis/data/real_potholes/szentharomsag_uttest.shp'
 precisions = []
 
 
 def write_to_shape(hit_counts):
-
     # from shapely.geometry import mapping, Polygon
     schema = {
         'geometry': 'Polygon',
         'properties': {'count': 'int'},
     }
 
-    output = r'D:\code\PyCharmProjects\thesis\data\real_potholes\potholes_hit_3m.geojson'
+    output = '/home/levente/projects/thesis/data/real_potholes/potholes_hit_3m.geojson'
     feature_collection = FeatureCollection(hit_counts)
-    with open(output,'w') as out:
+    with open(output, 'w') as out:
         dump(feature_collection, out)
 
 
-
 def get_measurement_path(test_run):
-    DATA_BASE_DIR = r'D:\code\PyCharmProjects\thesis\data'
+    DATA_BASE_DIR = '/home/levente/projects/thesis/data'
     CURRENT_TEST_RUN = test_run
     dir_path = DATA_BASE_DIR + CURRENT_TEST_RUN
     return dir_path
@@ -76,16 +74,16 @@ def get_true_positives_on_pothole(precisions):
 def get_paths(dir_path):
     path_imu = None
     path_gps = None
-    input_dir_path = Path(dir_path + '\measurement')
+    input_dir_path = Path(dir_path + '/measurement')
     if not input_dir_path.is_dir(): return
 
     only_files = [f for f in listdir(input_dir_path) if isfile(join(input_dir_path, f))]
     for file in only_files:
         if '.csv' in file:
-            path_imu = Path(str(input_dir_path) + '\\' + file)
+            path_imu = Path(str(input_dir_path) + '/' + file)
             print('Path of the IMU file: ', path_imu)
         elif '.log' in file:
-            path_gps = Path(str(input_dir_path) + '\\' + file)
+            path_gps = Path(str(input_dir_path) + '/' + file)
             print('Path of the GPS file: ', path_gps)
 
     return path_imu, path_gps
@@ -96,8 +94,8 @@ def run_algorithm(path_imu, path_gps, dir_path, max_eps, min_no_of_pothole_like_
 
     log.info("Initializing Measurement object...")
 
-
-    measurement = Measurement(path_imu, path_gps, dir_path, path_to_reference_potholes, path_to_invalid_potholes,path_to_szentharomsag,
+    measurement = Measurement(path_imu, path_gps, dir_path, path_to_reference_potholes, path_to_invalid_potholes,
+                              path_to_szentharomsag,
                               max_eps, min_no_of_pothole_like_measurements)
 
     log.info("Initializing Measurement object...DONE!")
@@ -118,27 +116,26 @@ def run_algorithm(path_imu, path_gps, dir_path, max_eps, min_no_of_pothole_like_
     measurement.create_outputs('kalmaned')
     log.info("Kalman filtering...DONE!")
 
-    prec = measurement.evaluate_potholes()
-    precisions.append(prec)
-    measurement.create_outputs('potholes')
+    # prec = measurement.evaluate_potholes()
+    # precisions.append(prec)
+    # measurement.create_outputs('potholes')
 
 
-# for test_run in [r'\20190115\elso']:
-# for test_run in [r'\roszke-szeged']:
-# for test_run in [r'\20190115\masodik', r'\20190409\elso', r'\20190409\masodik', r'\20190409\harmadik']:
-for test_run in [r'\trolli_playground']:
+# for test_run in [r'/20190115/elso']:
+# for test_run in [r'/roszke-szeged']:
+# for test_run in ['/20190115/masodik', r'/20190409/elso', r'/20190409/masodik', r'/20190409/harmadik']:
+for test_run in [r'/trolli_playground']:
     print('Processing: ', test_run)
     dir_path = get_measurement_path(test_run)
     path_imu, path_gps = get_paths(dir_path)
     assert not None in (path_imu, path_gps)
     max_eps = 5
     min_no_events_in_window = 10
-    config={
-        #TODO:
+    config = {
+        # TODO:
         #   input data and parameters unified
     }
     run_algorithm(path_imu, path_gps, dir_path, max_eps, min_no_events_in_window)
-
-get_true_positives_on_pothole(precisions)
+# get_true_positives_on_pothole(precisions)
 
 print("--- %s seconds ---" % (time.time() - start_time))

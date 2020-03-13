@@ -65,7 +65,7 @@ def create_kalmaned_plots(fig_dir, result_lists, matrices, file_count):
 
     if not file_count: return
 
-    # plotter.plot_adapted_result(fig_dir, 'adapted', result_lists)
+    plotter.plot_adapted_result(fig_dir, 'adapted', result_lists)
     plotter.valid_plot_og_vs_smoothed(fig_dir, 'adapted', result_lists)
     plotter.valid_plot_og_vs_prios(fig_dir, 'adapted', result_lists)
 

@@ -1,12 +1,14 @@
-pip install matplotlib
-pip install numpy
-pip install pandas
-pip install pyproj
-pip install Geohash
-pip install python-geohash
-pip install pynmea2
-pip install pyquaternion
-pip install peakutils
-conda install geopandas
-conda install shapely
+matplotlib
+numpy
+pandas
+pyproj
+Geohash
+python-geohash
+pynmea2
+pyquaternion
+peakutils
+geopandas
+shapely
+filterpy
+geojson
 

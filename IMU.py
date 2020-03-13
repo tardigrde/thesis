@@ -1,10 +1,9 @@
 from utils import imu_data_parser
 
+
 class IMU:
     def __init__(self, path):
         self.path = path
-
-
 
     @property
     def preprocessed(self):
@@ -16,9 +15,3 @@ class IMU:
     @property
     def dataframe(self):
         self._dataframe = imu_data_parser._wrangle_data_with_pandas(self.path)
-
-
-
-    @property
-    def dataset(self, col):
-        pass

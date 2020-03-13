@@ -258,7 +258,7 @@ def choose_potholes(stats):
     print('len of potholes: {}'.format(counter))
     print(bad_segments)
     df = pd.DataFrame(bad_segments)
-    fuser.convert_result_to_shp(df, r'D:\PyCharmProjects\thesis\data\20190115\harmadik\results\potholes\result')
+    fuser.convert_result_to_shp(df, r'/home/levente/projects/thesis/data/20190115/harmadik/results/potholes/result')
     print('done')
 
 # def get_low_pass_filtered_data(acc_time, acc_down, kf_res):
@@ -337,14 +337,14 @@ def calculate_stats(windows):
 
 def write_interval_data_to_file(time_intervals):
     time_intervals = [i for lists in time_intervals for i in lists]
-    with open(r'D:\code\PyCharmProjects\thesis\data\trolli_playground\kalmaned_data\interval_data.csv', 'w') as outfile:
+    with open( '/home/levente/projects/thesis/data/trolli_playground/kalmaned_data/interval_data.csv', 'w') as outfile:
         for i in time_intervals:
             line_to_write = str(i[0]) + ',' + str(i[1]) + '\n'
             outfile.write(line_to_write)
 
 
 def write_kalmaned_data_to_file(adaptive_kf_result):
-    with open(r'D:\code\PyCharmProjects\thesis\data\trolli_playground\kalmaned_data\kalmaned_data.csv', 'w') as outfile:
+    with open(r'/home/levente/projects/thesis/data/trolli_playground/kalmaned_data/kalmaned_data.csv', 'w') as outfile:
         for t, p in adaptive_kf_result:
             line_to_write = str(t) + ',' + str(p[0]) + ',' + str(p[1]) + '\n'
             outfile.write(line_to_write)
@@ -352,7 +352,7 @@ def write_kalmaned_data_to_file(adaptive_kf_result):
 
 def write_acc_data_to_file(acc_time, filtered):
     accs = []
-    with open(r'D:\code\PyCharmProjects\thesis\data\trolli_playground\acc_data\acc_data.csv', 'w') as outfile:
+    with open(r'/home/levente/projects/thesis/data/trolli_playground/acc_data/acc_data.csv', 'w') as outfile:
         for t, d in zip(acc_time, filtered):
             line_to_write = str(t) + ',' + str(d) + '\n'
             outfile.write(line_to_write)

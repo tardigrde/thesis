@@ -11,8 +11,8 @@ class FilterBank:
     def __init__(self, types):
         self._types = types
         self.create_filterbank()
-        self._adapted_states=[]
-        self._adapted_covs=[]
+        self._adapted_states = []
+        self._adapted_covs = []
 
     def create_filterbank(self):
         if self._types == 'all':
@@ -32,12 +32,13 @@ class FilterBank:
 
     def set_filters(self, first_measurement):
         util.set_cv_filter(self._cv)
-        #util.set_ca_filter(self._ca)
+        # util.set_ca_filter(self._ca)
         util.set_ukf_cv_filter(self._ucv)
         util.set_ukf_ca_filter(self._uca)
 
         # Setting the first state.
-        initial_state = np.array([first_measurement.lng, first_measurement.vlng, first_measurement.lat, first_measurement.vlat])
+        initial_state = np.array(
+            [first_measurement.lng, first_measurement.vlng, first_measurement.lat, first_measurement.vlat])
         self._cv.x = self._ucv.x = self._uca.x = initial_state
         # ADJUST THIS
         # self._ca.x = np.array([first_measurement.lng, first_measurement.vlng, .0, first_measurement.lat, first_measurement.vlat, .0])
@@ -51,24 +52,20 @@ class FilterBank:
         self._ca, self._ca_saver = None, None
         ca_eps = None
 
-
         self._ucv, self._ucv_saver = util.do_cv_uk_filtering(point, self._ucv, self._ucv_saver)
         ucv_eps = self._ucv.epsilon
-
-
 
         self._uca, self._uca_saver = util.do_ca_uk_filtering(point, self._uca, self._uca_saver)
         uca_eps = self._uca.epsilon
 
-        filters=[self._cv,self._ca , self._ucv, self._uca]
-        epsilons=[cv_eps,ca_eps , ucv_eps, uca_eps]
+        filters = [self._cv, self._ca, self._ucv, self._uca]
+        epsilons = [cv_eps, ca_eps, ucv_eps, uca_eps]
         Q_scale_factor = 10
         # util.adjust_process_noise(filters, epsilons, max_eps, Q_scale_factor)
 
-        adapted_state = util.save_adapted_state(filters,epsilons)
+        adapted_state = util.save_adapted_state(filters, epsilons)
         adapted_state['time'] = point.time
         self._adapted_states.append(adapted_state)
-
 
     def results_to_array(self):
         self._cv_saver.to_array()
@@ -87,11 +84,9 @@ class FilterBank:
 
             plotter.valid_plot_rts_output(xs, Ms, range(len(xs)))
 
-
             # lng, lat = self.get_smoothed_lng_lat()
 
             return Ms, P, K
-
 
     # def get_smoothed_lng_lat(self):
     #     lng = []
@@ -100,9 +95,6 @@ class FilterBank:
     #         lng.append(m[0])
     #         lat.append(m[2])
     #     return lng, lat
-
-
-
 
     @property
     def cv_saver(self):
