@@ -167,29 +167,3 @@ def read_shape_file(shp_path):
     shapes = fiona.open(shp_path)
     return shapes
 
-# def remove_invalid_potholes(self, ph):
-#     shapes = self.read_shape_file(self.invalid_path)
-#     shps = iter(shapes)
-#     potholes_without_invalid = []
-#     while True:
-#         try:
-#             shp = next(shps)
-#             shp_geom = shape(shp['geometry'])
-#             for i, (ln, lt, time, llh, prob) in enumerate(
-#                     zip(ph['lng'], ph['lat'], ph['time'], ph['llh'], ph['probability'])):
-#                 point_geom = Point(ln, lt)
-#                 pthl = {
-#                     'point': point_geom,
-#                     'time': time,
-#                     'llh': llh,
-#                     'prob': prob
-#                 }
-#
-#                 if not shp_geom.contains(point_geom):
-#                     potholes_without_invalid.append(pthl)
-#
-#         except StopIteration:
-#             break
-#
-#     print('{} potholes are on non-measureable area.'.format(len(ph['time']) - len(potholes_without_invalid)))
-#     return potholes_without_invalid

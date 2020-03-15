@@ -12,7 +12,6 @@ import os
 
 
 def create_outputs(dir_path, res_obj, type):
-    testset = ''
     if os.path.isdir(dir_path):
         testset = os.path.basename(dir_path)
     else:
@@ -23,15 +22,28 @@ def create_outputs(dir_path, res_obj, type):
 
     if type == 'kalmaned':
         result_lists, matrices = extract_attributes_from_saver_objects(res_obj)
+        write_results_to_file(result_lists)
 
-        create_kf_shapes(result_lists, kalmaned_dir, testset, file_count)
-        create_kalmaned_plots(figures_dir, result_lists, matrices, file_count)
+        #create_kf_shapes(result_lists, kalmaned_dir, testset, file_count)
+        #create_kalmaned_plots(figures_dir, result_lists, matrices, file_count)
         return result_lists
     elif type == 'potholes':
-        file_count = str(int(file_count)-1)
-        create_potholes_shapes(res_obj, potholes_dir, testset, file_count)
-        export_potholes_plots(res_obj, figures_dir, file_count)
+        file_count = str(int(file_count) - 1)
+        #create_potholes_shapes(res_obj, potholes_dir, testset, file_count)
+        #export_potholes_plots(res_obj, figures_dir, file_count)
 
+
+def write_results_to_file(results):
+    file = '/home/levente/projects/thesis/tests/kalmaned/adapted.csv'
+    import csv
+
+    with open(file, 'w') as csvfile:
+        writer = csv.writer(csvfile)
+        data = results.get('adapted')
+        writer.writerow(['time', 'lat', 'lng', 'P', 'llh', 'epsilons', 'type'])
+        for t, lt, ln, p, llh, e, typ in zip(data.get('time'), data.get('lat'), data.get('lng'), data.get('P'),
+                              data.get('llh'), data.get('epsilons'), data.get('type')):
+            writer.writerow([t, lt, ln, p, llh, e, typ])
 
 
 def create_potholes_shapes(res_obj, potholes_dir, testset, file_count):
@@ -72,12 +84,10 @@ def create_kalmaned_plots(fig_dir, result_lists, matrices, file_count):
     # epsilons = result_lists['adapted']['epsilons']
     # plotter.plot_epsilons(fig_dir, 'adapted', epsilons)
 
-
     # for i in ['cv', 'ucv','uca']:
     fig_dir_path = Path(str(fig_dir) + '\\' + file_count)
     if not fig_dir_path.is_dir(): makedirs(fig_dir_path)
     # plotter.valid_plot_llh(fig_dir_path,  result_lists)
-
 
     # create_plots(result_lists, matrices, fig_dir_path, file_count,i)
     # print("Plotting took %s seconds " % (time.time() - start_time))
@@ -138,11 +148,11 @@ def get_file_count(dir_path):
 
 
 def check_folders(dir_path):
-    output_dir_path = Path(str(dir_path) + r'\results')
-    shapes_dir = Path(str(output_dir_path) + r'\shapes')
-    kalmaned_dir = Path(str(shapes_dir) + r'\kalmaned')
-    potholes_dir = Path(str(shapes_dir) + r'\potholes')
-    figures_dir = Path(str(output_dir_path) + r'\figures')
+    output_dir_path = Path(str(dir_path) + r'/results')
+    shapes_dir = Path(str(output_dir_path) + r'/shapes')
+    kalmaned_dir = Path(str(shapes_dir) + r'/kalmaned')
+    potholes_dir = Path(str(shapes_dir) + r'/potholes')
+    figures_dir = Path(str(output_dir_path) + r'/figures')
 
     if not output_dir_path.is_dir(): makedirs(output_dir_path)
     if not shapes_dir.is_dir(): makedirs(shapes_dir)
@@ -195,13 +205,13 @@ def extract_attributes_from_saver_objects(kalmaned):
             'time': time,
             'lng': [i['x'][0] for i in kalmaned['adapted']],
             'lat': [i['x'][2] for i in kalmaned['adapted']],
-            'P': [i['P']for i in kalmaned['adapted']],
+            'P': [i['P'] for i in kalmaned['adapted']],
             'llh': [i['llh'] for i in kalmaned['adapted']],
             'epsilons': [i['eps'] for i in kalmaned['adapted']],
             'type': [i['model'] for i in kalmaned['adapted']],
         },
-        'smoothed':{
-            'lng': kalmaned['smoothed'][:,0],
+        'smoothed': {
+            'lng': kalmaned['smoothed'][:, 0],
             'lat': kalmaned['smoothed'][:, 2]
         }
     }

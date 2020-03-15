@@ -4,7 +4,6 @@ from pyquaternion import Quaternion
 from dsp_library import dsp
 from utils import fuser, plotter
 
-
 import pandas as pd
 import numpy as np
 import math
@@ -15,7 +14,7 @@ def apply_low_pass(df):
     for col in list(df):
         if col != 'time' and not 'mag' in col:
             low_passed = dsp.do_low_pass_filter(df[col].tolist())
-            dataset[col] =  low_passed #df[col].tolist()
+            dataset[col] = low_passed  # df[col].tolist()
             # We already checked visually if the new measurements are better with LPF
             # if col == 'acc_z':
             #     plotter.valid_plot_acc_axis(df[col].tolist(),low_passed)
@@ -27,14 +26,6 @@ def apply_low_pass(df):
 
 
 def _wrangle_data_with_pandas(path):
-    """
-
-    Args:
-        path:
-
-    Returns:
-
-    """
     # Transform the huge csv to dataframe.
     df = pd.DataFrame(pd.read_csv(path, sep=','))
     columns_to_keep = ['Timestamp',
@@ -110,9 +101,8 @@ def _iterate_through_table_and_do_calculations(data):
     # plt.show()
 
     # This will be used! In the next years ;)
-    #from ImuMeasurement import ImuMeasurement
-    #im = ImuMeasurement(data)
-
+    # from ImuMeasurement import ImuMeasurement
+    # im = ImuMeasurement(data)
 
     time = data['time']
     no_of_measurements = len(time)
@@ -184,11 +174,10 @@ def _iterate_through_table_and_do_calculations(data):
         imu_data_dict[int(time[i])] = {'time': time[i], 'acc_east': tru_acc['east'], 'acc_north': tru_acc['north'],
                                        'acc_down': tru_acc['down']}
 
-
-        list_of_dicts_of_imu_data.append(
-            {'time': int(time[i]), 'acc_east': tru_acc['east'], 'acc_north': tru_acc['north'],
-             'acc_down': tru_acc['down']}
-        )
+        # list_of_dicts_of_imu_data.append(
+        #    {'time': int(time[i]), 'acc_east': tru_acc['east'], 'acc_north': tru_acc['north'],
+        #     'acc_down': tru_acc['down']}
+        # )
     return imu_data_dict
 
 

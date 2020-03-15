@@ -1,5 +1,5 @@
 class Point:
-    def __init__(self, time, lng, lat, vlng,vlat, bear, hdop, acc):
+    def __init__(self, time, lng, lat, vlng, vlat, bear, hdop, acc):
         self._lng = lng
         self._lat = lat
         self._time = time
@@ -10,7 +10,7 @@ class Point:
         self._acc = acc
 
     def __repr__(self):
-        return "{}: ({}, {})".format(self.time,self.lng,self.lat)
+        return "{}: ({}, {})".format(self.time, self.lng, self.lat)
 
     @property
     def time(self):
@@ -43,4 +43,3 @@ class Point:
     @property
     def acc(self):
         return self._acc
-
